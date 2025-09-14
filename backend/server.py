@@ -1028,7 +1028,209 @@ async def generate_document(request: GenerateRequest):
         logger.error(f"Error generating document: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de la génération du document")
 
-@api_router.get("/quota/check")
+@api_router.post("/auth/request-login")
+async def request_login(request: LoginRequest):
+    """Request a magic link for Pro user login"""
+    try:
+        # Check if user exists and is Pro
+        is_pro, user = await check_user_pro_status(request.email)
+        
+        if not is_pro:
+            # Don't reveal if user exists or not for security
+            raise HTTPException(
+                status_code=404, 
+                detail="Utilisateur Pro non trouvé ou abonnement expiré"
+            )
+        
+        # Generate magic link token (short-lived, 15 minutes)
+        magic_token = str(uuid.uuid4()) + "-magic-" + str(int(datetime.now(timezone.utc).timestamp()))
+        expires_at = datetime.now(timezone.utc) + timedelta(minutes=15)
+        
+        # Store magic token temporarily
+        await db.magic_tokens.insert_one({
+            "token": magic_token,
+            "email": request.email,
+            "expires_at": expires_at,
+            "used": False,
+            "created_at": datetime.now(timezone.utc)
+        })
+        
+        # Send magic link email
+        email_sent = await send_magic_link_email(request.email, magic_token)
+        
+        if not email_sent:
+            raise HTTPException(
+                status_code=500,
+                detail="Erreur lors de l'envoi de l'email"
+            )
+        
+        return {
+            "message": "Lien de connexion envoyé par email",
+            "email": request.email
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in request login: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la demande de connexion"
+        )
+
+@api_router.post("/auth/verify-login")
+async def verify_login(request: VerifyLoginRequest):
+    """Verify magic link token and create session"""
+    try:
+        # Find magic token
+        magic_token_doc = await db.magic_tokens.find_one({
+            "token": request.token,
+            "used": False
+        })
+        
+        if not magic_token_doc:
+            raise HTTPException(
+                status_code=400,
+                detail="Token invalide ou déjà utilisé"
+            )
+        
+        # Check token expiration
+        expires_at = magic_token_doc.get('expires_at')
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
+        elif isinstance(expires_at, datetime) and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+            
+        now = datetime.now(timezone.utc)
+        
+        if expires_at < now:
+            # Token expired
+            await db.magic_tokens.delete_one({"token": request.token})
+            raise HTTPException(
+                status_code=400,
+                detail="Token expiré"
+            )
+        
+        email = magic_token_doc.get('email')
+        
+        # Verify user is still Pro
+        is_pro, user = await check_user_pro_status(email)
+        if not is_pro:
+            raise HTTPException(
+                status_code=403,
+                detail="Abonnement Pro expiré"
+            )
+        
+        # Mark token as used
+        await db.magic_tokens.update_one(
+            {"token": request.token},
+            {"$set": {"used": True, "used_at": datetime.now(timezone.utc)}}
+        )
+        
+        # Create login session
+        session_token = await create_login_session(email, request.device_id)
+        
+        if not session_token:
+            raise HTTPException(
+                status_code=500,
+                detail="Erreur lors de la création de la session"
+            )
+        
+        return {
+            "message": "Connexion réussie",
+            "email": email,
+            "session_token": session_token,
+            "expires_in": "24h"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in verify login: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la vérification du token"
+        )
+
+@api_router.post("/auth/logout")
+async def logout(request: Request):
+    """Logout user by invalidating session"""
+    try:
+        # Get session token from header
+        session_token = request.headers.get("X-Session-Token")
+        
+        if not session_token:
+            raise HTTPException(
+                status_code=400,
+                detail="Token de session manquant"
+            )
+        
+        # Remove session
+        result = await db.login_sessions.delete_one({"session_token": session_token})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(
+                status_code=404,
+                detail="Session non trouvée"
+            )
+        
+        return {"message": "Déconnexion réussie"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error in logout: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la déconnexion"
+        )
+
+@api_router.get("/auth/session/validate")
+async def validate_session(request: Request):
+    """Validate current session and return user info"""
+    try:
+        session_token = request.headers.get("X-Session-Token")
+        
+        if not session_token:
+            raise HTTPException(
+                status_code=401,
+                detail="Token de session manquant"
+            )
+        
+        email = await validate_session_token(session_token)
+        
+        if not email:
+            raise HTTPException(
+                status_code=401,
+                detail="Session invalide ou expirée"
+            )
+        
+        # Check if user is still Pro
+        is_pro, user = await check_user_pro_status(email)
+        
+        if not is_pro:
+            # Clean up session if user is no longer Pro
+            await db.login_sessions.delete_one({"session_token": session_token})
+            raise HTTPException(
+                status_code=403,
+                detail="Abonnement Pro expiré"
+            )
+        
+        return {
+            "email": email,
+            "is_pro": True,
+            "subscription_expires": user.get('subscription_expires'),
+            "last_login": user.get('last_login')
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error validating session: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Erreur lors de la validation de session"
+        )
 async def check_quota_status(guest_id: str):
     """Check current quota status for guest user"""
     return await check_guest_quota(guest_id)
