@@ -139,7 +139,7 @@ function MainApp() {
   // Initialize authentication and guest ID
   useEffect(() => {
     // Check for stored auth token
-    const storedToken = localStorage.getItem('lessonsmith_auth_token');
+    const storedToken = localStorage.getItem('lemaitremot_auth_token');
     if (storedToken) {
       setAuthToken(storedToken);
       setIsAuthenticated(true);
