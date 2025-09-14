@@ -271,6 +271,7 @@ function MainApp() {
   const [loginEmail, setLoginEmail] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
+  const [loginEmailSent, setLoginEmailSent] = useState(false);
   
   // Export states
   const [exportingSubject, setExportingSubject] = useState(false);
