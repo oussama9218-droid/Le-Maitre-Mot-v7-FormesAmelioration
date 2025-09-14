@@ -113,6 +113,11 @@ function MainApp() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [documents, setDocuments] = useState([]);
   
+  // Authentication state
+  const [authToken, setAuthToken] = useState("");
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  
   // Guest and quota management
   const [guestId, setGuestId] = useState("");
   const [quotaStatus, setQuotaStatus] = useState({ 
