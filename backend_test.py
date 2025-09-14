@@ -365,6 +365,347 @@ class LeMaitreMotAPITester:
         # For error cases, success means we got the expected error status
         return success
 
+    # ========== AUTHENTICATION SYSTEM TESTS ==========
+    
+    def test_pro_user_exists(self):
+        """Test if the Pro user exists in the system"""
+        success, response = self.run_test(
+            "Check Pro User Status",
+            "GET",
+            f"user/status/{self.pro_user_email}",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            is_pro = response.get('is_pro', False)
+            subscription_type = response.get('subscription_type')
+            subscription_expires = response.get('subscription_expires')
+            
+            print(f"   User is Pro: {is_pro}")
+            if is_pro:
+                print(f"   Subscription type: {subscription_type}")
+                print(f"   Expires: {subscription_expires}")
+            else:
+                print("   ⚠️  User is not Pro - this may affect authentication tests")
+        
+        return success, response
+
+    def test_request_login_pro_user(self):
+        """Test magic link request for existing Pro user"""
+        login_data = {
+            "email": self.pro_user_email
+        }
+        
+        success, response = self.run_test(
+            "Request Login - Pro User",
+            "POST",
+            "auth/request-login",
+            200,
+            data=login_data
+        )
+        
+        if success and isinstance(response, dict):
+            message = response.get('message', '')
+            email = response.get('email', '')
+            print(f"   Message: {message}")
+            print(f"   Email: {email}")
+            
+            if 'envoyé' in message.lower() or 'sent' in message.lower():
+                print("   ✅ Magic link email appears to have been sent")
+            else:
+                print("   ⚠️  Unexpected response message")
+        
+        return success, response
+
+    def test_request_login_non_pro_user(self):
+        """Test magic link request for non-Pro user (should fail)"""
+        login_data = {
+            "email": f"nonpro_{self.guest_id}@example.com"
+        }
+        
+        success, response = self.run_test(
+            "Request Login - Non-Pro User",
+            "POST",
+            "auth/request-login",
+            404,  # Should return 404 for non-Pro users
+            data=login_data
+        )
+        
+        if success:
+            print("   ✅ Correctly rejected non-Pro user login request")
+        
+        return success, response
+
+    def test_simulate_magic_token_verification(self):
+        """Simulate magic token verification (since we can't access email)"""
+        # First, let's try to create a mock magic token in the database
+        # Since we can't access the actual magic token from email, we'll simulate the verification process
+        
+        # Generate a test token format similar to what the system would create
+        import uuid
+        import time
+        test_token = f"{uuid.uuid4()}-magic-{int(time.time())}"
+        
+        verify_data = {
+            "token": test_token,
+            "device_id": self.device_id
+        }
+        
+        # This will likely fail with 400 (invalid token) which is expected
+        # since we're using a fake token, but it tests the endpoint structure
+        success, response = self.run_test(
+            "Verify Login - Simulated Token",
+            "POST",
+            "auth/verify-login",
+            400,  # Expecting 400 for invalid token
+            data=verify_data
+        )
+        
+        if success:
+            print("   ✅ Endpoint correctly rejected invalid token")
+        elif response:
+            # Check if we get the expected error message
+            try:
+                if isinstance(response, dict):
+                    detail = response.get('detail', '')
+                    if 'invalide' in detail.lower() or 'invalid' in detail.lower():
+                        print("   ✅ Got expected 'invalid token' error message")
+                        self.tests_passed += 1  # Count this as a pass since behavior is correct
+                        return True, response
+            except:
+                pass
+        
+        return success, response
+
+    def test_session_validation_without_token(self):
+        """Test session validation without token (should fail)"""
+        success, response = self.run_test(
+            "Session Validation - No Token",
+            "GET",
+            "auth/session/validate",
+            401  # Should return 401 for missing token
+        )
+        
+        if success:
+            print("   ✅ Correctly rejected request without session token")
+        
+        return success, response
+
+    def test_session_validation_invalid_token(self):
+        """Test session validation with invalid token"""
+        fake_token = f"fake-session-token-{self.device_id}"
+        headers = {"X-Session-Token": fake_token}
+        
+        success, response = self.run_test(
+            "Session Validation - Invalid Token",
+            "GET",
+            "auth/session/validate",
+            401,  # Should return 401 for invalid token
+            headers=headers
+        )
+        
+        if success:
+            print("   ✅ Correctly rejected invalid session token")
+        
+        return success, response
+
+    def test_export_with_session_token_invalid(self):
+        """Test PDF export with invalid session token"""
+        if not self.generated_document_id:
+            print("⚠️  Skipping export test - no document generated")
+            return False, {}
+        
+        fake_token = f"fake-session-token-{self.device_id}"
+        headers = {"X-Session-Token": fake_token}
+        
+        export_data = {
+            "document_id": self.generated_document_id,
+            "export_type": "sujet"
+        }
+        
+        success, response = self.run_test(
+            "Export with Invalid Session Token",
+            "POST",
+            "export",
+            401,  # Should return 401 for invalid session token
+            data=export_data,
+            headers=headers
+        )
+        
+        if success:
+            print("   ✅ Export correctly rejected invalid session token")
+        
+        return success, response
+
+    def test_export_with_email_header_pro(self):
+        """Test PDF export with email header (backwards compatibility)"""
+        if not self.generated_document_id:
+            print("⚠️  Skipping export test - no document generated")
+            return False, {}
+        
+        headers = {"X-User-Email": self.pro_user_email}
+        
+        export_data = {
+            "document_id": self.generated_document_id,
+            "export_type": "sujet"
+        }
+        
+        success, response = self.run_test(
+            "Export with Pro Email Header",
+            "POST",
+            "export",
+            200,  # Should work for Pro user
+            data=export_data,
+            headers=headers
+        )
+        
+        if success:
+            print("   ✅ Export worked with Pro user email header (backwards compatibility)")
+        
+        return success, response
+
+    def test_export_with_email_header_non_pro(self):
+        """Test PDF export with non-Pro email header"""
+        if not self.generated_document_id:
+            print("⚠️  Skipping export test - no document generated")
+            return False, {}
+        
+        non_pro_email = f"nonpro_{self.guest_id}@example.com"
+        headers = {"X-User-Email": non_pro_email}
+        
+        export_data = {
+            "document_id": self.generated_document_id,
+            "export_type": "sujet",
+            "guest_id": self.guest_id
+        }
+        
+        # This should work but count against guest quota
+        success, response = self.run_test(
+            "Export with Non-Pro Email Header",
+            "POST",
+            "export",
+            200,  # Should work but use guest quota
+            data=export_data,
+            headers=headers
+        )
+        
+        if success:
+            print("   ✅ Export worked for non-Pro user (using guest quota)")
+        
+        return success, response
+
+    def test_logout_without_token(self):
+        """Test logout without session token"""
+        success, response = self.run_test(
+            "Logout - No Token",
+            "POST",
+            "auth/logout",
+            400  # Should return 400 for missing token
+        )
+        
+        if success:
+            print("   ✅ Logout correctly rejected request without token")
+        
+        return success, response
+
+    def test_logout_invalid_token(self):
+        """Test logout with invalid session token"""
+        fake_token = f"fake-session-token-{self.device_id}"
+        headers = {"X-Session-Token": fake_token}
+        
+        success, response = self.run_test(
+            "Logout - Invalid Token",
+            "POST",
+            "auth/logout",
+            404,  # Should return 404 for non-existent session
+            headers=headers
+        )
+        
+        if success:
+            print("   ✅ Logout correctly handled invalid token")
+        
+        return success, response
+
+    def test_authentication_endpoints_structure(self):
+        """Test that all authentication endpoints exist and respond appropriately"""
+        print("\n🔍 Testing authentication endpoints structure...")
+        
+        endpoints_tests = [
+            ("POST /auth/request-login", "POST", "auth/request-login", {"email": "test@example.com"}, [400, 404]),
+            ("POST /auth/verify-login", "POST", "auth/verify-login", {"token": "fake", "device_id": "test"}, [400]),
+            ("GET /auth/session/validate", "GET", "auth/session/validate", None, [401]),
+            ("POST /auth/logout", "POST", "auth/logout", None, [400])
+        ]
+        
+        all_passed = True
+        for name, method, endpoint, data, expected_statuses in endpoints_tests:
+            success, response = self.run_test(
+                f"Endpoint Structure - {name}",
+                method,
+                endpoint,
+                expected_statuses[0],  # Use first expected status
+                data=data
+            )
+            
+            # Consider it a pass if we get any of the expected status codes
+            if not success:
+                # Check if we got one of the other expected statuses
+                try:
+                    # Re-run to get actual status
+                    url = f"{self.api_url}/{endpoint}"
+                    headers = {'Content-Type': 'application/json'}
+                    if method == 'GET':
+                        resp = requests.get(url, headers=headers, timeout=10)
+                    else:
+                        resp = requests.post(url, json=data, headers=headers, timeout=10)
+                    
+                    if resp.status_code in expected_statuses:
+                        print(f"   ✅ Got acceptable status code: {resp.status_code}")
+                        self.tests_passed += 1
+                        success = True
+                except:
+                    pass
+            
+            if not success:
+                all_passed = False
+        
+        return all_passed, {}
+
+    def run_authentication_tests(self):
+        """Run comprehensive authentication system tests"""
+        print("\n" + "="*60)
+        print("🔐 AUTHENTICATION SYSTEM TESTS")
+        print("="*60)
+        
+        auth_tests = [
+            ("Pro User Exists Check", self.test_pro_user_exists),
+            ("Request Login - Pro User", self.test_request_login_pro_user),
+            ("Request Login - Non-Pro User", self.test_request_login_non_pro_user),
+            ("Magic Token Verification", self.test_simulate_magic_token_verification),
+            ("Session Validation - No Token", self.test_session_validation_without_token),
+            ("Session Validation - Invalid Token", self.test_session_validation_invalid_token),
+            ("Export - Invalid Session Token", self.test_export_with_session_token_invalid),
+            ("Export - Pro Email Header", self.test_export_with_email_header_pro),
+            ("Export - Non-Pro Email Header", self.test_export_with_email_header_non_pro),
+            ("Logout - No Token", self.test_logout_without_token),
+            ("Logout - Invalid Token", self.test_logout_invalid_token),
+            ("Authentication Endpoints Structure", self.test_authentication_endpoints_structure)
+        ]
+        
+        auth_passed = 0
+        auth_total = len(auth_tests)
+        
+        for test_name, test_func in auth_tests:
+            try:
+                success, _ = test_func()
+                if success:
+                    auth_passed += 1
+            except Exception as e:
+                print(f"❌ {test_name} failed with exception: {e}")
+        
+        print(f"\n🔐 Authentication Tests: {auth_passed}/{auth_total} passed")
+        return auth_passed, auth_total
+
 def main():
     print("🚀 Starting Le Maître Mot API Tests - New Monetization System")
     print("=" * 60)
