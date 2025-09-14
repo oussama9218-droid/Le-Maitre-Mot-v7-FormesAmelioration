@@ -867,11 +867,16 @@ async def generate_document(request: GenerateRequest):
         raise HTTPException(status_code=500, detail="Erreur lors de la génération du document")
 
 @api_router.post("/export")
-async def export_pdf(request: ExportRequest):
+async def export_pdf(request: ExportRequest, current_user: User = Depends(get_current_user)):
     """Export document as PDF"""
     try:
-        # Check quota first
-        can_export, quota_info = await check_export_quota(guest_id=request.guest_id)
+        # Authenticated users have unlimited exports
+        if current_user:
+            can_export = True
+            quota_info = "authenticated_user"
+        else:
+            # Check quota for guest users
+            can_export, quota_info = await check_export_quota(guest_id=request.guest_id)
         
         if not can_export:
             if quota_info == "guest_quota_exceeded":
