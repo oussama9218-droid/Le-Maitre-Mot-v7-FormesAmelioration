@@ -613,7 +613,13 @@ JSON uniquement:
     
     try:
         user_message = UserMessage(text=prompt)
-        response = await chat.send_message(user_message)
+        
+        # Set shorter timeout for faster response
+        import asyncio
+        response = await asyncio.wait_for(
+            chat.send_message(user_message), 
+            timeout=20.0  # 20 seconds max
+        )
         
         # Parse the JSON response
         json_start = response.find('{')
@@ -635,25 +641,77 @@ JSON uniquement:
                 enonce=enonce,
                 donnees=None,  # Don't show technical data to users
                 difficulte=ex_data.get("difficulte", difficulte),
-                solution=ex_data.get("solution", {"etapes": [], "resultat": ""}),
-                bareme=ex_data.get("bareme", []),
+                solution=ex_data.get("solution", {"etapes": ["Étape 1", "Étape 2"], "resultat": "Résultat"}),
+                bareme=ex_data.get("bareme", [{"etape": "Méthode", "points": 2.0}, {"etape": "Résultat", "points": 2.0}]),
                 seed=hash(enonce) % 1000000
             )
             exercises.append(exercise)
         
+        if not exercises:
+            raise ValueError("No exercises generated")
+            
         return exercises
         
+    except asyncio.TimeoutError:
+        logger.error("AI generation timeout - using fallback")
+        return await generate_fallback_exercises(matiere, niveau, chapitre, difficulte, nb_exercices)
     except Exception as e:
         logger.error(f"Error generating exercises: {e}")
-        # Fallback exercise in case of error
-        fallback = Exercise(
+        return await generate_fallback_exercises(matiere, niveau, chapitre, difficulte, nb_exercices)
+
+async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, difficulte: str, nb_exercices: int) -> List[Exercise]:
+    """Generate quick fallback exercises"""
+    exercises = []
+    
+    # Quick templates based on chapter
+    templates = {
+        "Nombres relatifs": [
+            "Calculer : {a} + {b} - ({c})",
+            "Déterminer le signe de : {a} × {b}",
+            "Résoudre : x + {a} = {b}"
+        ],
+        "Volumes": [
+            "Calculer le volume d'un pavé de dimensions {a} cm × {b} cm × {c} cm",
+            "Une boîte cubique a une arête de {a} cm. Quel est son volume ?",
+            "Convertir {a} L en cm³"
+        ],
+        "Fractions": [
+            "Calculer : 1/{a} + 1/{b}",
+            "Simplifier : {a}/{b}",
+            "Comparer : 1/{a} et 1/{b}"
+        ]
+    }
+    
+    template_list = templates.get(chapitre, [f"Exercice sur {chapitre}"])
+    
+    for i in range(nb_exercices):
+        # Use modulo to cycle through templates
+        template = template_list[i % len(template_list)]
+        
+        # Simple random values
+        import random
+        a, b, c = random.randint(2, 9), random.randint(2, 9), random.randint(2, 9)
+        
+        enonce = template.format(a=a, b=b, c=c)
+        
+        exercise = Exercise(
             type="ouvert",
-            enonce=f"Exercice sur {chapitre} - {niveau}",
+            enonce=enonce,
+            donnees=None,
             difficulte=difficulte,
-            solution={"etapes": ["Résolution étape par étape"], "resultat": "Résultat attendu"},
-            bareme=[{"etape": "Résolution", "points": 2.0}]
+            solution={
+                "etapes": ["Appliquer la méthode du cours", "Effectuer les calculs"],
+                "resultat": "Résultat à calculer"
+            },
+            bareme=[
+                {"etape": "Méthode", "points": 2.0},
+                {"etape": "Calcul", "points": 2.0}
+            ],
+            seed=random.randint(1000, 9999)
         )
-        return [fallback]
+        exercises.append(exercise)
+    
+    return exercises
 
 # API Routes
 @api_router.get("/")
