@@ -172,6 +172,12 @@ function MainApp() {
   const [paymentEmail, setPaymentEmail] = useState("");
   const [paymentLoading, setPaymentLoading] = useState(false);
   
+  // Login modal for existing Pro users
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+  const [loginSuccess, setLoginSuccess] = useState(false);
+  
   // Export states
   const [exportingSubject, setExportingSubject] = useState(false);
   const [exportingSolution, setExportingSolution] = useState(false);
