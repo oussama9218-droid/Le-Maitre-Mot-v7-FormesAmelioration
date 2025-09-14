@@ -1239,14 +1239,24 @@ async def check_quota_status(guest_id: str):
 async def export_pdf(request: ExportRequest, http_request: Request):
     """Export document as PDF"""
     try:
-        # Check if user is Pro (via email header)
+        # Check authentication methods (backwards compatibility)
         user_email = http_request.headers.get("X-User-Email")
+        session_token = http_request.headers.get("X-Session-Token")
         is_pro_user = False
         
-        if user_email:
+        # Try session token first (new method)
+        if session_token:
+            email = await validate_session_token(session_token)
+            if email:
+                is_pro, user = await check_user_pro_status(email)
+                is_pro_user = is_pro
+                user_email = email
+                logger.info(f"Export request from Pro user via session: {email}, is_pro: {is_pro}")
+        # Fall back to email header (old method)
+        elif user_email:
             is_pro, user = await check_user_pro_status(user_email)
             is_pro_user = is_pro
-            logger.info(f"Export request from Pro user: {user_email}, is_pro: {is_pro}")
+            logger.info(f"Export request from Pro user via email header: {user_email}, is_pro: {is_pro}")
         
         # Pro users have unlimited exports
         if not is_pro_user:
