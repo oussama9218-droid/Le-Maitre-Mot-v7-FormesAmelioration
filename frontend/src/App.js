@@ -420,7 +420,19 @@ function MainApp() {
   useEffect(() => {
     fetchCatalog();
     fetchPricing();
-  }, []);
+    
+    // Check if user just returned from payment
+    const pendingPayment = localStorage.getItem('lemaitremot_pending_payment');
+    if (pendingPayment && userEmail) {
+      console.log('User returned from payment, checking Pro status...');
+      localStorage.removeItem('lemaitremot_pending_payment');
+      
+      // Wait a bit for webhook processing, then check status
+      setTimeout(() => {
+        checkProStatus(userEmail);
+      }, 3000);
+    }
+  }, [userEmail]);
 
   useEffect(() => {
     if (guestId && proStatusChecked) {
