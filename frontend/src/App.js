@@ -140,11 +140,14 @@ function MainApp() {
   useEffect(() => {
     // Check for stored auth token
     const storedToken = localStorage.getItem('lemaitremot_auth_token');
+    console.log('Stored auth token:', storedToken); // Debug
+    
     if (storedToken) {
       setAuthToken(storedToken);
       setIsAuthenticated(true);
-      // In a real app, you'd verify the token with the server
-      // For now, we'll assume it's valid
+      console.log('User authenticated with token:', storedToken); // Debug
+    } else {
+      console.log('No auth token found, user is guest'); // Debug
     }
     
     // Initialize guest ID for non-authenticated users
