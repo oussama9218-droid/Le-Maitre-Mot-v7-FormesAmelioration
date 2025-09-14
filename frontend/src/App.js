@@ -148,10 +148,10 @@ function MainApp() {
     }
     
     // Initialize guest ID for non-authenticated users
-    let storedGuestId = localStorage.getItem('lessonsmith_guest_id');
+    let storedGuestId = localStorage.getItem('lemaitremot_guest_id');
     if (!storedGuestId) {
       storedGuestId = 'guest_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('lessonsmith_guest_id', storedGuestId);
+      localStorage.setItem('lemaitremot_guest_id', storedGuestId);
     }
     setGuestId(storedGuestId);
   }, []);
