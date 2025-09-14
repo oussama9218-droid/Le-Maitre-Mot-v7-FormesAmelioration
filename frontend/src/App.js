@@ -188,7 +188,9 @@ function MainApp() {
     // Check if user has a stored email (Pro user)
     const storedEmail = localStorage.getItem('lemaitremot_user_email');
     if (storedEmail) {
+      console.log('Found stored email, checking Pro status for:', storedEmail);
       setUserEmail(storedEmail);
+      setPaymentEmail(storedEmail); // Pre-fill payment form
       checkProStatus(storedEmail);
     } else {
       setProStatusChecked(true);
