@@ -812,4 +812,15 @@ function MainApp() {
   );
 }
 
+function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/auth/verify" element={<AuthVerify />} />
+        <Route path="/*" element={<MainApp />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
+
 export default App;
