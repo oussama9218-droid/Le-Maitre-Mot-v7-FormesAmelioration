@@ -882,15 +882,18 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         # Generate PDF
         pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
         
-        # Track export for guest quota
-        export_record = {
-            "id": str(uuid.uuid4()),
-            "document_id": request.document_id,
-            "export_type": request.export_type,
-            "guest_id": request.guest_id,
-            "created_at": datetime.now(timezone.utc)
-        }
-        await db.exports.insert_one(export_record)
+        # Track export for guest quota (only for non-Pro users)
+        if not is_pro_user and request.guest_id:
+            export_record = {
+                "id": str(uuid.uuid4()),
+                "document_id": request.document_id,
+                "export_type": request.export_type,
+                "guest_id": request.guest_id,
+                "user_email": user_email,
+                "is_pro": is_pro_user,
+                "created_at": datetime.now(timezone.utc)
+            }
+            await db.exports.insert_one(export_record)
         
         # Create temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
