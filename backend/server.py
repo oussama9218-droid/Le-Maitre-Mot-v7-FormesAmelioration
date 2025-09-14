@@ -108,6 +108,22 @@ class PaymentTransaction(BaseModel):
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
+class LoginSession(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_email: EmailStr
+    session_token: str
+    device_id: str  # Unique identifier for device/browser
+    expires_at: datetime
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    last_used: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+
+class VerifyLoginRequest(BaseModel):
+    token: str
+    device_id: str
+
 class GenerateRequest(BaseModel):
     matiere: str
     niveau: str
