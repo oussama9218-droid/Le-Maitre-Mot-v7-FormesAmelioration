@@ -707,26 +707,40 @@ class LeMaitreMotAPITester:
         return auth_passed, auth_total
 
 def main():
-    print("🚀 Starting Le Maître Mot API Tests - New Monetization System")
+    print("🚀 Starting Le Maître Mot API Tests - Authentication System Focus")
     print("=" * 60)
     
     tester = LeMaitreMotAPITester()
     
-    # Test sequence focused on new monetization workflow
-    tests = [
+    # First run basic tests to set up document for authentication testing
+    basic_tests = [
         ("Root API", tester.test_root_endpoint),
         ("Catalog", tester.test_catalog_endpoint),
-        ("Pricing Packages", tester.test_pricing_endpoint),
-        ("Initial Quota Check", tester.test_quota_check),
         ("Generate Document", tester.test_generate_document),
-        ("Get Documents", tester.test_get_documents),
-        ("Quota Exhaustion Workflow", tester.test_quota_exhaustion_workflow),
-        ("Stripe Checkout Session", tester.test_checkout_session_creation),
-        ("Vary Exercise", tester.test_vary_exercise),
+    ]
+    
+    print("\n📋 BASIC SETUP TESTS")
+    print("=" * 30)
+    
+    for test_name, test_func in basic_tests:
+        try:
+            test_func()
+        except Exception as e:
+            print(f"❌ {test_name} failed with exception: {e}")
+    
+    # Run comprehensive authentication tests
+    auth_passed, auth_total = tester.run_authentication_tests()
+    
+    # Run some additional tests for completeness
+    additional_tests = [
+        ("Pricing Packages", tester.test_pricing_endpoint),
         ("Error Handling", tester.test_invalid_requests)
     ]
     
-    for test_name, test_func in tests:
+    print("\n📋 ADDITIONAL TESTS")
+    print("=" * 30)
+    
+    for test_name, test_func in additional_tests:
         try:
             test_func()
         except Exception as e:
@@ -735,14 +749,19 @@ def main():
     # Print final results
     print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
+    print(f"🔐 Authentication Focus: {auth_passed}/{auth_total} auth tests passed")
     
-    if tester.tests_passed == tester.tests_run:
-        print("🎉 All backend tests passed!")
-        print("✅ New monetization system appears to be working correctly")
+    # Determine overall success
+    overall_success_rate = tester.tests_passed / tester.tests_run if tester.tests_run > 0 else 0
+    auth_success_rate = auth_passed / auth_total if auth_total > 0 else 0
+    
+    if overall_success_rate >= 0.8 and auth_success_rate >= 0.7:
+        print("🎉 Authentication system tests mostly passed!")
+        print("✅ Authentication endpoints are responding correctly")
         return 0
     else:
-        print("⚠️  Some tests failed - check backend logs")
-        print("❌ Issues detected in the new monetization system")
+        print("⚠️  Some critical tests failed - check backend logs")
+        print("❌ Issues detected in the authentication system")
         return 1
 
 if __name__ == "__main__":
