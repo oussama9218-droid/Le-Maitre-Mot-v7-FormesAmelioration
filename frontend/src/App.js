@@ -258,18 +258,20 @@ function MainApp() {
       };
       
       const requestConfig = {
-        responseType: 'blob'
+        responseType: 'blob',
+        headers: {}
       };
 
       // Add authentication or guest identification
       if (isAuthenticated && authToken) {
-        requestConfig.headers = {
-          'Authorization': `Bearer ${authToken}`
-        };
+        console.log('🔑 Sending authenticated request with token:', authToken);
+        requestConfig.headers['Authorization'] = `Bearer ${authToken}`;
       } else {
+        console.log('👤 Sending guest request with guest_id:', guestId);
         requestData.guest_id = guestId;
       }
 
+      console.log('📤 Export request:', { requestData, headers: requestConfig.headers });
       const response = await axios.post(`${API}/export`, requestData, requestConfig);
 
       // Create download link
