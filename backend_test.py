@@ -84,8 +84,9 @@ class LessonSmithAPITester:
             "chapitre": "Nombres relatifs",
             "type_doc": "exercices",
             "difficulte": "moyen",
-            "nb_exercices": 3,
-            "versions": ["A"]
+            "nb_exercices": 4,
+            "versions": ["A"],
+            "guest_id": self.guest_id
         }
         
         print(f"   Generating document with: {test_data}")
