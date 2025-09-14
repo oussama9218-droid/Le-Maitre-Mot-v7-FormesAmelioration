@@ -167,6 +167,8 @@ function MainApp() {
   // Payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pricing, setPricing] = useState({});
+  const [paymentEmail, setPaymentEmail] = useState("");
+  const [paymentLoading, setPaymentLoading] = useState(false);
   
   // Export states
   const [exportingSubject, setExportingSubject] = useState(false);
