@@ -139,6 +139,99 @@ function PaymentCancel() {
   );
 }
 
+// Login Verification Component (for magic link)
+function LoginVerify() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [verifying, setVerifying] = useState(true);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (!token) {
+      setError("Token manquant");
+      setVerifying(false);
+      return;
+    }
+
+    verifyLogin(token);
+  }, [searchParams]);
+
+  const verifyLogin = async (token) => {
+    try {
+      // Generate device ID
+      const deviceId = localStorage.getItem('lemaitremot_device_id') || generateDeviceId();
+      localStorage.setItem('lemaitremot_device_id', deviceId);
+
+      const response = await axios.post(`${API}/auth/verify-login`, {
+        token: token,
+        device_id: deviceId
+      });
+
+      // Store session token and user info
+      localStorage.setItem('lemaitremot_session_token', response.data.session_token);
+      localStorage.setItem('lemaitremot_user_email', response.data.email);
+      localStorage.setItem('lemaitremot_login_method', 'session');
+
+      setSuccess(true);
+      setTimeout(() => {
+        navigate('/');
+      }, 2000);
+
+    } catch (error) {
+      console.error('Error verifying login:', error);
+      setError(error.response?.data?.detail || 'Erreur lors de la vérification');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const generateDeviceId = () => {
+    return 'device_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <div className="flex items-center justify-center mb-4">
+            <GraduationCap className="h-8 w-8 text-blue-600 mr-2" />
+            <h1 className="text-2xl font-bold text-gray-900">Le Maître Mot</h1>
+          </div>
+          <CardTitle>Connexion en cours</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+          {verifying ? (
+            <div className="space-y-4">
+              <Loader2 className="h-8 w-8 text-blue-600 animate-spin mx-auto" />
+              <p className="text-gray-600">Vérification de votre connexion...</p>
+            </div>
+          ) : error ? (
+            <div className="space-y-4">
+              <AlertCircle className="h-8 w-8 text-red-600 mx-auto" />
+              <p className="text-red-600">{error}</p>
+              <Button 
+                onClick={() => navigate('/')}
+                variant="outline"
+                className="w-full"
+              >
+                Retour à l'accueil
+              </Button>
+            </div>
+          ) : success ? (
+            <div className="space-y-4">
+              <CheckCircle className="h-8 w-8 text-green-600 mx-auto" />
+              <p className="text-green-600">✅ Connexion réussie !</p>
+              <p className="text-sm text-gray-500">Redirection en cours...</p>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 function MainApp() {
   const [catalog, setCatalog] = useState([]);
   const [selectedMatiere, setSelectedMatiere] = useState("");
