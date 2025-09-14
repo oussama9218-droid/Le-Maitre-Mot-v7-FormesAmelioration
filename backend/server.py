@@ -832,18 +832,32 @@ async def check_quota_status(guest_id: str):
     return await check_guest_quota(guest_id)
 
 @api_router.post("/export")
-async def export_pdf(request: ExportRequest):
+async def export_pdf(request: ExportRequest, http_request: Request):
     """Export document as PDF"""
     try:
-        # Check if guest quota is exceeded
-        quota_status = await check_guest_quota(request.guest_id)
+        # Check if user is Pro (via email header)
+        user_email = http_request.headers.get("X-User-Email")
+        is_pro_user = False
         
-        if quota_status["quota_exceeded"]:
-            raise HTTPException(status_code=402, detail={
-                "error": "quota_exceeded", 
-                "message": "Limite de 3 exports gratuits atteinte. Passez à l'abonnement Pro pour continuer.",
-                "action": "upgrade_required"
-            })
+        if user_email:
+            is_pro, user = await check_user_pro_status(user_email)
+            is_pro_user = is_pro
+            logger.info(f"Export request from Pro user: {user_email}, is_pro: {is_pro}")
+        
+        # Pro users have unlimited exports
+        if not is_pro_user:
+            # Check guest quota
+            if not request.guest_id:
+                raise HTTPException(status_code=400, detail="Guest ID required for non-Pro users")
+                
+            quota_status = await check_guest_quota(request.guest_id)
+            
+            if quota_status["quota_exceeded"]:
+                raise HTTPException(status_code=402, detail={
+                    "error": "quota_exceeded", 
+                    "message": "Limite de 3 exports gratuits atteinte. Passez à l'abonnement Pro pour continuer.",
+                    "action": "upgrade_required"
+                })
         
         # Find the document
         doc = await db.documents.find_one({"id": request.document_id})
