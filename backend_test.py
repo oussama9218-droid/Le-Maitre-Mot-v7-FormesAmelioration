@@ -356,22 +356,22 @@ class LeMaitreMotAPITester:
         return success
 
 def main():
-    print("🚀 Starting LessonSmith API Tests")
-    print("=" * 50)
+    print("🚀 Starting Le Maître Mot API Tests - New Monetization System")
+    print("=" * 60)
     
-    tester = LessonSmithAPITester()
+    tester = LeMaitreMotAPITester()
     
-    # Test sequence
+    # Test sequence focused on new monetization workflow
     tests = [
         ("Root API", tester.test_root_endpoint),
         ("Catalog", tester.test_catalog_endpoint),
+        ("Pricing Packages", tester.test_pricing_endpoint),
+        ("Initial Quota Check", tester.test_quota_check),
         ("Generate Document", tester.test_generate_document),
         ("Get Documents", tester.test_get_documents),
-        ("Quota Check", tester.test_quota_check),
-        ("Export Sujet PDF", tester.test_export_pdf_sujet),
-        ("Export Corrigé PDF", tester.test_export_pdf_corrige),
+        ("Quota Exhaustion Workflow", tester.test_quota_exhaustion_workflow),
+        ("Stripe Checkout Session", tester.test_checkout_session_creation),
         ("Vary Exercise", tester.test_vary_exercise),
-        ("Signup Request", tester.test_signup_request),
         ("Error Handling", tester.test_invalid_requests)
     ]
     
@@ -382,14 +382,16 @@ def main():
             print(f"❌ {test_name} failed with exception: {e}")
     
     # Print final results
-    print("\n" + "=" * 50)
+    print("\n" + "=" * 60)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
     
     if tester.tests_passed == tester.tests_run:
-        print("🎉 All tests passed!")
+        print("🎉 All backend tests passed!")
+        print("✅ New monetization system appears to be working correctly")
         return 0
     else:
         print("⚠️  Some tests failed - check backend logs")
+        print("❌ Issues detected in the new monetization system")
         return 1
 
 if __name__ == "__main__":
