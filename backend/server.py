@@ -524,9 +524,22 @@ async def check_export_quota(user_id: str = None, guest_id: str = None):
     return False, "no_access"
 
 async def send_magic_link(email: str, token: str):
-    """Send magic link email (simplified for demo)"""
-    # In production, implement proper email sending
-    print(f"Magic link for {email}: /auth/verify?token={token}")
+    """Send magic link email (development version)"""
+    # For development/testing - store magic link in a simple way
+    magic_link = f"https://lessonsmith.preview.emergentagent.com/auth/verify?token={token}"
+    
+    print(f"🔗 Magic link for {email}: {magic_link}")
+    
+    # Store in database for easy retrieval during testing
+    magic_link_record = {
+        "email": email,
+        "token": token,
+        "magic_link": magic_link,
+        "created_at": datetime.now(timezone.utc),
+        "used": False
+    }
+    await db.magic_links.insert_one(magic_link_record)
+    
     return True
 
 async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, type_doc: str, difficulte: str, nb_exercices: int) -> List[Exercise]:
