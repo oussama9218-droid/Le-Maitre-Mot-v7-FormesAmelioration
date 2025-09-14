@@ -340,7 +340,7 @@ function MainApp() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
             <GraduationCap className="h-12 w-12 text-blue-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-900">LessonSmith V1</h1>
+            <h1 className="text-4xl font-bold text-gray-900">Le Maître Mot V1</h1>
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Générateur de documents pédagogiques personnalisés pour les enseignants français
