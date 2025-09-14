@@ -39,7 +39,7 @@ function AuthVerify() {
         setUser(response.data.user);
         
         // Store auth token for future requests
-        localStorage.setItem('lessonsmith_auth_token', response.data.token);
+        localStorage.setItem('lemaitremot_auth_token', response.data.token);
         
         // Redirect after 3 seconds
         setTimeout(() => {
