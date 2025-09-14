@@ -10,6 +10,7 @@ class LessonSmithAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.generated_document_id = None
+        self.guest_id = f"test_guest_{datetime.now().strftime('%H%M%S')}"
 
     def run_test(self, name, method, endpoint, expected_status, data=None, timeout=30):
         """Run a single API test"""
