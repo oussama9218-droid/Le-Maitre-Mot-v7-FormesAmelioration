@@ -7,7 +7,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Badge } from "./components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Separator } from "./components/ui/separator";
-import { BookOpen, FileText, Download, Shuffle, Loader2, GraduationCap } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./components/ui/dialog";
+import { Input } from "./components/ui/input";
+import { Label } from "./components/ui/label";
+import { Alert, AlertDescription } from "./components/ui/alert";
+import { BookOpen, FileText, Download, Shuffle, Loader2, GraduationCap, AlertCircle, CheckCircle, User, Mail } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -23,6 +27,28 @@ function App() {
   const [currentDocument, setCurrentDocument] = useState(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [documents, setDocuments] = useState([]);
+  
+  // Guest and quota management
+  const [guestId, setGuestId] = useState("");
+  const [quotaStatus, setQuotaStatus] = useState({ exports_remaining: 3, quota_exceeded: false });
+  const [showSignupModal, setShowSignupModal] = useState(false);
+  const [signupData, setSignupData] = useState({ email: "", nom: "", etablissement: "" });
+  const [signupLoading, setSignupLoading] = useState(false);
+  const [signupSuccess, setSignupSuccess] = useState(false);
+  
+  // Export states
+  const [exportingSubject, setExportingSubject] = useState(false);
+  const [exportingSolution, setExportingSolution] = useState(false);
+
+  // Initialize guest ID
+  useEffect(() => {
+    let storedGuestId = localStorage.getItem('lessonsmith_guest_id');
+    if (!storedGuestId) {
+      storedGuestId = 'guest_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('lessonsmith_guest_id', storedGuestId);
+    }
+    setGuestId(storedGuestId);
+  }, []);
 
   const fetchCatalog = async () => {
     try {
@@ -33,9 +59,20 @@ function App() {
     }
   };
 
-  const fetchDocuments = async () => {
+  const fetchQuotaStatus = async () => {
+    if (!guestId) return;
     try {
-      const response = await axios.get(`${API}/documents`);
+      const response = await axios.get(`${API}/quota/check?guest_id=${guestId}`);
+      setQuotaStatus(response.data);
+    } catch (error) {
+      console.error("Erreur lors du chargement du quota:", error);
+    }
+  };
+
+  const fetchDocuments = async () => {
+    if (!guestId) return;
+    try {
+      const response = await axios.get(`${API}/documents?guest_id=${guestId}`);
       setDocuments(response.data.documents);
     } catch (error) {
       console.error("Erreur lors du chargement des documents:", error);
@@ -56,7 +93,8 @@ function App() {
         chapitre: selectedChapitre,
         type_doc: typeDoc,
         difficulte: difficulte,
-        nb_exercices: nbExercices
+        nb_exercices: nbExercices,
+        guest_id: guestId
       });
       
       setCurrentDocument(response.data.document);
@@ -66,6 +104,70 @@ function App() {
       alert("Erreur lors de la génération du document");
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  const exportPDF = async (exportType) => {
+    if (!currentDocument) return;
+
+    const setLoading = exportType === 'sujet' ? setExportingSubject : setExportingSolution;
+    setLoading(true);
+
+    try {
+      const response = await axios.post(`${API}/export`, {
+        document_id: currentDocument.id,
+        export_type: exportType,
+        guest_id: guestId
+      }, {
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${currentDocument.type_doc}_${currentDocument.matiere}_${currentDocument.niveau}_${exportType}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      // Refresh quota
+      await fetchQuotaStatus();
+      
+    } catch (error) {
+      console.error("Erreur lors de l'export:", error);
+      
+      if (error.response?.status === 402) {
+        const errorData = error.response.data;
+        if (errorData.action === "signup_required") {
+          setShowSignupModal(true);
+        } else {
+          alert("Quota d'exports dépassé");
+        }
+      } else {
+        alert("Erreur lors de l'export PDF");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignup = async () => {
+    if (!signupData.email) {
+      alert("Veuillez saisir votre adresse email");
+      return;
+    }
+
+    setSignupLoading(true);
+    try {
+      await axios.post(`${API}/auth/signup`, signupData);
+      setSignupSuccess(true);
+    } catch (error) {
+      console.error("Erreur lors de l'inscription:", error);
+      alert("Erreur lors de l'inscription");
+    } finally {
+      setSignupLoading(false);
     }
   };
 
@@ -85,8 +187,14 @@ function App() {
 
   useEffect(() => {
     fetchCatalog();
-    fetchDocuments();
   }, []);
+
+  useEffect(() => {
+    if (guestId) {
+      fetchQuotaStatus();
+      fetchDocuments();
+    }
+  }, [guestId]);
 
   const availableLevels = catalog.find(m => m.name === selectedMatiere)?.levels || [];
   const availableChapters = availableLevels.find(l => l.name === selectedNiveau)?.chapters || [];
@@ -95,17 +203,36 @@ function App() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-12">
+        <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
             <GraduationCap className="h-12 w-12 text-blue-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-900">LessonSmith</h1>
+            <h1 className="text-4xl font-bold text-gray-900">LessonSmith V1</h1>
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Générateur de documents pédagogiques personnalisés pour les enseignants français
           </p>
-          <p className="text-sm text-gray-500 mt-2">
-            Créez vos feuilles d'exercices, contrôles et DM en 3 étapes simples
-          </p>
+          
+          {/* Quota Status */}
+          <div className="mt-4">
+            {quotaStatus.quota_exceeded ? (
+              <Alert className="max-w-md mx-auto border-orange-200 bg-orange-50">
+                <AlertCircle className="h-4 w-4 text-orange-600" />
+                <AlertDescription className="text-orange-800">
+                  <strong>Limite atteinte :</strong> 3 exports gratuits utilisés. 
+                  <Button variant="link" className="p-0 h-auto text-orange-600 underline ml-1" onClick={() => setShowSignupModal(true)}>
+                    Créer un compte
+                  </Button> pour continuer.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <Alert className="max-w-md mx-auto border-green-200 bg-green-50">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  <strong>Mode invité :</strong> {quotaStatus.exports_remaining} exports gratuits restants
+                </AlertDescription>
+              </Alert>
+            )}
+          </div>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-8">
@@ -271,7 +398,7 @@ function App() {
                 Aperçu du document
               </CardTitle>
               <CardDescription className="text-indigo-50">
-                Prévisualisez et modifiez votre document
+                Prévisualisez et exportez votre document
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
@@ -290,6 +417,45 @@ function App() {
                         <p className="text-sm text-gray-500">{currentDocument.nb_exercices} exercices</p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Export Buttons */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <Button 
+                      onClick={() => exportPDF('sujet')}
+                      disabled={exportingSubject || quotaStatus.quota_exceeded}
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                    >
+                      {exportingSubject ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Export...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Export Sujet PDF
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button 
+                      onClick={() => exportPDF('corrige')}
+                      disabled={exportingSolution || quotaStatus.quota_exceeded}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    >
+                      {exportingSolution ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Export...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="mr-2 h-4 w-4" />
+                          Export Corrigé PDF
+                        </>
+                      )}
+                    </Button>
                   </div>
 
                   {/* Exercises */}
@@ -360,14 +526,6 @@ function App() {
                       ))}
                     </TabsContent>
                   </Tabs>
-
-                  {/* Export Button */}
-                  <div className="flex justify-center pt-4">
-                    <Button className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-8 py-2">
-                      <Download className="mr-2 h-4 w-4" />
-                      Exporter en PDF
-                    </Button>
-                  </div>
                 </div>
               ) : (
                 <div className="text-center py-12">
@@ -422,6 +580,86 @@ function App() {
             </CardContent>
           </Card>
         )}
+
+        {/* Signup Modal */}
+        <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center">
+                <User className="mr-2 h-5 w-5" />
+                Créer un compte gratuit
+              </DialogTitle>
+              <DialogDescription>
+                Débloquez les exports illimités et sauvegardez vos documents
+              </DialogDescription>
+            </DialogHeader>
+            
+            {signupSuccess ? (
+              <div className="text-center py-6">
+                <CheckCircle className="mx-auto h-12 w-12 text-green-600 mb-4" />
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                  Lien envoyé !
+                </h3>
+                <p className="text-gray-600">
+                  Vérifiez votre boîte email et cliquez sur le lien de connexion.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="email">Adresse email *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="votre@email.fr"
+                    value={signupData.email}
+                    onChange={(e) => setSignupData(prev => ({...prev, email: e.target.value}))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="nom">Nom (optionnel)</Label>
+                  <Input
+                    id="nom"
+                    placeholder="Votre nom"
+                    value={signupData.nom}
+                    onChange={(e) => setSignupData(prev => ({...prev, nom: e.target.value}))}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="etablissement">Établissement (optionnel)</Label>
+                  <Input
+                    id="etablissement"
+                    placeholder="Nom de votre établissement"
+                    value={signupData.etablissement}
+                    onChange={(e) => setSignupData(prev => ({...prev, etablissement: e.target.value}))}
+                  />
+                </div>
+                
+                <Button 
+                  onClick={handleSignup}
+                  disabled={signupLoading}
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                >
+                  {signupLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Inscription...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Envoyer le lien de connexion
+                    </>
+                  )}
+                </Button>
+                
+                <p className="text-xs text-gray-500 text-center">
+                  Aucun mot de passe requis. Connexion par lien magique.
+                </p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
