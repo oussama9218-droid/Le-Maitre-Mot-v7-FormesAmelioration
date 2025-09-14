@@ -593,34 +593,22 @@ JSON OBLIGATOIRE:
 }}"""
     ).with_model("openai", "gpt-4o")
     
-    # Create the prompt with specific examples
+    # Create concise prompt for faster generation
+    examples = {
+        "Volumes": "Calculer volume pavé 4×3×2 cm",
+        "Nombres relatifs": "Calculer -5 + 3 - (-2)",
+        "Fractions": "Calculer 2/3 + 1/4"
+    }
+    
+    example = examples.get(chapitre, f"Exercice {chapitre}")
+    
     prompt = f"""
-Matière: {matiere}
-Niveau: {niveau}
-Chapitre: {chapitre}
-Type de document: {type_doc}
-Difficulté: {difficulte}
-Nombre d'exercices: {nb_exercices}
+{matiere} {niveau} - {chapitre}
+Génère {nb_exercices} exercices {difficulte}
 
-CONTEXTE SPÉCIFIQUE POUR {niveau} - {chapitre}:
-{chapter_guide}
+Exemple: {example}
 
-EXEMPLES D'EXERCICES ATTENDUS pour {chapitre} en {niveau}:
-""" + ("""
-- Calculer le volume d'un pavé droit de dimensions 5 cm, 3 cm et 2 cm
-- Une piscine rectangulaire mesure 8 m sur 4 m et 1,5 m de profondeur. Quel est son volume en litres ?
-- Combien de cubes de 1 cm d'arête peut-on ranger dans une boîte de 6 cm × 4 cm × 3 cm ?
-""" if chapitre == "Volumes" and niveau == "6e" else """
-- Exercices adaptés au chapitre et niveau demandés
-""") + f"""
-
-Génère {nb_exercices} exercices CONCRETS et ADAPTÉS au niveau {niveau}:
-- Utilise des situations réelles et parlantes pour des élèves de {niveau}
-- Assure-toi que les calculs sont adaptés au niveau
-- Fournis des solutions pédagogiques étape par étape
-- Crée un barème détaillé pour chaque exercice
-
-Réponds UNIQUEMENT avec le JSON demandé, sans texte supplémentaire.
+JSON uniquement:
 """
     
     try:
