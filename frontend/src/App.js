@@ -70,8 +70,17 @@ function App() {
     try {
       const response = await axios.get(`${API}/quota/check?guest_id=${guestId}`);
       setQuotaStatus(response.data);
+      setQuotaLoaded(true);
     } catch (error) {
       console.error("Erreur lors du chargement du quota:", error);
+      // Set safe defaults on error
+      setQuotaStatus({ 
+        exports_remaining: 3, 
+        quota_exceeded: false,
+        exports_used: 0,
+        max_exports: 3
+      });
+      setQuotaLoaded(true);
     }
   };
 
