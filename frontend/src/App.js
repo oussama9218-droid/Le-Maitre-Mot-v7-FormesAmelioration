@@ -30,7 +30,13 @@ function App() {
   
   // Guest and quota management
   const [guestId, setGuestId] = useState("");
-  const [quotaStatus, setQuotaStatus] = useState({ exports_remaining: 3, quota_exceeded: false });
+  const [quotaStatus, setQuotaStatus] = useState({ 
+    exports_remaining: 3, 
+    quota_exceeded: false,
+    exports_used: 0,
+    max_exports: 3
+  });
+  const [quotaLoaded, setQuotaLoaded] = useState(false);
   const [showSignupModal, setShowSignupModal] = useState(false);
   const [signupData, setSignupData] = useState({ email: "", nom: "", etablissement: "" });
   const [signupLoading, setSignupLoading] = useState(false);
