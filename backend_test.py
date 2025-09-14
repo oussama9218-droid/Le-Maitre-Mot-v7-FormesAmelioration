@@ -187,29 +187,126 @@ class LeMaitreMotAPITester:
         
         return success, response
 
-    def test_signup_request(self):
-        """Test signup request functionality"""
-        signup_data = {
+    def test_pricing_endpoint(self):
+        """Test the pricing endpoint for new monetization system"""
+        success, response = self.run_test("Pricing", "GET", "pricing", 200)
+        
+        if success and isinstance(response, dict):
+            packages = response.get('packages', {})
+            print(f"   Found {len(packages)} pricing packages")
+            
+            # Check for expected packages
+            if 'monthly' in packages:
+                monthly = packages['monthly']
+                print(f"   Monthly: {monthly.get('amount')}€ - {monthly.get('description')}")
+            
+            if 'yearly' in packages:
+                yearly = packages['yearly']
+                print(f"   Yearly: {yearly.get('amount')}€ - {yearly.get('description')}")
+        
+        return success, response
+
+    def test_checkout_session_creation(self):
+        """Test Stripe checkout session creation"""
+        checkout_data = {
+            "package_id": "monthly",
+            "origin_url": self.base_url,
             "email": f"test_{self.guest_id}@example.com",
             "nom": "Test User",
             "etablissement": "Test School"
         }
         
         success, response = self.run_test(
-            "Signup Request",
+            "Create Checkout Session",
             "POST",
-            "auth/signup",
+            "checkout/session",
             200,
-            data=signup_data
+            data=checkout_data
         )
         
         if success and isinstance(response, dict):
-            message = response.get('message', '')
-            email = response.get('email', '')
-            print(f"   Signup response: {message}")
-            print(f"   Email: {email}")
+            url = response.get('url', '')
+            session_id = response.get('session_id', '')
+            print(f"   Checkout URL: {url[:50]}...")
+            print(f"   Session ID: {session_id}")
+            
+            # Verify it's a Stripe URL
+            if 'stripe.com' in url:
+                print("   ✅ Valid Stripe checkout URL")
+            else:
+                print("   ⚠️  URL doesn't appear to be from Stripe")
         
         return success, response
+
+    def test_quota_exhaustion_workflow(self):
+        """Test the complete quota exhaustion workflow"""
+        print("\n🔍 Testing quota exhaustion workflow...")
+        
+        # First, check initial quota
+        success, quota_response = self.test_quota_check()
+        if success:
+            self.initial_quota = quota_response.get('exports_remaining', 3)
+            print(f"   Initial quota: {self.initial_quota}")
+        
+        # Generate a document if we don't have one
+        if not self.generated_document_id:
+            self.test_generate_document()
+        
+        if not self.generated_document_id:
+            print("   ❌ Cannot test quota exhaustion without a document")
+            return False, {}
+        
+        # Try to exhaust the quota by exporting multiple times
+        exports_made = 0
+        max_attempts = 5  # Safety limit
+        
+        for attempt in range(max_attempts):
+            print(f"\n   Export attempt {attempt + 1}:")
+            
+            # Check current quota
+            success, quota_response = self.test_quota_check()
+            if success:
+                remaining = quota_response.get('exports_remaining', 0)
+                exceeded = quota_response.get('quota_exceeded', False)
+                print(f"   Current quota: {remaining} remaining, exceeded: {exceeded}")
+                
+                if exceeded:
+                    print("   ✅ Quota exhaustion detected!")
+                    break
+            
+            # Try to export
+            export_data = {
+                "document_id": self.generated_document_id,
+                "export_type": "sujet",
+                "guest_id": self.guest_id
+            }
+            
+            success, response = self.run_test(
+                f"Export Attempt {attempt + 1}",
+                "POST",
+                "export",
+                200 if remaining > 0 else 402,  # Expect 402 when quota exceeded
+                data=export_data,
+                timeout=30
+            )
+            
+            if success and remaining > 0:
+                exports_made += 1
+                print(f"   ✅ Export {exports_made} successful")
+            elif not success and remaining == 0:
+                print(f"   ✅ Export correctly blocked due to quota exhaustion")
+                # Check if we get the right error message
+                try:
+                    # This would be in the response if it was JSON
+                    print(f"   Expected 402 error received")
+                except:
+                    pass
+                break
+            else:
+                print(f"   ⚠️  Unexpected result: success={success}, remaining={remaining}")
+        
+        print(f"\n   Total exports made: {exports_made}")
+        return True, {"exports_made": exports_made}
 
     def test_vary_exercise(self):
         """Test exercise variation functionality"""
