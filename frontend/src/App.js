@@ -453,7 +453,7 @@ function App() {
                   <div className="grid grid-cols-2 gap-4">
                     <Button 
                       onClick={() => exportPDF('sujet')}
-                      disabled={!currentDocument || exportingSubject || (quotaLoaded && quotaStatus.quota_exceeded)}
+                      disabled={!currentDocument || exportingSubject}
                       className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white disabled:opacity-50"
                     >
                       {exportingSubject ? (
