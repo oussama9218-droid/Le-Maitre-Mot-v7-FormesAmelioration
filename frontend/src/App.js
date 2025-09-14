@@ -356,15 +356,27 @@ function MainApp() {
   };
 
   const handleUpgradeClick = async (packageId) => {
+    // Ask for email before payment
+    const email = prompt('Veuillez saisir votre adresse email pour continuer :');
+    if (!email || !email.includes('@')) {
+      alert('Adresse email requise pour continuer');
+      return;
+    }
+    
     try {
       const originUrl = window.location.origin;
       
       const response = await axios.post(`${API}/checkout/session`, {
         package_id: packageId,
-        origin_url: originUrl
+        origin_url: originUrl,
+        email: email
       });
 
       if (response.data.url) {
+        // Store email for when user returns
+        localStorage.setItem('lemaitremot_user_email', email);
+        localStorage.setItem('lemaitremot_pending_payment', 'true');
+        
         // Redirect to Stripe Checkout
         window.location.href = response.data.url;
       } else {
