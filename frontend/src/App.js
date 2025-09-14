@@ -902,7 +902,23 @@ function MainApp() {
               </DialogDescription>
             </DialogHeader>
             
-            <div className="space-y-4">
+            <div className="space-y-6">
+              {/* Email Input */}
+              <div className="space-y-2">
+                <Label htmlFor="payment-email">Adresse email *</Label>
+                <Input
+                  id="payment-email"
+                  type="email"
+                  placeholder="votre@email.fr"
+                  value={paymentEmail}
+                  onChange={(e) => setPaymentEmail(e.target.value)}
+                  required
+                />
+                <p className="text-xs text-gray-500">
+                  Cette adresse sera utilisée pour gérer votre abonnement
+                </p>
+              </div>
+              
               {/* Monthly Plan */}
               {pricing.monthly && (
                 <Card className="border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
