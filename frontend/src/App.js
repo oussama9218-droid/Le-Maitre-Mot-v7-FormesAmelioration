@@ -159,6 +159,11 @@ function MainApp() {
   });
   const [quotaLoaded, setQuotaLoaded] = useState(false);
   
+  // Pro status management
+  const [userEmail, setUserEmail] = useState("");
+  const [isPro, setIsPro] = useState(false);
+  const [proStatusChecked, setProStatusChecked] = useState(false);
+  
   // Payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pricing, setPricing] = useState({});
