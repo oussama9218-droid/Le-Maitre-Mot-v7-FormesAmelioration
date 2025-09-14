@@ -166,6 +166,19 @@ function MainApp() {
   };
 
   const fetchQuotaStatus = async () => {
+    // Authenticated users have unlimited exports
+    if (isAuthenticated) {
+      setQuotaStatus({ 
+        exports_remaining: 999, 
+        quota_exceeded: false,
+        exports_used: 0,
+        max_exports: 999,
+        account_type: 'authenticated'
+      });
+      setQuotaLoaded(true);
+      return;
+    }
+    
     if (!guestId) return;
     try {
       const response = await axios.get(`${API}/quota/check?guest_id=${guestId}`);
