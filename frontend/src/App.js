@@ -544,11 +544,18 @@ function MainApp() {
     }
   };
 
-  // Initialize authentication on load
+  // Initialize authentication on load and set up session monitoring
   useEffect(() => {
     initializeAuth();
     fetchCatalog();
     fetchPricing();
+    
+    // Set up periodic session validation for Pro users
+    const sessionCheckInterval = setInterval(() => {
+      if (sessionToken) {
+        validateSession(sessionToken, true); // silent validation
+      }
+    }, 60000); // Check every minute
     
     // Check if user just returned from payment
     const pendingPayment = localStorage.getItem('lemaitremot_pending_payment');
@@ -561,7 +568,12 @@ function MainApp() {
         checkProStatus(userEmail);
       }, 3000);
     }
-  }, []);
+    
+    // Cleanup interval on unmount
+    return () => {
+      clearInterval(sessionCheckInterval);
+    };
+  }, [sessionToken]);
 
   const initializeAuth = () => {
     // Check for session token (new method)
