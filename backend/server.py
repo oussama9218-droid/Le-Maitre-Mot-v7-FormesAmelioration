@@ -922,7 +922,7 @@ async def export_pdf(request: ExportRequest):
         temp_file.close()
         
         # Generate filename
-        filename = f"{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}.pdf"
+        filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}.pdf"
         
         return FileResponse(
             temp_file.name,
