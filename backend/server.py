@@ -911,15 +911,16 @@ async def export_pdf(request: ExportRequest, current_user: User = Depends(get_cu
         # Generate PDF
         pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
         
-        # Track export
-        export_record = {
-            "id": str(uuid.uuid4()),
-            "document_id": request.document_id,
-            "export_type": request.export_type,
-            "guest_id": request.guest_id,
-            "created_at": datetime.now(timezone.utc)
-        }
-        await db.exports.insert_one(export_record)
+        # Track export (only for guest users to maintain quota)
+        if not current_user:
+            export_record = {
+                "id": str(uuid.uuid4()),
+                "document_id": request.document_id,
+                "export_type": request.export_type,
+                "guest_id": request.guest_id,
+                "created_at": datetime.now(timezone.utc)
+            }
+            await db.exports.insert_one(export_record)
         
         # Create temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
