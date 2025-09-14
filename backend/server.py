@@ -554,10 +554,18 @@ async def check_user_pro_status(email: str):
         if user and user.get("subscription_expires"):
             expires = user["subscription_expires"]
             if isinstance(expires, str):
-                expires = datetime.fromisoformat(expires)
+                expires = datetime.fromisoformat(expires).replace(tzinfo=timezone.utc)
+            elif isinstance(expires, datetime) and expires.tzinfo is None:
+                expires = expires.replace(tzinfo=timezone.utc)
             
-            if expires > datetime.now(timezone.utc):
+            now = datetime.now(timezone.utc)
+            logger.info(f"Checking Pro status for {email}: expires={expires}, now={now}")
+            
+            if expires > now:
+                logger.info(f"User {email} is Pro (expires: {expires})")
                 return True, user
+            else:
+                logger.info(f"User {email} Pro subscription expired")
         
         return False, None
         
