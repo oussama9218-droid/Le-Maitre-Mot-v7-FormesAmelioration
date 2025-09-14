@@ -1,78 +1,88 @@
 import React, { useState, useEffect } from "react";
 import "./App.css";
 import axios from "axios";
-import { BrowserRouter, Routes, Route, useSearchParams, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useSearchParams, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "./components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select";
 import { Badge } from "./components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs";
 import { Separator } from "./components/ui/separator";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "./components/ui/dialog";
-import { Input } from "./components/ui/input";
-import { Label } from "./components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "./components/ui/dialog";
 import { Alert, AlertDescription } from "./components/ui/alert";
-import { BookOpen, FileText, Download, Shuffle, Loader2, GraduationCap, AlertCircle, CheckCircle, User, Mail } from "lucide-react";
+import { BookOpen, FileText, Download, Shuffle, Loader2, GraduationCap, AlertCircle, CheckCircle, Crown, CreditCard } from "lucide-react";
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Auth verification component
-function AuthVerify() {
+// Payment Success Component
+function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [verifying, setVerifying] = useState(true);
+  const [checkingStatus, setCheckingStatus] = useState(true);
+  const [paymentStatus, setPaymentStatus] = useState(null);
   const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (!token) {
-      setError("Token manquant dans l'URL");
-      setVerifying(false);
+    const sessionId = searchParams.get('session_id');
+    if (!sessionId) {
+      setError("Session ID manquant");
+      setCheckingStatus(false);
       return;
     }
 
-    const verifyToken = async () => {
-      try {
-        const response = await axios.get(`${API}/auth/verify?token=${token}`);
-        setUser(response.data.user);
+    pollPaymentStatus(sessionId);
+  }, [searchParams]);
+
+  const pollPaymentStatus = async (sessionId, attempts = 0) => {
+    const maxAttempts = 5;
+    const pollInterval = 2000; // 2 seconds
+
+    if (attempts >= maxAttempts) {
+      setError('Vérification du paiement expirée. Veuillez contacter le support.');
+      setCheckingStatus(false);
+      return;
+    }
+
+    try {
+      const response = await axios.get(`${API}/checkout/status/${sessionId}`);
+      
+      if (response.data.payment_status === 'paid') {
+        setPaymentStatus('success');
+        setCheckingStatus(false);
         
-        // Store auth token for future requests
-        localStorage.setItem('lemaitremot_auth_token', response.data.token);
-        
-        // Redirect after 3 seconds
+        // Redirect to main app after 3 seconds
         setTimeout(() => {
           navigate('/');
         }, 3000);
-        
-      } catch (error) {
-        console.error("Erreur de vérification:", error);
-        if (error.response?.status === 400) {
-          setError("Lien invalide ou expiré");
-        } else {
-          setError("Erreur lors de la vérification");
-        }
-      } finally {
-        setVerifying(false);
+        return;
+      } else if (response.data.status === 'expired') {
+        setError('Session de paiement expirée. Veuillez réessayer.');
+        setCheckingStatus(false);
+        return;
       }
-    };
 
-    verifyToken();
-  }, [searchParams, navigate]);
+      // Continue polling if payment is still pending
+      setTimeout(() => pollPaymentStatus(sessionId, attempts + 1), pollInterval);
+    } catch (error) {
+      console.error('Error checking payment status:', error);
+      setError('Erreur lors de la vérification du paiement.');
+      setCheckingStatus(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <GraduationCap className="mx-auto h-12 w-12 text-blue-600 mb-4" />
-          <CardTitle>Le Maître Mot - Vérification</CardTitle>
+          <CardTitle>Le Maître Mot - Paiement</CardTitle>
         </CardHeader>
         <CardContent className="text-center">
-          {verifying ? (
+          {checkingStatus ? (
             <div>
               <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600 mb-4" />
-              <p>Vérification en cours...</p>
+              <p>Vérification du paiement en cours...</p>
             </div>
           ) : error ? (
             <div>
@@ -82,19 +92,45 @@ function AuthVerify() {
                 Retour à l'accueil
               </Button>
             </div>
-          ) : user ? (
+          ) : paymentStatus === 'success' ? (
             <div>
               <CheckCircle className="mx-auto h-8 w-8 text-green-600 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Connexion réussie !</h3>
-              <p className="text-gray-600 mb-2">Bienvenue {user.nom || user.email}</p>
+              <h3 className="text-lg font-semibold mb-2">Paiement réussi !</h3>
+              <p className="text-gray-600 mb-2">Votre abonnement Pro est maintenant actif</p>
               <p className="text-sm text-gray-500 mb-4">
-                Compte : {user.account_type === 'pro' ? 'Professionnel' : 'Gratuit'}
+                Vous avez accès aux exports illimités
               </p>
               <p className="text-sm text-gray-500">
                 Redirection automatique vers l'accueil...
               </p>
             </div>
           ) : null}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// Payment Cancel Component
+function PaymentCancel() {
+  const navigate = useNavigate();
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <GraduationCap className="mx-auto h-12 w-12 text-blue-600 mb-4" />
+          <CardTitle>Le Maître Mot - Paiement Annulé</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+          <AlertCircle className="mx-auto h-8 w-8 text-orange-600 mb-4" />
+          <h3 className="text-lg font-semibold mb-2">Paiement annulé</h3>
+          <p className="text-gray-600 mb-4">
+            Votre paiement a été annulé. Vous pouvez réessayer à tout moment.
+          </p>
+          <Button onClick={() => navigate('/')} className="w-full">
+            Retour à l'accueil
+          </Button>
         </CardContent>
       </Card>
     </div>
@@ -113,12 +149,7 @@ function MainApp() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [documents, setDocuments] = useState([]);
   
-  // Authentication state
-  const [authToken, setAuthToken] = useState("");
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  
-  // Guest and quota management
+  // Guest and quota management (new logic)
   const [guestId, setGuestId] = useState("");
   const [quotaStatus, setQuotaStatus] = useState({ 
     exports_remaining: 3, 
@@ -127,36 +158,24 @@ function MainApp() {
     max_exports: 3
   });
   const [quotaLoaded, setQuotaLoaded] = useState(false);
-  const [showSignupModal, setShowSignupModal] = useState(false);
-  const [signupData, setSignupData] = useState({ email: "", nom: "", etablissement: "" });
-  const [signupLoading, setSignupLoading] = useState(false);
-  const [signupSuccess, setSignupSuccess] = useState(false);
+  
+  // Payment modal
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [pricing, setPricing] = useState({});
   
   // Export states
   const [exportingSubject, setExportingSubject] = useState(false);
   const [exportingSolution, setExportingSolution] = useState(false);
 
-  // Initialize authentication and guest ID
+  // Initialize guest ID
   useEffect(() => {
-    // Check for stored auth token
-    const storedToken = localStorage.getItem('lemaitremot_auth_token');
-    console.log('Stored auth token:', storedToken); // Debug
-    
-    if (storedToken) {
-      setAuthToken(storedToken);
-      setIsAuthenticated(true);
-      console.log('User authenticated with token:', storedToken); // Debug
-    } else {
-      console.log('No auth token found, user is guest'); // Debug
-    }
-    
-    // Initialize guest ID for non-authenticated users
     let storedGuestId = localStorage.getItem('lemaitremot_guest_id');
     if (!storedGuestId) {
       storedGuestId = 'guest_' + Math.random().toString(36).substr(2, 9);
       localStorage.setItem('lemaitremot_guest_id', storedGuestId);
     }
     setGuestId(storedGuestId);
+    console.log('Guest ID:', storedGuestId);
   }, []);
 
   const fetchCatalog = async () => {
@@ -168,25 +187,22 @@ function MainApp() {
     }
   };
 
-  const fetchQuotaStatus = async () => {
-    // Authenticated users have unlimited exports
-    if (isAuthenticated) {
-      setQuotaStatus({ 
-        exports_remaining: 999, 
-        quota_exceeded: false,
-        exports_used: 0,
-        max_exports: 999,
-        account_type: 'authenticated'
-      });
-      setQuotaLoaded(true);
-      return;
+  const fetchPricing = async () => {
+    try {
+      const response = await axios.get(`${API}/pricing`);
+      setPricing(response.data.packages);
+    } catch (error) {
+      console.error("Erreur lors du chargement des prix:", error);
     }
-    
+  };
+
+  const fetchQuotaStatus = async () => {
     if (!guestId) return;
     try {
       const response = await axios.get(`${API}/quota/check?guest_id=${guestId}`);
       setQuotaStatus(response.data);
       setQuotaLoaded(true);
+      console.log('Quota status:', response.data);
     } catch (error) {
       console.error("Erreur lors du chargement du quota:", error);
       // Set safe defaults on error
@@ -227,7 +243,7 @@ function MainApp() {
         nb_exercices: nbExercices,
         guest_id: guestId
       }, {
-        timeout: 30000  // 30 seconds timeout instead of default
+        timeout: 30000  // 30 seconds timeout
       });
       
       setCurrentDocument(response.data.document);
@@ -251,34 +267,19 @@ function MainApp() {
     setLoading(true);
 
     try {
-      // Prepare request data and headers
-      const requestData = {
+      const response = await axios.post(`${API}/export`, {
         document_id: currentDocument.id,
-        export_type: exportType
-      };
-      
-      const requestConfig = {
-        responseType: 'blob',
-        headers: {}
-      };
-
-      // Add authentication or guest identification
-      if (isAuthenticated && authToken) {
-        console.log('🔑 Sending authenticated request with token:', authToken);
-        requestConfig.headers['Authorization'] = `Bearer ${authToken}`;
-      } else {
-        console.log('👤 Sending guest request with guest_id:', guestId);
-        requestData.guest_id = guestId;
-      }
-
-      console.log('📤 Export request:', { requestData, headers: requestConfig.headers });
-      const response = await axios.post(`${API}/export`, requestData, requestConfig);
+        export_type: exportType,
+        guest_id: guestId
+      }, {
+        responseType: 'blob'
+      });
 
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${currentDocument.type_doc}_${currentDocument.matiere}_${currentDocument.niveau}_${exportType}.pdf`;
+      link.download = `LeMaitremot_${currentDocument.type_doc}_${currentDocument.matiere}_${currentDocument.niveau}_${exportType}.pdf`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -292,8 +293,8 @@ function MainApp() {
       
       if (error.response?.status === 402) {
         const errorData = error.response.data;
-        if (errorData.action === "signup_required") {
-          setShowSignupModal(true);
+        if (errorData.action === "upgrade_required") {
+          setShowPaymentModal(true);
         } else {
           alert("Quota d'exports dépassé");
         }
@@ -305,21 +306,24 @@ function MainApp() {
     }
   };
 
-  const handleSignup = async () => {
-    if (!signupData.email) {
-      alert("Veuillez saisir votre adresse email");
-      return;
-    }
-
-    setSignupLoading(true);
+  const handleUpgradeClick = async (packageId) => {
     try {
-      await axios.post(`${API}/auth/signup`, signupData);
-      setSignupSuccess(true);
+      const originUrl = window.location.origin;
+      
+      const response = await axios.post(`${API}/checkout/session`, {
+        package_id: packageId,
+        origin_url: originUrl
+      });
+
+      if (response.data.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = response.data.url;
+      } else {
+        throw new Error('Aucune URL de checkout reçue');
+      }
     } catch (error) {
-      console.error("Erreur lors de l'inscription:", error);
-      alert("Erreur lors de l'inscription");
-    } finally {
-      setSignupLoading(false);
+      console.error('Erreur lors du paiement:', error);
+      alert('Erreur lors de la création de la session de paiement');
     }
   };
 
@@ -339,14 +343,15 @@ function MainApp() {
 
   useEffect(() => {
     fetchCatalog();
+    fetchPricing();
   }, []);
 
   useEffect(() => {
-    if (guestId || isAuthenticated) {
+    if (guestId) {
       fetchQuotaStatus();
       fetchDocuments();
     }
-  }, [guestId, isAuthenticated]);
+  }, [guestId]);
 
   const availableLevels = catalog.find(m => m.name === selectedMatiere)?.levels || [];
   const availableChapters = availableLevels.find(l => l.name === selectedNiveau)?.chapters || [];
@@ -358,7 +363,7 @@ function MainApp() {
         <div className="text-center mb-8">
           <div className="flex items-center justify-center mb-6">
             <GraduationCap className="h-12 w-12 text-blue-600 mr-3" />
-            <h1 className="text-4xl font-bold text-gray-900">Le Maître Mot V1</h1>
+            <h1 className="text-4xl font-bold text-gray-900">Le Maître Mot</h1>
           </div>
           <p className="text-xl text-gray-600 max-w-2xl mx-auto">
             Générateur de documents pédagogiques personnalisés pour les enseignants français
@@ -367,20 +372,17 @@ function MainApp() {
           {/* Quota Status */}
           <div className="mt-4">
             {quotaLoaded ? (
-              isAuthenticated ? (
-                <Alert className="max-w-md mx-auto border-blue-200 bg-blue-50">
-                  <CheckCircle className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    <strong>Compte connecté :</strong> Exports illimités
-                  </AlertDescription>
-                </Alert>
-              ) : quotaStatus.quota_exceeded ? (
+              quotaStatus.quota_exceeded ? (
                 <Alert className="max-w-md mx-auto border-orange-200 bg-orange-50">
                   <AlertCircle className="h-4 w-4 text-orange-600" />
                   <AlertDescription className="text-orange-800">
                     <strong>Limite atteinte :</strong> 3 exports gratuits utilisés. 
-                    <Button variant="link" className="p-0 h-auto text-orange-600 underline ml-1" onClick={() => setShowSignupModal(true)}>
-                      Créer un compte
+                    <Button 
+                      variant="link" 
+                      className="p-0 h-auto text-orange-600 underline ml-1" 
+                      onClick={() => setShowPaymentModal(true)}
+                    >
+                      Passer à Pro
                     </Button> pour continuer.
                   </AlertDescription>
                 </Alert>
@@ -388,7 +390,7 @@ function MainApp() {
                 <Alert className="max-w-md mx-auto border-green-200 bg-green-50">
                   <CheckCircle className="h-4 w-4 text-green-600" />
                   <AlertDescription className="text-green-800">
-                    <strong>Mode invité :</strong> {quotaStatus.exports_remaining} exports gratuits restants
+                    <strong>Mode gratuit :</strong> {quotaStatus.exports_remaining} exports restants
                   </AlertDescription>
                 </Alert>
               )
@@ -625,13 +627,20 @@ function MainApp() {
                       )}
                     </Button>
                   </div>
-                  
+
                   {/* Export Status Info */}
-                  {currentDocument && quotaLoaded && (
+                  {quotaLoaded && (
                     <div className="text-center text-sm text-gray-600">
                       {quotaStatus.quota_exceeded ? (
                         <p className="text-orange-600">
-                          ⚠️ Quota dépassé - Créez un compte pour continuer
+                          ⚠️ Quota dépassé - 
+                          <Button 
+                            variant="link" 
+                            className="p-0 h-auto text-orange-600 underline ml-1"
+                            onClick={() => setShowPaymentModal(true)}
+                          >
+                            Passer à Pro
+                          </Button>
                         </p>
                       ) : (
                         <p>
@@ -764,100 +773,110 @@ function MainApp() {
           </Card>
         )}
 
-        {/* Signup Modal */}
-        <Dialog open={showSignupModal} onOpenChange={setShowSignupModal}>
-          <DialogContent className="sm:max-w-md">
+        {/* Payment Modal */}
+        <Dialog open={showPaymentModal} onOpenChange={setShowPaymentModal}>
+          <DialogContent className="sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle className="flex items-center">
-                <User className="mr-2 h-5 w-5" />
-                Créer un compte gratuit
+              <DialogTitle className="flex items-center text-center">
+                <Crown className="mr-2 h-6 w-6 text-yellow-600" />
+                Passez à Le Maître Mot Pro
               </DialogTitle>
-              <DialogDescription>
-                Débloquez les exports illimités et sauvegardez vos documents
+              <DialogDescription className="text-center">
+                Débloquez les exports illimités et accédez à toutes les fonctionnalités
               </DialogDescription>
             </DialogHeader>
             
-            {signupSuccess ? (
-              <div className="text-center py-6">
-                <CheckCircle className="mx-auto h-12 w-12 text-green-600 mb-4" />
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Lien envoyé !
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  En mode développement, le lien magique n'est pas envoyé par email.
-                </p>
-                <Button 
-                  onClick={async () => {
-                    try {
-                      const response = await axios.get(`${API}/auth/magic-links/${signupData.email}`);
-                      const magicLink = response.data.magic_link;
-                      window.open(magicLink, '_blank');
-                    } catch (error) {
-                      alert('Erreur lors de la récupération du lien magique');
-                    }
-                  }}
-                  className="bg-blue-600 hover:bg-blue-700 text-white"
-                >
-                  Récupérer le lien magique
-                </Button>
-                <p className="text-xs text-gray-500 mt-2">
-                  Cliquez ci-dessus pour obtenir votre lien de connexion
-                </p>
+            <div className="space-y-4">
+              {/* Monthly Plan */}
+              {pricing.monthly && (
+                <Card className="border-2 border-blue-200 hover:border-blue-400 transition-colors cursor-pointer">
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">Abonnement Mensuel</h3>
+                        <p className="text-sm text-gray-600">Parfait pour essayer</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-blue-600">{pricing.monthly.amount}€</div>
+                        <div className="text-sm text-gray-500">par mois</div>
+                      </div>
+                    </div>
+                    <ul className="space-y-2 mb-4 text-sm text-gray-700">
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        Exports PDF illimités
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        Génération d'exercices sans limite
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        Toutes les matières et niveaux
+                      </li>
+                    </ul>
+                    <Button 
+                      onClick={() => handleUpgradeClick('monthly')}
+                      className="w-full bg-blue-600 hover:bg-blue-700"
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Choisir Mensuel
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Yearly Plan */}
+              {pricing.yearly && (
+                <Card className="border-2 border-green-200 hover:border-green-400 transition-colors cursor-pointer relative">
+                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                    <Badge className="bg-green-600 text-white px-3 py-1">Économisez 16%</Badge>
+                  </div>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start mb-4">
+                      <div>
+                        <h3 className="text-lg font-bold text-gray-900">Abonnement Annuel</h3>
+                        <p className="text-sm text-gray-600">Le meilleur rapport qualité/prix</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-2xl font-bold text-green-600">{pricing.yearly.amount}€</div>
+                        <div className="text-sm text-gray-500">par an</div>
+                        <div className="text-xs text-green-600">Soit {(pricing.yearly.amount / 12).toFixed(2)}€/mois</div>
+                      </div>
+                    </div>
+                    <ul className="space-y-2 mb-4 text-sm text-gray-700">
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        Exports PDF illimités
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        Génération d'exercices sans limite
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        Toutes les matières et niveaux
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-4 w-4 text-green-600 mr-2" />
+                        Économisez 20€ par rapport au mensuel
+                      </li>
+                    </ul>
+                    <Button 
+                      onClick={() => handleUpgradeClick('yearly')}
+                      className="w-full bg-green-600 hover:bg-green-700"
+                    >
+                      <Crown className="mr-2 h-4 w-4" />
+                      Choisir Annuel
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
+
+              <div className="text-center text-xs text-gray-500 mt-4">
+                Paiement sécurisé par Stripe • Annulation possible à tout moment
               </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Adresse email *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="votre@email.fr"
-                    value={signupData.email}
-                    onChange={(e) => setSignupData(prev => ({...prev, email: e.target.value}))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="nom">Nom (optionnel)</Label>
-                  <Input
-                    id="nom"
-                    placeholder="Votre nom"
-                    value={signupData.nom}
-                    onChange={(e) => setSignupData(prev => ({...prev, nom: e.target.value}))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="etablissement">Établissement (optionnel)</Label>
-                  <Input
-                    id="etablissement"
-                    placeholder="Nom de votre établissement"
-                    value={signupData.etablissement}
-                    onChange={(e) => setSignupData(prev => ({...prev, etablissement: e.target.value}))}
-                  />
-                </div>
-                
-                <Button 
-                  onClick={handleSignup}
-                  disabled={signupLoading}
-                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
-                >
-                  {signupLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Inscription...
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="mr-2 h-4 w-4" />
-                      Envoyer le lien de connexion
-                    </>
-                  )}
-                </Button>
-                
-                <p className="text-xs text-gray-500 text-center">
-                  Aucun mot de passe requis. Connexion par lien magique.
-                </p>
-              </div>
-            )}
+            </div>
           </DialogContent>
         </Dialog>
       </div>
@@ -869,7 +888,8 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/auth/verify" element={<AuthVerify />} />
+        <Route path="/success" element={<PaymentSuccess />} />
+        <Route path="/cancel" element={<PaymentCancel />} />
         <Route path="/*" element={<MainApp />} />
       </Routes>
     </BrowserRouter>
