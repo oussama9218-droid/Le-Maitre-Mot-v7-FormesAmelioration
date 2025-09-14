@@ -324,11 +324,11 @@ function MainApp() {
   }, []);
 
   useEffect(() => {
-    if (guestId) {
+    if (guestId || isAuthenticated) {
       fetchQuotaStatus();
       fetchDocuments();
     }
-  }, [guestId]);
+  }, [guestId, isAuthenticated]);
 
   const availableLevels = catalog.find(m => m.name === selectedMatiere)?.levels || [];
   const availableChapters = availableLevels.find(l => l.name === selectedNiveau)?.chapters || [];
