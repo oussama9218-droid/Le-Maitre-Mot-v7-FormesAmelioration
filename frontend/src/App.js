@@ -316,13 +316,28 @@ function MainApp() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API}/export`, {
+      const requestData = {
         document_id: currentDocument.id,
-        export_type: exportType,
-        guest_id: guestId
-      }, {
+        export_type: exportType
+      };
+      
+      // Pro users don't need guest_id, regular users do
+      if (!isPro) {
+        requestData.guest_id = guestId;
+      }
+      
+      const requestConfig = {
         responseType: 'blob'
-      });
+      };
+      
+      // Add email for Pro users
+      if (isPro && userEmail) {
+        requestConfig.headers = {
+          'X-User-Email': userEmail
+        };
+      }
+
+      const response = await axios.post(`${API}/export`, requestData, requestConfig);
 
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
