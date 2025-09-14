@@ -538,23 +538,23 @@ async def send_magic_link(email: str, token: str):
         api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
         
         # Email content
-        subject = "Connexion à LessonSmith - Votre lien magique"
+        subject = "Connexion à Le Maître Mot - Votre lien magique"
         html_content = f"""
         <html>
         <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #3b82f6;">🎓 LessonSmith</h1>
+                <h1 style="color: #3b82f6;">🎓 Le Maître Mot</h1>
                 <h2 style="color: #374151;">Connexion à votre compte</h2>
             </div>
             
             <p>Bonjour,</p>
             
-            <p>Vous avez demandé à vous connecter à LessonSmith. Cliquez sur le bouton ci-dessous pour accéder à votre compte :</p>
+            <p>Vous avez demandé à vous connecter à Le Maître Mot. Cliquez sur le bouton ci-dessous pour accéder à votre compte :</p>
             
             <div style="text-align: center; margin: 30px 0;">
                 <a href="{magic_link}" 
                    style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-                   Se connecter à LessonSmith
+                   Se connecter à Le Maître Mot
                 </a>
             </div>
             
@@ -564,7 +564,7 @@ async def send_magic_link(email: str, token: str):
             
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
             <p style="font-size: 12px; color: #6b7280; text-align: center;">
-                LessonSmith - Générateur de documents pédagogiques pour enseignants
+                Le Maître Mot - Générateur de documents pédagogiques pour enseignants
             </p>
         </body>
         </html>
