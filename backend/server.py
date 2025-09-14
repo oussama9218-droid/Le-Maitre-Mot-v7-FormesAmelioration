@@ -877,11 +877,15 @@ async def generate_document(request: GenerateRequest):
 async def export_pdf(request: ExportRequest, current_user: User = Depends(get_current_user)):
     """Export document as PDF"""
     try:
+        logger.info(f"Export request - User authenticated: {current_user is not None}, Guest ID: {request.guest_id}")
+        
         # Authenticated users have unlimited exports
         if current_user:
+            logger.info(f"Authenticated user export: {current_user.email}")
             can_export = True
             quota_info = "authenticated_user"
         else:
+            logger.info(f"Guest user export: {request.guest_id}")
             # Check quota for guest users
             can_export, quota_info = await check_export_quota(guest_id=request.guest_id)
         
