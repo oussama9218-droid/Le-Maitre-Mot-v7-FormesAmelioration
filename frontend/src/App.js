@@ -727,17 +727,33 @@ function MainApp() {
                   {/* Export Status Info */}
                   {quotaLoaded && (
                     <div className="text-center text-sm text-gray-600">
-                      {quotaStatus.quota_exceeded ? (
-                        <p className="text-orange-600">
-                          ⚠️ Quota dépassé - 
-                          <Button 
-                            variant="link" 
-                            className="p-0 h-auto text-orange-600 underline ml-1"
-                            onClick={() => setShowPaymentModal(true)}
-                          >
-                            Passer à Pro
-                          </Button>
+                      {isPro ? (
+                        <p className="text-blue-600">
+                          👑 Compte Pro - Exports illimités
                         </p>
+                      ) : quotaStatus.quota_exceeded ? (
+                        <div>
+                          <p className="text-orange-600 mb-2">
+                            ⚠️ Quota dépassé - 
+                            <Button 
+                              variant="link" 
+                              className="p-0 h-auto text-orange-600 underline ml-1"
+                              onClick={() => setShowPaymentModal(true)}
+                            >
+                              Passer à Pro
+                            </Button>
+                          </p>
+                          {userEmail && (
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => checkProStatus(userEmail)}
+                              className="text-xs"
+                            >
+                              Vérifier mon statut Pro
+                            </Button>
+                          )}
+                        </div>
                       ) : (
                         <p>
                           📄 Exports restants : {quotaStatus.exports_remaining}
