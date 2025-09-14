@@ -408,11 +408,11 @@ function MainApp() {
   }, []);
 
   useEffect(() => {
-    if (guestId) {
+    if (guestId && proStatusChecked) {
       fetchQuotaStatus();
       fetchDocuments();
     }
-  }, [guestId]);
+  }, [guestId, proStatusChecked, isPro]);
 
   const availableLevels = catalog.find(m => m.name === selectedMatiere)?.levels || [];
   const availableChapters = availableLevels.find(l => l.name === selectedNiveau)?.chapters || [];
