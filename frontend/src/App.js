@@ -526,7 +526,9 @@ function MainApp() {
     }
   };
 
+  // Initialize authentication on load
   useEffect(() => {
+    initializeAuth();
     fetchCatalog();
     fetchPricing();
     
@@ -541,7 +543,114 @@ function MainApp() {
         checkProStatus(userEmail);
       }, 3000);
     }
-  }, [userEmail]);
+  }, []);
+
+  const initializeAuth = () => {
+    // Check for session token (new method)
+    const storedSessionToken = localStorage.getItem('lemaitremot_session_token');
+    const storedEmail = localStorage.getItem('lemaitremot_user_email');
+    const loginMethod = localStorage.getItem('lemaitremot_login_method');
+    
+    if (storedSessionToken && storedEmail && loginMethod === 'session') {
+      setSessionToken(storedSessionToken);
+      setUserEmail(storedEmail);
+      validateSession(storedSessionToken);
+    } else if (storedEmail && loginMethod !== 'session') {
+      // Legacy method (email only)
+      setUserEmail(storedEmail);
+      checkProStatus(storedEmail);
+    } else {
+      setProStatusChecked(true);
+    }
+  };
+
+  const validateSession = async (token) => {
+    try {
+      const response = await axios.get(`${API}/auth/session/validate`, {
+        headers: {
+          'X-Session-Token': token
+        }
+      });
+      
+      setUserEmail(response.data.email);
+      setIsPro(true);
+      setProStatusChecked(true);
+      
+      console.log('✅ Session valid - user is Pro:', response.data.email);
+      
+    } catch (error) {
+      console.error('Session validation failed:', error);
+      
+      // Clear invalid session
+      localStorage.removeItem('lemaitremot_session_token');
+      localStorage.removeItem('lemaitremot_login_method');
+      
+      setSessionToken("");
+      setIsPro(false);
+      setProStatusChecked(true);
+      
+      // If it was session expired (401), show a message
+      if (error.response?.status === 401) {
+        console.log('Session expired - user needs to login again');
+      }
+    }
+  };
+
+  const requestLogin = async (email) => {
+    setLoginLoading(true);
+    try {
+      await axios.post(`${API}/auth/request-login`, {
+        email: email
+      });
+      
+      setLoginEmailSent(true);
+      console.log('✅ Magic link sent to:', email);
+      
+    } catch (error) {
+      console.error('Error requesting login:', error);
+      const errorMsg = error.response?.data?.detail || 'Erreur lors de l\'envoi du lien de connexion';
+      alert(errorMsg);
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      if (sessionToken) {
+        await axios.post(`${API}/auth/logout`, {}, {
+          headers: {
+            'X-Session-Token': sessionToken
+          }
+        });
+      }
+      
+      // Clear all auth data
+      localStorage.removeItem('lemaitremot_session_token');
+      localStorage.removeItem('lemaitremot_user_email');
+      localStorage.removeItem('lemaitremot_login_method');
+      
+      setSessionToken("");
+      setUserEmail("");
+      setIsPro(false);
+      setProStatusChecked(true);
+      
+      console.log('✅ Logged out successfully');
+      
+    } catch (error) {
+      console.error('Error during logout:', error);
+      
+      // Clear local data anyway
+      localStorage.removeItem('lemaitremot_session_token');
+      localStorage.removeItem('lemaitremot_user_email');
+      localStorage.removeItem('lemaitremot_login_method');
+      
+      setSessionToken("");
+      setUserEmail("");
+      setIsPro(false);
+      setProStatusChecked(true);
+    }
+  };
 
   useEffect(() => {
     if (guestId && proStatusChecked) {
