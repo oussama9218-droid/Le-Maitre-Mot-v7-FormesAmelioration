@@ -373,12 +373,12 @@ function MainApp() {
   };
 
   const handleUpgradeClick = async (packageId) => {
-    // Ask for email before payment
-    const email = prompt('Veuillez saisir votre adresse email pour continuer :');
-    if (!email || !email.includes('@')) {
-      alert('Adresse email requise pour continuer');
+    if (!paymentEmail || !paymentEmail.includes('@')) {
+      alert('Veuillez saisir une adresse email valide');
       return;
     }
+    
+    setPaymentLoading(true);
     
     try {
       const originUrl = window.location.origin;
@@ -386,12 +386,12 @@ function MainApp() {
       const response = await axios.post(`${API}/checkout/session`, {
         package_id: packageId,
         origin_url: originUrl,
-        email: email
+        email: paymentEmail
       });
 
       if (response.data.url) {
         // Store email for when user returns
-        localStorage.setItem('lemaitremot_user_email', email);
+        localStorage.setItem('lemaitremot_user_email', paymentEmail);
         localStorage.setItem('lemaitremot_pending_payment', 'true');
         
         // Redirect to Stripe Checkout
@@ -402,6 +402,8 @@ function MainApp() {
     } catch (error) {
       console.error('Erreur lors du paiement:', error);
       alert('Erreur lors de la création de la session de paiement');
+    } finally {
+      setPaymentLoading(false);
     }
   };
 
