@@ -269,7 +269,11 @@ def main():
         ("Catalog", tester.test_catalog_endpoint),
         ("Generate Document", tester.test_generate_document),
         ("Get Documents", tester.test_get_documents),
+        ("Quota Check", tester.test_quota_check),
+        ("Export Sujet PDF", tester.test_export_pdf_sujet),
+        ("Export Corrigé PDF", tester.test_export_pdf_corrige),
         ("Vary Exercise", tester.test_vary_exercise),
+        ("Signup Request", tester.test_signup_request),
         ("Error Handling", tester.test_invalid_requests)
     ]
     
