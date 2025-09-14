@@ -349,7 +349,14 @@ function MainApp() {
           {/* Quota Status */}
           <div className="mt-4">
             {quotaLoaded ? (
-              quotaStatus.quota_exceeded ? (
+              isAuthenticated ? (
+                <Alert className="max-w-md mx-auto border-blue-200 bg-blue-50">
+                  <CheckCircle className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Compte connecté :</strong> Exports illimités
+                  </AlertDescription>
+                </Alert>
+              ) : quotaStatus.quota_exceeded ? (
                 <Alert className="max-w-md mx-auto border-orange-200 bg-orange-50">
                   <AlertCircle className="h-4 w-4 text-orange-600" />
                   <AlertDescription className="text-orange-800">
