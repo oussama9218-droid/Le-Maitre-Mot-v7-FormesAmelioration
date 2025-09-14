@@ -172,7 +172,7 @@ function MainApp() {
   const [exportingSubject, setExportingSubject] = useState(false);
   const [exportingSolution, setExportingSolution] = useState(false);
 
-  // Initialize guest ID
+  // Initialize guest ID and check Pro status
   useEffect(() => {
     let storedGuestId = localStorage.getItem('lemaitremot_guest_id');
     if (!storedGuestId) {
@@ -180,8 +180,38 @@ function MainApp() {
       localStorage.setItem('lemaitremot_guest_id', storedGuestId);
     }
     setGuestId(storedGuestId);
-    console.log('Guest ID:', storedGuestId);
+    
+    // Check if user has a stored email (Pro user)
+    const storedEmail = localStorage.getItem('lemaitremot_user_email');
+    if (storedEmail) {
+      setUserEmail(storedEmail);
+      checkProStatus(storedEmail);
+    } else {
+      setProStatusChecked(true);
+    }
+    
+    console.log('Guest ID:', storedGuestId, 'Stored email:', storedEmail);
   }, []);
+
+  const checkProStatus = async (email) => {
+    try {
+      const response = await axios.get(`${API}/user/status/${encodeURIComponent(email)}`);
+      const isProUser = response.data.is_pro;
+      
+      setIsPro(isProUser);
+      setProStatusChecked(true);
+      
+      console.log('Pro status check:', { email, isPro: isProUser });
+      
+      if (isProUser) {
+        console.log('✅ User is Pro - unlimited exports');
+      }
+    } catch (error) {
+      console.error('Error checking Pro status:', error);
+      setIsPro(false);
+      setProStatusChecked(true);
+    }
+  };
 
   const fetchCatalog = async () => {
     try {
