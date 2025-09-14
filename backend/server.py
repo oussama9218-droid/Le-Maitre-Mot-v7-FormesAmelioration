@@ -797,7 +797,7 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
 # API Routes
 @api_router.get("/")
 async def root():
-    return {"message": "API LessonSmith V1 - Générateur de documents pédagogiques"}
+    return {"message": "API Le Maître Mot V1 - Générateur de documents pédagogiques"}
 
 @api_router.get("/catalog")
 async def get_catalog():
