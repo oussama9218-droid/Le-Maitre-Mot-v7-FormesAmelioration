@@ -1287,6 +1287,107 @@ function MainApp() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Login Modal */}
+        <Dialog open={showLoginModal} onOpenChange={(open) => {
+          setShowLoginModal(open);
+          if (!open) {
+            setLoginEmail("");
+            setLoginEmailSent(false);
+            setLoginLoading(false);
+          }
+        }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center text-center">
+                <LogIn className="mr-2 h-6 w-6 text-blue-600" />
+                Connexion Pro
+              </DialogTitle>
+              <DialogDescription className="text-center">
+                {loginEmailSent 
+                  ? "Vérifiez votre boîte email"
+                  : "Entrez votre email pour recevoir un lien de connexion"
+                }
+              </DialogDescription>
+            </DialogHeader>
+            
+            {!loginEmailSent ? (
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="login-email">Adresse email de votre compte Pro</Label>
+                  <Input
+                    id="login-email"
+                    type="email"
+                    placeholder="votre@email.fr"
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                  />
+                </div>
+                
+                <Button 
+                  onClick={() => requestLogin(loginEmail)}
+                  disabled={!loginEmail || loginLoading}
+                  className="w-full bg-blue-600 hover:bg-blue-700"
+                >
+                  {loginLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Envoi en cours...
+                    </>
+                  ) : (
+                    <>
+                      <Mail className="mr-2 h-4 w-4" />
+                      Envoyer le lien de connexion
+                    </>
+                  )}
+                </Button>
+                
+                <div className="text-center">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Pas encore Pro ?
+                  </p>
+                  <Button 
+                    variant="link" 
+                    onClick={() => {
+                      setShowLoginModal(false);
+                      setShowPaymentModal(true);
+                    }}
+                    className="text-blue-600 p-0 h-auto"
+                  >
+                    Créer un compte Pro
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-center">
+                <div className="mx-auto w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                  <Mail className="h-8 w-8 text-blue-600" />
+                </div>
+                
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-2">Email envoyé !</h3>
+                  <p className="text-sm text-gray-600 mb-4">
+                    Nous avons envoyé un lien de connexion à <strong>{loginEmail}</strong>
+                  </p>
+                  <div className="bg-blue-50 p-3 rounded-lg text-xs text-blue-700">
+                    💡 <strong>Conseil :</strong> Vérifiez vos spams si vous ne recevez pas l'email dans les 2 minutes.
+                  </div>
+                </div>
+                
+                <Button 
+                  variant="outline" 
+                  onClick={() => {
+                    setLoginEmailSent(false);
+                    setLoginEmail("");
+                  }}
+                  className="w-full"
+                >
+                  Changer d'email
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
