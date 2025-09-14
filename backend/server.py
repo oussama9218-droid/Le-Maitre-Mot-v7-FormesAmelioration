@@ -524,23 +524,91 @@ async def check_export_quota(user_id: str = None, guest_id: str = None):
     return False, "no_access"
 
 async def send_magic_link(email: str, token: str):
-    """Send magic link email (development version)"""
-    # For development/testing - store magic link in a simple way
+    """Send magic link email via Brevo"""
     magic_link = f"https://lessonsmith.preview.emergentagent.com/auth/verify?token={token}"
     
-    print(f"🔗 Magic link for {email}: {magic_link}")
-    
-    # Store in database for easy retrieval during testing
-    magic_link_record = {
-        "email": email,
-        "token": token,
-        "magic_link": magic_link,
-        "created_at": datetime.now(timezone.utc),
-        "used": False
-    }
-    await db.magic_links.insert_one(magic_link_record)
-    
-    return True
+    try:
+        # Configure Brevo
+        import sib_api_v3_sdk
+        from sib_api_v3_sdk.rest import ApiException
+        
+        configuration = sib_api_v3_sdk.Configuration()
+        configuration.api_key['api-key'] = os.environ.get('BREVO_API_KEY')
+        
+        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
+        
+        # Email content
+        subject = "Connexion à LessonSmith - Votre lien magique"
+        html_content = f"""
+        <html>
+        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+            <div style="text-align: center; margin-bottom: 30px;">
+                <h1 style="color: #3b82f6;">🎓 LessonSmith</h1>
+                <h2 style="color: #374151;">Connexion à votre compte</h2>
+            </div>
+            
+            <p>Bonjour,</p>
+            
+            <p>Vous avez demandé à vous connecter à LessonSmith. Cliquez sur le bouton ci-dessous pour accéder à votre compte :</p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{magic_link}" 
+                   style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+                   Se connecter à LessonSmith
+                </a>
+            </div>
+            
+            <p><small>Ce lien est valable pendant 1 heure.</small></p>
+            
+            <p>Si vous n'avez pas demandé cette connexion, vous pouvez ignorer cet email.</p>
+            
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+            <p style="font-size: 12px; color: #6b7280; text-align: center;">
+                LessonSmith - Générateur de documents pédagogiques pour enseignants
+            </p>
+        </body>
+        </html>
+        """
+        
+        # Send email
+        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
+            to=[{"email": email}],
+            sender={"name": os.environ.get('BREVO_SENDER_NAME'), "email": os.environ.get('BREVO_SENDER_EMAIL')},
+            subject=subject,
+            html_content=html_content
+        )
+        
+        api_response = api_instance.send_transac_email(send_smtp_email)
+        logger.info(f"Email sent successfully to {email}: {api_response}")
+        
+        # Store in database for tracking
+        magic_link_record = {
+            "email": email,
+            "token": token,
+            "magic_link": magic_link,
+            "created_at": datetime.now(timezone.utc),
+            "used": False,
+            "email_sent": True
+        }
+        await db.magic_links.insert_one(magic_link_record)
+        
+        return True
+        
+    except Exception as e:
+        logger.error(f"Error sending email to {email}: {e}")
+        # Fallback: store the link for manual retrieval
+        magic_link_record = {
+            "email": email,
+            "token": token,
+            "magic_link": magic_link,
+            "created_at": datetime.now(timezone.utc),
+            "used": False,
+            "email_sent": False,
+            "error": str(e)
+        }
+        await db.magic_links.insert_one(magic_link_record)
+        
+        return False
 
 async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, type_doc: str, difficulte: str, nb_exercices: int) -> List[Exercise]:
     """Generate exercises using AI"""
