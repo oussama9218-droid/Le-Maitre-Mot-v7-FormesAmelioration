@@ -111,42 +111,78 @@ CURRICULUM_DATA = {
 async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, type_doc: str, difficulte: str, nb_exercices: int) -> List[Exercise]:
     """Generate exercises using AI"""
     
+    # Level-specific guidance
+    niveau_guidance = {
+        "6e": "Niveau débutant - vocabulaire simple, calculs basiques, exemples concrets du quotidien",
+        "5e": "Niveau intermédiaire - introduction de concepts plus abstraits mais restant accessibles", 
+        "4e": "Niveau confirmé - calculs plus complexes, raisonnement mathématique développé",
+        "3e": "Niveau avancé - préparation au lycée, concepts abstraits, démonstrations"
+    }
+    
+    # Chapter-specific examples
+    chapter_examples = {
+        "Volumes": {
+            "6e": "Utiliser des objets du quotidien (boîtes, bouteilles), unités simples (cm³, L), calculs avec nombres entiers ou décimaux simples",
+            "5e": "Prismes et cylindres, conversions d'unités, calculs avec fractions simples",
+            "4e": "Pyramides et cônes, volumes composés, problèmes de proportionnalité",
+            "3e": "Solides de révolution, problèmes d'optimisation, calculs complexes"
+        },
+        "Nombres relatifs": {
+            "5e": "Introduction intuitive avec température, altitude, calculs simples",
+            "4e": "Opérations complètes, règles des signes, problèmes contextualisés",
+            "3e": "Applications complexes, équations, inéquations"
+        }
+    }
+    
+    # Get specific guidance
+    level_guide = niveau_guidance.get(niveau, "Adapter au niveau demandé")
+    chapter_guide = chapter_examples.get(chapitre, {}).get(niveau, "Respecter le programme officiel")
+    
     # Create LLM chat instance
     chat = LlmChat(
         api_key=emergent_key,
         session_id=f"exercise_gen_{uuid.uuid4()}",
-        system_message="""Tu es un générateur d'exercices scolaires français rigoureux et expert du programme scolaire français.
+        system_message=f"""Tu es un générateur d'exercices scolaires français rigoureux et expert du programme scolaire français.
 
-Tu dois créer des exercices parfaitement alignés sur le programme officiel français et adaptés au niveau demandé.
+Tu dois créer des exercices parfaitement alignés sur le programme officiel français et adaptés au niveau {niveau}.
 
 RÈGLES STRICTES:
-1. Respecter EXACTEMENT le chapitre et niveau demandés
-2. Utiliser un français impeccable et des formulations claires
-3. Proposer des données numériques réalistes et cohérentes
-4. Fournir des solutions détaillées étape par étape
-5. Adapter la difficulté au niveau (6e plus simple que 3e)
-6. Utiliser la notation française (virgules pour les décimaux)
+1. Respecter EXACTEMENT le chapitre "{chapitre}" et niveau "{niveau}"
+2. {level_guide}
+3. {chapter_guide}
+4. Utiliser un français impeccable et des formulations claires SANS guillemets vides
+5. Proposer des données numériques réalistes et cohérentes
+6. Fournir des solutions détaillées étape par étape
+7. Utiliser la notation française (virgules pour les décimaux)
+8. NE JAMAIS inclure de guillemets vides "" dans les énoncés
 
 FORMAT DE SORTIE JSON OBLIGATOIRE:
-{
+{{
   "exercises": [
-    {
-      "type": "ouvert|qcm",
-      "enonce": "Énoncé clair et précis",
-      "donnees": {"valeurs": [...], "unites": "..."},
-      "difficulte": "facile|moyen|difficile",
-      "solution": {
-        "etapes": ["Étape 1: ...", "Étape 2: ..."],
-        "resultat": "Résultat final avec unité"
-      },
+    {{
+      "type": "ouvert",
+      "enonce": "Énoncé clair et précis sans guillemets vides",
+      "donnees": null,
+      "difficulte": "{difficulte}",
+      "solution": {{
+        "etapes": ["Étape 1: explication claire", "Étape 2: calcul détaillé"],
+        "resultat": "Résultat final avec unité si nécessaire"
+      }},
       "bareme": [
-        {"etape": "Compréhension", "points": 0.5},
-        {"etape": "Calcul", "points": 1.0},
-        {"etape": "Résultat", "points": 0.5}
+        {{"etape": "Compréhension", "points": 1.0}},
+        {{"etape": "Méthode", "points": 2.0}},
+        {{"etape": "Calcul", "points": 1.0}},
+        {{"etape": "Résultat", "points": 1.0}}
       ]
-    }
+    }}
   ]
-}"""
+}}
+
+ATTENTION: 
+- Assure-toi que chaque exercice est adapté au niveau {niveau}
+- Évite absolument les guillemets vides ""
+- Les énoncés doivent être complets et autonomes
+- Les solutions doivent être pédagogiques et détaillées"""
     ).with_model("openai", "gpt-5")
     
     # Create the prompt
