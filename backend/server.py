@@ -589,6 +589,184 @@ async def check_user_pro_status(email: str):
         logger.error(f"Error checking pro status: {e}")
         return False, None
 
+async def send_magic_link_email(email: str, token: str):
+    """Send magic link email via Brevo"""
+    try:
+        brevo_api_key = os.environ.get('BREVO_API_KEY')
+        sender_email = os.environ.get('BREVO_SENDER_EMAIL')
+        sender_name = os.environ.get('BREVO_SENDER_NAME', 'Le Maître Mot')
+        
+        if not brevo_api_key or not sender_email:
+            logger.error("Brevo credentials not configured")
+            return False
+        
+        # Generate magic link URL
+        frontend_url = os.environ.get('FRONTEND_URL', 'https://edudocsai.preview.emergentagent.com')
+        magic_link = f"{frontend_url}/login/verify?token={token}"
+        
+        # Email content
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); padding: 2rem; text-align: center; border-radius: 8px 8px 0 0;">
+                <h1 style="color: white; margin: 0; font-size: 1.5rem;">Le Maître Mot</h1>
+                <p style="color: rgba(255,255,255,0.9); margin: 0.5rem 0 0 0;">Connexion à votre compte Pro</p>
+            </div>
+            
+            <div style="background: white; padding: 2rem; border-radius: 0 0 8px 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                <h2 style="color: #1f2937; margin-top: 0;">Connexion demandée</h2>
+                <p style="color: #4b5563; line-height: 1.6;">
+                    Vous avez demandé à vous connecter à votre compte Le Maître Mot Pro. 
+                    Cliquez sur le bouton ci-dessous pour vous connecter automatiquement.
+                </p>
+                
+                <div style="text-align: center; margin: 2rem 0;">
+                    <a href="{magic_link}" 
+                       style="background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%); 
+                              color: white;
+                              text-decoration: none;
+                              padding: 1rem 2rem;
+                              border-radius: 8px;
+                              font-weight: bold;
+                              display: inline-block;">
+                        🔐 Se connecter à Le Maître Mot Pro
+                    </a>
+                </div>
+                
+                <div style="background: #f3f4f6; padding: 1rem; border-radius: 6px; margin: 1.5rem 0;">
+                    <p style="margin: 0; font-size: 0.875rem; color: #6b7280;">
+                        <strong>⚠️ Important :</strong> Ce lien est valide pendant 15 minutes et ne peut être utilisé qu'une seule fois.
+                        Pour des raisons de sécurité, toute autre session active sera automatiquement fermée.
+                    </p>
+                </div>
+                
+                <p style="color: #6b7280; font-size: 0.875rem; line-height: 1.4;">
+                    Si vous n'avez pas demandé cette connexion, ignorez cet email. 
+                    Votre compte reste sécurisé.
+                </p>
+                
+                <div style="border-top: 1px solid #e5e7eb; margin-top: 2rem; padding-top: 1rem;">
+                    <p style="color: #9ca3af; font-size: 0.75rem; margin: 0; text-align: center;">
+                        Le Maître Mot - Générateur de documents pédagogiques
+                    </p>
+                </div>
+            </div>
+        </div>
+        """
+        
+        # Send email using requests (simple approach)
+        import requests
+        
+        headers = {
+            'api-key': brevo_api_key,
+            'Content-Type': 'application/json'
+        }
+        
+        data = {
+            'sender': {
+                'name': sender_name,
+                'email': sender_email
+            },
+            'to': [
+                {
+                    'email': email,
+                    'name': email.split('@')[0]
+                }
+            ],
+            'subject': '🔐 Connexion à Le Maître Mot Pro',
+            'htmlContent': html_content
+        }
+        
+        response = requests.post(
+            'https://api.brevo.com/v3/smtp/email',
+            headers=headers,
+            json=data,
+            timeout=10
+        )
+        
+        if response.status_code == 201:
+            logger.info(f"Magic link email sent successfully to {email}")
+            return True
+        else:
+            logger.error(f"Failed to send magic link email: {response.status_code} - {response.text}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error sending magic link email: {e}")
+        return False
+
+async def create_login_session(email: str, device_id: str):
+    """Create a new login session and invalidate old ones"""
+    try:
+        # Generate secure session token
+        session_token = str(uuid.uuid4()) + "-" + str(uuid.uuid4())
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
+        
+        # Create new session
+        session = LoginSession(
+            user_email=email,
+            session_token=session_token,
+            device_id=device_id,
+            expires_at=expires_at
+        )
+        
+        # Remove all existing sessions for this user (one device at a time policy)
+        await db.login_sessions.delete_many({"user_email": email})
+        
+        # Save new session
+        session_dict = session.dict()
+        session_dict['expires_at'] = session_dict['expires_at'].isoformat()
+        session_dict['created_at'] = session_dict['created_at'].isoformat()
+        session_dict['last_used'] = session_dict['last_used'].isoformat()
+        
+        await db.login_sessions.insert_one(session_dict)
+        
+        # Update user's last_login
+        await db.pro_users.update_one(
+            {"email": email},
+            {"$set": {"last_login": datetime.now(timezone.utc)}}
+        )
+        
+        logger.info(f"Login session created for {email} on device {device_id}")
+        return session_token
+        
+    except Exception as e:
+        logger.error(f"Error creating login session: {e}")
+        return None
+
+async def validate_session_token(session_token: str):
+    """Validate a session token and return user email if valid"""
+    try:
+        session = await db.login_sessions.find_one({"session_token": session_token})
+        
+        if not session:
+            return None
+            
+        # Check expiration
+        expires_at = session.get('expires_at')
+        if isinstance(expires_at, str):
+            expires_at = datetime.fromisoformat(expires_at).replace(tzinfo=timezone.utc)
+        elif isinstance(expires_at, datetime) and expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=timezone.utc)
+            
+        now = datetime.now(timezone.utc)
+        
+        if expires_at < now:
+            # Session expired, clean it up
+            await db.login_sessions.delete_one({"session_token": session_token})
+            return None
+            
+        # Update last_used
+        await db.login_sessions.update_one(
+            {"session_token": session_token},
+            {"$set": {"last_used": datetime.now(timezone.utc)}}
+        )
+        
+        return session.get('user_email')
+        
+    except Exception as e:
+        logger.error(f"Error validating session token: {e}")
+        return None
+
 async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, type_doc: str, difficulte: str, nb_exercices: int) -> List[Exercise]:
     """Generate exercises using AI"""
     
