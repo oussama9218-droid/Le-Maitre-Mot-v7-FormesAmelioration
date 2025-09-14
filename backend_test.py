@@ -19,20 +19,24 @@ class LeMaitreMotAPITester:
         self.session_token = None
         self.device_id = f"test_device_{datetime.now().strftime('%H%M%S')}"
 
-    def run_test(self, name, method, endpoint, expected_status, data=None, timeout=30):
+    def run_test(self, name, method, endpoint, expected_status, data=None, headers=None, timeout=30):
         """Run a single API test"""
         url = f"{self.api_url}/{endpoint}" if not endpoint.startswith('http') else endpoint
-        headers = {'Content-Type': 'application/json'}
+        default_headers = {'Content-Type': 'application/json'}
+        if headers:
+            default_headers.update(headers)
 
         self.tests_run += 1
         print(f"\n🔍 Testing {name}...")
         print(f"   URL: {url}")
+        if headers:
+            print(f"   Headers: {list(headers.keys())}")
         
         try:
             if method == 'GET':
-                response = requests.get(url, headers=headers, timeout=timeout)
+                response = requests.get(url, headers=default_headers, timeout=timeout)
             elif method == 'POST':
-                response = requests.post(url, json=data, headers=headers, timeout=timeout)
+                response = requests.post(url, json=data, headers=default_headers, timeout=timeout)
 
             print(f"   Status: {response.status_code}")
             
