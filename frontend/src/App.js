@@ -258,6 +258,7 @@ function MainApp() {
   const [userEmail, setUserEmail] = useState("");
   const [isPro, setIsPro] = useState(false);
   const [proStatusChecked, setProStatusChecked] = useState(false);
+  const [sessionToken, setSessionToken] = useState("");
   
   // Payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
