@@ -444,8 +444,8 @@ function App() {
                   <div className="grid grid-cols-2 gap-4">
                     <Button 
                       onClick={() => exportPDF('sujet')}
-                      disabled={exportingSubject || quotaStatus.quota_exceeded}
-                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                      disabled={!currentDocument || exportingSubject || (quotaLoaded && quotaStatus.quota_exceeded)}
+                      className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white disabled:opacity-50"
                     >
                       {exportingSubject ? (
                         <>
@@ -462,8 +462,8 @@ function App() {
                     
                     <Button 
                       onClick={() => exportPDF('corrige')}
-                      disabled={exportingSolution || quotaStatus.quota_exceeded}
-                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      disabled={!currentDocument || exportingSolution || (quotaLoaded && quotaStatus.quota_exceeded)}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white disabled:opacity-50"
                     >
                       {exportingSolution ? (
                         <>
@@ -478,6 +478,21 @@ function App() {
                       )}
                     </Button>
                   </div>
+                  
+                  {/* Export Status Info */}
+                  {currentDocument && quotaLoaded && (
+                    <div className="text-center text-sm text-gray-600">
+                      {quotaStatus.quota_exceeded ? (
+                        <p className="text-orange-600">
+                          ⚠️ Quota dépassé - Créez un compte pour continuer
+                        </p>
+                      ) : (
+                        <p>
+                          📄 Exports restants : {quotaStatus.exports_remaining}
+                        </p>
+                      )}
+                    </div>
+                  )}
 
                   {/* Exercises */}
                   <Tabs defaultValue="sujet" className="w-full">
