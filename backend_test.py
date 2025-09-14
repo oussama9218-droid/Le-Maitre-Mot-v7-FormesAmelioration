@@ -1,6 +1,7 @@
 import requests
 import sys
 import json
+import time
 from datetime import datetime
 
 class LeMaitreMotAPITester:
@@ -12,6 +13,11 @@ class LeMaitreMotAPITester:
         self.generated_document_id = None
         self.guest_id = f"test_guest_{datetime.now().strftime('%H%M%S')}"
         self.initial_quota = None
+        # Authentication testing variables
+        self.pro_user_email = "oussama92.18@gmail.com"
+        self.magic_token = None
+        self.session_token = None
+        self.device_id = f"test_device_{datetime.now().strftime('%H%M%S')}"
 
     def run_test(self, name, method, endpoint, expected_status, data=None, timeout=30):
         """Run a single API test"""
