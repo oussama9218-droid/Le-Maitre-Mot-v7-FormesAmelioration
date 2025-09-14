@@ -319,11 +319,6 @@ function App() {
                               </Button>
                             </div>
                             <p className="text-gray-900 whitespace-pre-wrap">{exercise.enonce}</p>
-                            {exercise.donnees && (
-                              <div className="mt-3 p-2 bg-gray-50 rounded text-sm">
-                                <strong>Données :</strong> {JSON.stringify(exercise.donnees)}
-                              </div>
-                            )}
                           </CardContent>
                         </Card>
                       ))}
