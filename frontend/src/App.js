@@ -232,12 +232,26 @@ function MainApp() {
   };
 
   const fetchQuotaStatus = async () => {
+    // Pro users have unlimited exports
+    if (isPro) {
+      setQuotaStatus({
+        exports_remaining: 999,
+        quota_exceeded: false,
+        exports_used: 0,
+        max_exports: 999,
+        is_pro: true
+      });
+      setQuotaLoaded(true);
+      console.log('Pro user - unlimited quota set');
+      return;
+    }
+    
     if (!guestId) return;
     try {
       const response = await axios.get(`${API}/quota/check?guest_id=${guestId}`);
       setQuotaStatus(response.data);
       setQuotaLoaded(true);
-      console.log('Quota status:', response.data);
+      console.log('Guest quota status:', response.data);
     } catch (error) {
       console.error("Erreur lors du chargement du quota:", error);
       // Set safe defaults on error
