@@ -1,6 +1,5 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Response, Depends, BackgroundTasks
+from fastapi import FastAPI, APIRouter, HTTPException, Response, Depends, BackgroundTasks, Request
 from fastapi.responses import FileResponse
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -8,17 +7,15 @@ import os
 import logging
 from pathlib import Path
 from pydantic import BaseModel, Field, EmailStr
-from typing import List, Optional
+from typing import List, Optional, Dict
 import uuid
 from datetime import datetime, timezone, timedelta
 from emergentintegrations.llm.chat import LlmChat, UserMessage
+from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 import json
 import tempfile
 import weasyprint
 from jinja2 import Template
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
@@ -37,8 +34,26 @@ api_router = APIRouter(prefix="/api")
 # Initialize LLM Chat
 emergent_key = os.environ.get('EMERGENT_LLM_KEY')
 
-# Security
-security = HTTPBearer(auto_error=False)
+# Initialize Stripe
+stripe_secret_key = os.environ.get('STRIPE_SECRET_KEY')
+
+# Define pricing packages (server-side only for security)
+PRICING_PACKAGES = {
+    "monthly": {
+        "name": "Abonnement Mensuel",
+        "amount": 9.99,
+        "currency": "eur",
+        "duration": "monthly",
+        "description": "Accès illimité pendant 1 mois"
+    },
+    "yearly": {
+        "name": "Abonnement Annuel", 
+        "amount": 99.00,
+        "currency": "eur",
+        "duration": "yearly",
+        "description": "Accès illimité pendant 1 an - Économisez 16%"
+    }
+}
 
 # Define Models
 class Exercise(BaseModel):
@@ -54,7 +69,7 @@ class Exercise(BaseModel):
 
 class Document(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    user_id: Optional[str] = None  # For registered users
+    user_id: Optional[str] = None  # For Pro users
     guest_id: Optional[str] = None  # For guest users
     matiere: str
     niveau: str
@@ -66,18 +81,32 @@ class Document(BaseModel):
     export_count: int = 0  # Track exports for quotas
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
-class User(BaseModel):
+class ProUser(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     email: EmailStr
     nom: Optional[str] = None
     etablissement: Optional[str] = None
-    account_type: str = "free"  # "free", "pro"
-    exports_used: int = 0
-    max_exports: int = 50  # Free tier limit
-    magic_token: Optional[str] = None
-    token_expires: Optional[datetime] = None
+    account_type: str = "pro"
+    subscription_type: str  # "monthly" or "yearly"
+    subscription_expires: datetime
+    stripe_customer_id: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     last_login: Optional[datetime] = None
+
+class PaymentTransaction(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    session_id: str
+    payment_id: Optional[str] = None
+    amount: float
+    currency: str
+    package_id: str
+    email: Optional[str] = None
+    user_id: Optional[str] = None
+    payment_status: str = "pending"  # pending, paid, failed, expired
+    session_status: str = "initiated"  # initiated, complete, expired
+    metadata: Optional[Dict] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 class GenerateRequest(BaseModel):
     matiere: str
@@ -89,15 +118,22 @@ class GenerateRequest(BaseModel):
     versions: List[str] = ["A"]
     guest_id: Optional[str] = None
 
-class AuthRequest(BaseModel):
-    email: EmailStr
-    nom: Optional[str] = None
-    etablissement: Optional[str] = None
-
 class ExportRequest(BaseModel):
     document_id: str
     export_type: str  # "sujet" or "corrige"
     guest_id: Optional[str] = None
+
+class CheckoutRequest(BaseModel):
+    package_id: str  # "monthly" or "yearly"
+    origin_url: str
+    email: Optional[str] = None
+    nom: Optional[str] = None
+    etablissement: Optional[str] = None
+
+class CatalogItem(BaseModel):
+    name: str
+    levels: Optional[List[str]] = None
+    chapters: Optional[List[str]] = None
 
 # French curriculum data
 CURRICULUM_DATA = {
@@ -484,146 +520,50 @@ CORRIGE_TEMPLATE = """
 """
 
 # Helper functions
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Get current user from token"""
-    if not credentials:
-        return None
-    
+async def check_guest_quota(guest_id: str):
+    """Check if guest user can export (3 exports max)"""
     try:
-        # Simple token validation - in production use proper JWT
-        user = await db.users.find_one({"magic_token": credentials.credentials})
-        if user and user.get("token_expires"):
-            # Convert datetime strings if needed and ensure timezone awareness
-            if isinstance(user.get('created_at'), str):
-                user['created_at'] = datetime.fromisoformat(user['created_at']).replace(tzinfo=timezone.utc)
-            if isinstance(user.get('last_login'), str):
-                user['last_login'] = datetime.fromisoformat(user['last_login']).replace(tzinfo=timezone.utc)
-            if isinstance(user.get('token_expires'), str):
-                user['token_expires'] = datetime.fromisoformat(user['token_expires']).replace(tzinfo=timezone.utc)
-            elif isinstance(user.get('token_expires'), datetime) and user['token_expires'].tzinfo is None:
-                user['token_expires'] = user['token_expires'].replace(tzinfo=timezone.utc)
-            
-            # Check if token is still valid
-            if user["token_expires"] > datetime.now(timezone.utc):
-                logger.info(f"Valid token found for user: {user.get('email')}")
-                return User(**user)
-            else:
-                logger.info(f"Expired token for user: {user.get('email')}")
-    except Exception as e:
-        logger.error(f"Error getting current user: {e}")
-    return None
-
-async def check_export_quota(user_id: str = None, guest_id: str = None):
-    """Check if user can export (quota management)"""
-    if user_id:
-        user = await db.users.find_one({"id": user_id})
-        if user:
-            if user.get("account_type") == "pro":
-                return True, "unlimited"
-            elif user.get("exports_used", 0) < user.get("max_exports", 50):
-                return True, f"remaining: {user.get('max_exports', 50) - user.get('exports_used', 0)}"
-            else:
-                return False, "quota_exceeded"
-    else:
-        # Guest mode - check exports in last 30 days
         thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         export_count = await db.exports.count_documents({
             "guest_id": guest_id,
             "created_at": {"$gte": thirty_days_ago}
         })
-        if export_count < 3:
-            return True, f"guest_remaining: {3 - export_count}"
-        else:
-            return False, "guest_quota_exceeded"
-    
-    return False, "no_access"
-
-async def send_magic_link(email: str, token: str):
-    """Send magic link email via Brevo"""
-    magic_link = f"https://lessonsmith.preview.emergentagent.com/auth/verify?token={token}"
-    
-    try:
-        # Configure Brevo
-        import sib_api_v3_sdk
-        from sib_api_v3_sdk.rest import ApiException
         
-        configuration = sib_api_v3_sdk.Configuration()
-        configuration.api_key['api-key'] = os.environ.get('BREVO_API_KEY')
+        remaining = max(0, 3 - export_count)
         
-        api_instance = sib_api_v3_sdk.TransactionalEmailsApi(sib_api_v3_sdk.ApiClient(configuration))
-        
-        # Email content
-        subject = "Connexion à Le Maître Mot - Votre lien magique"
-        html_content = f"""
-        <html>
-        <body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-            <div style="text-align: center; margin-bottom: 30px;">
-                <h1 style="color: #3b82f6;">🎓 Le Maître Mot</h1>
-                <h2 style="color: #374151;">Connexion à votre compte</h2>
-            </div>
-            
-            <p>Bonjour,</p>
-            
-            <p>Vous avez demandé à vous connecter à Le Maître Mot. Cliquez sur le bouton ci-dessous pour accéder à votre compte :</p>
-            
-            <div style="text-align: center; margin: 30px 0;">
-                <a href="{magic_link}" 
-                   style="background-color: #3b82f6; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
-                   Se connecter à Le Maître Mot
-                </a>
-            </div>
-            
-            <p><small>Ce lien est valable pendant 1 heure.</small></p>
-            
-            <p>Si vous n'avez pas demandé cette connexion, vous pouvez ignorer cet email.</p>
-            
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
-            <p style="font-size: 12px; color: #6b7280; text-align: center;">
-                Le Maître Mot - Générateur de documents pédagogiques pour enseignants
-            </p>
-        </body>
-        </html>
-        """
-        
-        # Send email
-        send_smtp_email = sib_api_v3_sdk.SendSmtpEmail(
-            to=[{"email": email}],
-            sender={"name": os.environ.get('BREVO_SENDER_NAME'), "email": os.environ.get('BREVO_SENDER_EMAIL')},
-            subject=subject,
-            html_content=html_content
-        )
-        
-        api_response = api_instance.send_transac_email(send_smtp_email)
-        logger.info(f"Email sent successfully to {email}: {api_response}")
-        
-        # Store in database for tracking
-        magic_link_record = {
-            "email": email,
-            "token": token,
-            "magic_link": magic_link,
-            "created_at": datetime.now(timezone.utc),
-            "used": False,
-            "email_sent": True
+        return {
+            "exports_used": export_count,
+            "exports_remaining": remaining,
+            "max_exports": 3,
+            "quota_exceeded": remaining == 0
         }
-        await db.magic_links.insert_one(magic_link_record)
-        
-        return True
         
     except Exception as e:
-        logger.error(f"Error sending email to {email}: {e}")
-        # Fallback: store the link for manual retrieval
-        magic_link_record = {
-            "email": email,
-            "token": token,
-            "magic_link": magic_link,
-            "created_at": datetime.now(timezone.utc),
-            "used": False,
-            "email_sent": False,
-            "error": str(e)
+        logger.error(f"Error checking guest quota: {e}")
+        return {
+            "exports_used": 0,
+            "exports_remaining": 3,
+            "max_exports": 3,
+            "quota_exceeded": False
         }
-        await db.magic_links.insert_one(magic_link_record)
+
+async def check_user_pro_status(email: str):
+    """Check if user has active Pro subscription"""
+    try:
+        user = await db.pro_users.find_one({"email": email})
+        if user and user.get("subscription_expires"):
+            expires = user["subscription_expires"]
+            if isinstance(expires, str):
+                expires = datetime.fromisoformat(expires)
+            
+            if expires > datetime.now(timezone.utc):
+                return True, user
         
-        return False
+        return False, None
+        
+    except Exception as e:
+        logger.error(f"Error checking pro status: {e}")
+        return False, None
 
 async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, type_doc: str, difficulte: str, nb_exercices: int) -> List[Exercise]:
     """Generate exercises using AI"""
@@ -831,6 +771,11 @@ async def get_catalog():
         })
     return {"catalog": catalog}
 
+@api_router.get("/pricing")
+async def get_pricing():
+    """Get pricing packages"""
+    return {"packages": PRICING_PACKAGES}
+
 @api_router.post("/generate")
 async def generate_document(request: GenerateRequest):
     """Generate a document with exercises"""
@@ -881,31 +826,24 @@ async def generate_document(request: GenerateRequest):
         logger.error(f"Error generating document: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de la génération du document")
 
+@api_router.get("/quota/check")
+async def check_quota_status(guest_id: str):
+    """Check current quota status for guest user"""
+    return await check_guest_quota(guest_id)
+
 @api_router.post("/export")
-async def export_pdf(request: ExportRequest, current_user: User = Depends(get_current_user)):
+async def export_pdf(request: ExportRequest):
     """Export document as PDF"""
     try:
-        logger.info(f"Export request - User authenticated: {current_user is not None}, Guest ID: {request.guest_id}")
+        # Check if guest quota is exceeded
+        quota_status = await check_guest_quota(request.guest_id)
         
-        # Authenticated users have unlimited exports
-        if current_user:
-            logger.info(f"Authenticated user export: {current_user.email}")
-            can_export = True
-            quota_info = "authenticated_user"
-        else:
-            logger.info(f"Guest user export: {request.guest_id}")
-            # Check quota for guest users
-            can_export, quota_info = await check_export_quota(guest_id=request.guest_id)
-        
-        if not can_export:
-            if quota_info == "guest_quota_exceeded":
-                raise HTTPException(status_code=402, detail={
-                    "error": "quota_exceeded", 
-                    "message": "Limite de 3 exports gratuits atteinte. Créez un compte pour continuer.",
-                    "action": "signup_required"
-                })
-            else:
-                raise HTTPException(status_code=402, detail="Quota d'exports dépassé")
+        if quota_status["quota_exceeded"]:
+            raise HTTPException(status_code=402, detail={
+                "error": "quota_exceeded", 
+                "message": "Limite de 3 exports gratuits atteinte. Passez à l'abonnement Pro pour continuer.",
+                "action": "upgrade_required"
+            })
         
         # Find the document
         doc = await db.documents.find_one({"id": request.document_id})
@@ -930,16 +868,15 @@ async def export_pdf(request: ExportRequest, current_user: User = Depends(get_cu
         # Generate PDF
         pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
         
-        # Track export (only for guest users to maintain quota)
-        if not current_user:
-            export_record = {
-                "id": str(uuid.uuid4()),
-                "document_id": request.document_id,
-                "export_type": request.export_type,
-                "guest_id": request.guest_id,
-                "created_at": datetime.now(timezone.utc)
-            }
-            await db.exports.insert_one(export_record)
+        # Track export for guest quota
+        export_record = {
+            "id": str(uuid.uuid4()),
+            "document_id": request.document_id,
+            "export_type": request.export_type,
+            "guest_id": request.guest_id,
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.exports.insert_one(export_record)
         
         # Create temporary file
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
@@ -961,175 +898,227 @@ async def export_pdf(request: ExportRequest, current_user: User = Depends(get_cu
         logger.error(f"Error exporting PDF: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de l'export PDF")
 
-@api_router.get("/quota/check")
-async def check_quota_status(guest_id: str):
-    """Check current quota status for guest user"""
+@api_router.post("/checkout/session")
+async def create_checkout_session(request: CheckoutRequest, http_request: Request):
+    """Create Stripe checkout session"""
     try:
-        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
-        export_count = await db.exports.count_documents({
-            "guest_id": guest_id,
-            "created_at": {"$gte": thirty_days_ago}
-        })
+        # Validate package
+        if request.package_id not in PRICING_PACKAGES:
+            raise HTTPException(status_code=400, detail="Package invalide")
         
-        remaining = max(0, 3 - export_count)
+        package = PRICING_PACKAGES[request.package_id]
+        logger.info(f"Creating checkout session for package: {package}")
         
-        return {
-            "exports_used": export_count,
-            "exports_remaining": remaining,
-            "max_exports": 3,
-            "quota_exceeded": remaining == 0
+        # Initialize Stripe
+        host_url = str(http_request.base_url).rstrip('/')
+        webhook_url = f"{host_url}/api/webhook/stripe"
+        stripe_checkout = StripeCheckout(api_key=stripe_secret_key, webhook_url=webhook_url)
+        
+        # Build URLs from frontend origin
+        success_url = f"{request.origin_url}/success?session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url = f"{request.origin_url}/cancel"
+        
+        # Prepare metadata
+        metadata = {
+            "package_id": request.package_id,
+            "email": request.email or "",
+            "nom": request.nom or "",
+            "etablissement": request.etablissement or "",
+            "source": "lemaitremot_web"
         }
         
+        # Create checkout session request
+        checkout_request = CheckoutSessionRequest(
+            amount=package["amount"],
+            currency=package["currency"],
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata=metadata
+        )
+        
+        # Create session
+        session = await stripe_checkout.create_checkout_session(checkout_request)
+        
+        # Store transaction
+        transaction = PaymentTransaction(
+            session_id=session.session_id,
+            amount=package["amount"],
+            currency=package["currency"],
+            package_id=request.package_id,
+            email=request.email,
+            metadata=metadata,
+            payment_status="pending",
+            session_status="initiated"
+        )
+        
+        # Save to database
+        await db.payment_transactions.insert_one(transaction.dict())
+        
+        logger.info(f"Checkout session created: {session.session_id}")
+        
+        return {
+            "url": session.url,
+            "session_id": session.session_id
+        }
+        
+    except HTTPException:
+        raise
     except Exception as e:
-        logger.error(f"Error checking quota: {e}")
-        return {
-            "exports_used": 0,
-            "exports_remaining": 3,
-            "max_exports": 3,
-            "quota_exceeded": False
-        }
+        logger.error(f"Error creating checkout session: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la création de la session")
 
-@api_router.post("/quota/reset")
-async def reset_quota_for_testing(guest_id: str):
-    """Reset quota for testing purposes (development only)"""
+@api_router.get("/checkout/status/{session_id}")
+async def get_checkout_status(session_id: str):
+    """Get checkout session status"""
     try:
-        # Delete all exports for this guest
-        result = await db.exports.delete_many({"guest_id": guest_id})
+        # Initialize Stripe
+        stripe_checkout = StripeCheckout(api_key=stripe_secret_key, webhook_url="")
         
-        return {
-            "message": f"Quota réinitialisé pour {guest_id}",
-            "deleted_exports": result.deleted_count,
-            "new_quota": {
-                "exports_used": 0,
-                "exports_remaining": 3,
-                "max_exports": 3,
-                "quota_exceeded": False
-            }
-        }
+        # Get status from Stripe
+        status = await stripe_checkout.get_checkout_status(session_id)
         
-    except Exception as e:
-        logger.error(f"Error resetting quota: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la réinitialisation")
-
-@api_router.post("/auth/signup")
-async def signup_request(request: AuthRequest):
-    """Request signup with magic link"""
-    try:
-        # Check if user already exists
-        existing_user = await db.users.find_one({"email": request.email})
-        if existing_user:
-            # User exists, send login link
-            magic_token = str(uuid.uuid4())
-            token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
-            
-            await db.users.update_one(
-                {"email": request.email},
-                {"$set": {
-                    "magic_token": magic_token,
-                    "token_expires": token_expires
-                }}
+        # Find transaction in database
+        transaction = await db.payment_transactions.find_one({"session_id": session_id})
+        
+        if not transaction:
+            raise HTTPException(status_code=404, detail="Transaction non trouvée")
+        
+        # Update transaction status if payment completed
+        if status.payment_status == "paid" and transaction.get("payment_status") != "paid":
+            # Update transaction
+            await db.payment_transactions.update_one(
+                {"session_id": session_id},
+                {
+                    "$set": {
+                        "payment_status": "paid",
+                        "session_status": "complete",
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
             )
+            
+            # Create or update Pro user
+            if transaction.get("email"):
+                await create_pro_user_from_transaction(transaction, status)
+        
+        return {
+            "session_id": session_id,
+            "status": status.status,
+            "payment_status": status.payment_status,
+            "amount_total": status.amount_total,
+            "currency": status.currency
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting checkout status: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la vérification du statut")
+
+async def create_pro_user_from_transaction(transaction: dict, status):
+    """Create Pro user from successful transaction"""
+    try:
+        package = PRICING_PACKAGES[transaction["package_id"]]
+        
+        # Calculate expiration date
+        if package["duration"] == "monthly":
+            expires = datetime.now(timezone.utc) + timedelta(days=30)
+        else:  # yearly
+            expires = datetime.now(timezone.utc) + timedelta(days=365)
+        
+        # Create Pro user
+        pro_user = ProUser(
+            email=transaction["email"],
+            nom=transaction.get("metadata", {}).get("nom"),
+            etablissement=transaction.get("metadata", {}).get("etablissement"),
+            subscription_type=package["duration"],
+            subscription_expires=expires
+        )
+        
+        # Save to database (upsert)
+        await db.pro_users.update_one(
+            {"email": transaction["email"]},
+            {"$set": pro_user.dict()},
+            upsert=True
+        )
+        
+        logger.info(f"Pro user created/updated: {transaction['email']}")
+        
+    except Exception as e:
+        logger.error(f"Error creating pro user: {e}")
+
+@api_router.post("/webhook/stripe")
+async def stripe_webhook(request: Request):
+    """Handle Stripe webhooks"""
+    try:
+        body = await request.body()
+        stripe_signature = request.headers.get("Stripe-Signature")
+        
+        if not stripe_signature:
+            raise HTTPException(status_code=400, detail="Missing Stripe signature")
+        
+        # Initialize Stripe
+        stripe_checkout = StripeCheckout(api_key=stripe_secret_key, webhook_url="")
+        
+        # Handle webhook
+        webhook_response = await stripe_checkout.handle_webhook(body, stripe_signature)
+        
+        logger.info(f"Webhook received: {webhook_response.event_type} for session {webhook_response.session_id}")
+        
+        # Process the webhook based on event type
+        if webhook_response.event_type == "checkout.session.completed":
+            # Find and update transaction
+            await db.payment_transactions.update_one(
+                {"session_id": webhook_response.session_id},
+                {
+                    "$set": {
+                        "payment_status": webhook_response.payment_status,
+                        "session_status": "complete",
+                        "updated_at": datetime.now(timezone.utc)
+                    }
+                }
+            )
+            
+            # Get transaction details for user creation
+            transaction = await db.payment_transactions.find_one({"session_id": webhook_response.session_id})
+            if transaction and transaction.get("email"):
+                # Create Pro user
+                await create_pro_user_from_transaction(transaction, webhook_response)
+        
+        return {"status": "success"}
+        
+    except Exception as e:
+        logger.error(f"Webhook error: {e}")
+        raise HTTPException(status_code=400, detail="Webhook processing error")
+
+@api_router.get("/user/status/{email}")
+async def get_user_status(email: str):
+    """Get user Pro status"""
+    try:
+        is_pro, user = await check_user_pro_status(email)
+        
+        if is_pro:
+            return {
+                "is_pro": True,
+                "subscription_type": user.get("subscription_type"),
+                "subscription_expires": user.get("subscription_expires"),
+                "account_type": "pro"
+            }
         else:
-            # Create new user
-            magic_token = str(uuid.uuid4())
-            token_expires = datetime.now(timezone.utc) + timedelta(hours=1)
-            
-            user = User(
-                email=request.email,
-                nom=request.nom,
-                etablissement=request.etablissement,
-                magic_token=magic_token,
-                token_expires=token_expires
-            )
-            
-            await db.users.insert_one(user.dict())
-        
-        # Send magic link (in production, send real email)
-        await send_magic_link(request.email, magic_token)
-        
-        return {
-            "message": "Un lien de connexion a été envoyé à votre adresse email",
-            "email": request.email
-        }
-        
-    except Exception as e:
-        logger.error(f"Error in signup: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de l'inscription")
-
-@api_router.get("/auth/magic-links/{email}")
-async def get_magic_link_for_testing(email: str):
-    """Get magic link for testing purposes (development only)"""
-    try:
-        # Find the most recent magic link for this email
-        magic_link = await db.magic_links.find_one(
-            {"email": email, "used": False},
-            sort=[("created_at", -1)]
-        )
-        
-        if not magic_link:
-            raise HTTPException(status_code=404, detail="Aucun lien magique trouvé pour cette adresse")
-        
-        return {
-            "email": email,
-            "magic_link": magic_link["magic_link"],
-            "token": magic_link["token"],
-            "created_at": magic_link["created_at"]
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting magic link: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la récupération du lien")
-
-@api_router.get("/auth/verify")
-async def verify_magic_link(token: str):
-    """Verify magic link and return auth token"""
-    try:
-        user = await db.users.find_one({
-            "magic_token": token,
-            "token_expires": {"$gt": datetime.now(timezone.utc)}
-        })
-        
-        if not user:
-            raise HTTPException(status_code=400, detail="Lien invalide ou expiré")
-        
-        # Mark magic link as used
-        await db.magic_links.update_one(
-            {"token": token},
-            {"$set": {"used": True}}
-        )
-        
-        # Update last login
-        await db.users.update_one(
-            {"id": user["id"]},
-            {"$set": {"last_login": datetime.now(timezone.utc)}}
-        )
-        
-        return {
-            "token": token,
-            "user": {
-                "id": user["id"],
-                "email": user["email"],
-                "nom": user.get("nom"),
-                "account_type": user.get("account_type", "free")
+            return {
+                "is_pro": False,
+                "account_type": "guest"
             }
-        }
-        
-    except HTTPException:
-        raise
+            
     except Exception as e:
-        logger.error(f"Error verifying token: {e}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la vérification")
+        logger.error(f"Error getting user status: {e}")
+        return {"is_pro": False, "account_type": "guest"}
 
 @api_router.get("/documents")
-async def get_documents(guest_id: str = None, current_user: User = Depends(get_current_user)):
+async def get_documents(guest_id: str = None):
     """Get user documents"""
     try:
-        if current_user:
-            # Get documents for registered user
-            documents = await db.documents.find({"user_id": current_user.id}).sort("created_at", -1).limit(50).to_list(length=50)
-        elif guest_id:
+        if guest_id:
             # Get documents for guest user
             documents = await db.documents.find({"guest_id": guest_id}).sort("created_at", -1).limit(20).to_list(length=20)
         else:
