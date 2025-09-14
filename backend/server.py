@@ -493,9 +493,16 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         # Simple token validation - in production use proper JWT
         user = await db.users.find_one({"magic_token": credentials.credentials})
         if user and user.get("token_expires") and user["token_expires"] > datetime.now(timezone.utc):
+            # Convert datetime strings if needed
+            if isinstance(user.get('created_at'), str):
+                user['created_at'] = datetime.fromisoformat(user['created_at'])
+            if isinstance(user.get('last_login'), str):
+                user['last_login'] = datetime.fromisoformat(user['last_login'])
+            if isinstance(user.get('token_expires'), str):
+                user['token_expires'] = datetime.fromisoformat(user['token_expires'])
             return User(**user)
-    except:
-        pass
+    except Exception as e:
+        logger.error(f"Error getting current user: {e}")
     return None
 
 async def check_export_quota(user_id: str = None, guest_id: str = None):
