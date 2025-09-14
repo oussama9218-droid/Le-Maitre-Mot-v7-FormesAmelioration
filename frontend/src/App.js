@@ -1001,9 +1001,14 @@ function MainApp() {
                     </ul>
                     <Button 
                       onClick={() => handleUpgradeClick('yearly')}
-                      className="w-full bg-green-600 hover:bg-green-700"
+                      disabled={!paymentEmail || paymentLoading}
+                      className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50"
                     >
-                      <Crown className="mr-2 h-4 w-4" />
+                      {paymentLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Crown className="mr-2 h-4 w-4" />
+                      )}
                       Choisir Annuel
                     </Button>
                   </CardContent>
