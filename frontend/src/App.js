@@ -594,7 +594,7 @@ function MainApp() {
     }
   };
 
-  const validateSession = async (token) => {
+  const validateSession = async (token, silent = false) => {
     try {
       const response = await axios.get(`${API}/auth/session/validate`, {
         headers: {
@@ -606,10 +606,14 @@ function MainApp() {
       setIsPro(true);
       setProStatusChecked(true);
       
-      console.log('✅ Session valid - user is Pro:', response.data.email);
+      if (!silent) {
+        console.log('✅ Session valid - user is Pro:', response.data.email);
+      }
       
     } catch (error) {
-      console.error('Session validation failed:', error);
+      if (!silent) {
+        console.error('Session validation failed:', error);
+      }
       
       // Clear invalid session
       localStorage.removeItem('lemaitremot_session_token');
@@ -619,9 +623,13 @@ function MainApp() {
       setIsPro(false);
       setProStatusChecked(true);
       
-      // If it was session expired (401), show a message
+      // If it was session expired/invalid during active use (not silent check)
       if (error.response?.status === 401) {
-        console.log('Session expired - user needs to login again');
+        if (!silent) {
+          console.log('Session expired - user needs to login again');
+          alert('Votre session a expiré. Vous avez peut-être été déconnecté depuis un autre appareil.');
+          setShowLoginModal(true);
+        }
       }
     }
   };
