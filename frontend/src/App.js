@@ -17,7 +17,91 @@ import { BookOpen, FileText, Download, Shuffle, Loader2, GraduationCap, AlertCir
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-function App() {
+// Auth verification component
+function AuthVerify() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [verifying, setVerifying] = useState(true);
+  const [error, setError] = useState(null);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (!token) {
+      setError("Token manquant dans l'URL");
+      setVerifying(false);
+      return;
+    }
+
+    const verifyToken = async () => {
+      try {
+        const response = await axios.get(`${API}/auth/verify?token=${token}`);
+        setUser(response.data.user);
+        
+        // Store auth token for future requests
+        localStorage.setItem('lessonsmith_auth_token', response.data.token);
+        
+        // Redirect after 3 seconds
+        setTimeout(() => {
+          navigate('/');
+        }, 3000);
+        
+      } catch (error) {
+        console.error("Erreur de vérification:", error);
+        if (error.response?.status === 400) {
+          setError("Lien invalide ou expiré");
+        } else {
+          setError("Erreur lors de la vérification");
+        }
+      } finally {
+        setVerifying(false);
+      }
+    };
+
+    verifyToken();
+  }, [searchParams, navigate]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-center">
+          <GraduationCap className="mx-auto h-12 w-12 text-blue-600 mb-4" />
+          <CardTitle>LessonSmith - Vérification</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center">
+          {verifying ? (
+            <div>
+              <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600 mb-4" />
+              <p>Vérification en cours...</p>
+            </div>
+          ) : error ? (
+            <div>
+              <AlertCircle className="mx-auto h-8 w-8 text-red-600 mb-4" />
+              <p className="text-red-600 mb-4">{error}</p>
+              <Button onClick={() => navigate('/')} variant="outline">
+                Retour à l'accueil
+              </Button>
+            </div>
+          ) : user ? (
+            <div>
+              <CheckCircle className="mx-auto h-8 w-8 text-green-600 mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Connexion réussie !</h3>
+              <p className="text-gray-600 mb-2">Bienvenue {user.nom || user.email}</p>
+              <p className="text-sm text-gray-500 mb-4">
+                Compte : {user.account_type === 'pro' ? 'Professionnel' : 'Gratuit'}
+              </p>
+              <p className="text-sm text-gray-500">
+                Redirection automatique vers l'accueil...
+              </p>
+            </div>
+          ) : null}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function MainApp() {
   const [catalog, setCatalog] = useState([]);
   const [selectedMatiere, setSelectedMatiere] = useState("");
   const [selectedNiveau, setSelectedNiveau] = useState("");
