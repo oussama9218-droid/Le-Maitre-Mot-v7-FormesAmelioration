@@ -248,13 +248,26 @@ function MainApp() {
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API}/export`, {
+      // Prepare request data and headers
+      const requestData = {
         document_id: currentDocument.id,
-        export_type: exportType,
-        guest_id: guestId
-      }, {
+        export_type: exportType
+      };
+      
+      const requestConfig = {
         responseType: 'blob'
-      });
+      };
+
+      // Add authentication or guest identification
+      if (isAuthenticated && authToken) {
+        requestConfig.headers = {
+          'Authorization': `Bearer ${authToken}`
+        };
+      } else {
+        requestData.guest_id = guestId;
+      }
+
+      const response = await axios.post(`${API}/export`, requestData, requestConfig);
 
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
