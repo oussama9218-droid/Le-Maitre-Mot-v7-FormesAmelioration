@@ -231,14 +231,17 @@ Réponds UNIQUEMENT avec le JSON demandé, sans texte supplémentaire.
         # Convert to Exercise objects
         exercises = []
         for ex_data in data.get("exercises", []):
+            # Clean the enonce to remove any unwanted formatting
+            enonce = ex_data.get("enonce", "").strip()
+            
             exercise = Exercise(
                 type=ex_data.get("type", "ouvert"),
-                enonce=ex_data.get("enonce", ""),
-                donnees=ex_data.get("donnees"),
+                enonce=enonce,
+                donnees=None,  # Don't show technical data to users
                 difficulte=ex_data.get("difficulte", difficulte),
                 solution=ex_data.get("solution", {"etapes": [], "resultat": ""}),
                 bareme=ex_data.get("bareme", []),
-                seed=hash(ex_data.get("enonce", "")) % 1000000
+                seed=hash(enonce) % 1000000
             )
             exercises.append(exercise)
         
