@@ -492,15 +492,26 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     try:
         # Simple token validation - in production use proper JWT
         user = await db.users.find_one({"magic_token": credentials.credentials})
-        if user and user.get("token_expires") and user["token_expires"] > datetime.now(timezone.utc):
-            # Convert datetime strings if needed
+        if user and user.get("token_expires"):
+            # Convert datetime strings if needed and ensure timezone awareness
             if isinstance(user.get('created_at'), str):
-                user['created_at'] = datetime.fromisoformat(user['created_at'])
+                user['created_at'] = datetime.fromisoformat(user['created_at']).replace(tzinfo=timezone.utc)
             if isinstance(user.get('last_login'), str):
-                user['last_login'] = datetime.fromisoformat(user['last_login'])
+                user['last_login'] = datetime.fromisoformat(user['last_login']).replace(tzinfo=timezone.utc)
             if isinstance(user.get('token_expires'), str):
-                user['token_expires'] = datetime.fromisoformat(user['token_expires'])
-            return User(**user)
+                user['token_expires'] = datetime.fromisoformat(user['token_expires']).replace(tzinfo=timezone.utc)
+            elif isinstance(user.get('token_expires'), datetime) and user['token_expires'].tzinfo is None:
+                user['token_expires'] = user['token_expires'].replace(tzinfo=timezone.utc)
+            
+            # Check if token is still valid
+            if user["token_expires"] > datetime.now(timezone.utc):
+                logger.info(f"Valid token found for user: {user.get('email')}")
+                return User(**user)
+            else:
+                logger.info(f"Expired token for user: {user.get('email')}")
+    except Exception as e:
+        logger.error(f"Error getting current user: {e}")
+    return None
     except Exception as e:
         logger.error(f"Error getting current user: {e}")
     return None
