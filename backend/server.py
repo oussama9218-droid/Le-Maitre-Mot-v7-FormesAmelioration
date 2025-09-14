@@ -696,13 +696,13 @@ async def send_magic_link_email(email: str, token: str):
         return False
 
 async def create_login_session(email: str, device_id: str):
-    """Create a new login session and invalidate old ones"""
+    """Create a new login session and invalidate old ones (atomic operation)"""
     try:
         # Generate secure session token
         session_token = str(uuid.uuid4()) + "-" + str(uuid.uuid4())
         expires_at = datetime.now(timezone.utc) + timedelta(hours=24)
         
-        # Create new session
+        # Create new session data
         session = LoginSession(
             user_email=email,
             session_token=session_token,
@@ -710,16 +710,25 @@ async def create_login_session(email: str, device_id: str):
             expires_at=expires_at
         )
         
-        # Remove all existing sessions for this user (one device at a time policy)
-        await db.login_sessions.delete_many({"user_email": email})
-        
-        # Save new session
         session_dict = session.dict()
         session_dict['expires_at'] = session_dict['expires_at'].isoformat()
         session_dict['created_at'] = session_dict['created_at'].isoformat()
         session_dict['last_used'] = session_dict['last_used'].isoformat()
         
-        await db.login_sessions.insert_one(session_dict)
+        # ATOMIC OPERATION: Remove all existing sessions and insert new one
+        # Use MongoDB transaction for atomic delete+insert to prevent race conditions
+        async with await client.start_session() as session_db:
+            async with session_db.start_transaction():
+                # Delete all existing sessions for this user
+                delete_result = await db.login_sessions.delete_many(
+                    {"user_email": email}, 
+                    session=session_db
+                )
+                logger.info(f"Deleted {delete_result.deleted_count} existing sessions for {email}")
+                
+                # Insert the new session
+                await db.login_sessions.insert_one(session_dict, session=session_db)
+                logger.info(f"Created new session for {email} on device {device_id}")
         
         # Update user's last_login
         await db.pro_users.update_one(
@@ -727,7 +736,7 @@ async def create_login_session(email: str, device_id: str):
             {"$set": {"last_login": datetime.now(timezone.utc)}}
         )
         
-        logger.info(f"Login session created for {email} on device {device_id}")
+        logger.info(f"Login session created successfully for {email} - all previous sessions invalidated")
         return session_token
         
     except Exception as e:
