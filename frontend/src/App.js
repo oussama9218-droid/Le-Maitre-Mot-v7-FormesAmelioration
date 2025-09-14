@@ -437,8 +437,13 @@ function MainApp() {
         responseType: 'blob'
       };
       
-      // Add email for Pro users
-      if (isPro && userEmail) {
+      // Add authentication headers (prioritize session token)
+      if (sessionToken) {
+        requestConfig.headers = {
+          'X-Session-Token': sessionToken
+        };
+      } else if (isPro && userEmail) {
+        // Fallback to email header for backwards compatibility
         requestConfig.headers = {
           'X-User-Email': userEmail
         };
@@ -461,6 +466,19 @@ function MainApp() {
       
     } catch (error) {
       console.error("Erreur lors de l'export:", error);
+      
+      // Handle session expiry
+      if (error.response?.status === 401 && sessionToken) {
+        console.log('Session expired during export');
+        // Clear session and show login modal
+        localStorage.removeItem('lemaitremot_session_token');
+        localStorage.removeItem('lemaitremot_login_method');
+        setSessionToken("");
+        setIsPro(false);
+        alert('Votre session a expiré. Veuillez vous reconnecter.');
+        setShowLoginModal(true);
+        return;
+      }
       
       if (error.response?.status === 402) {
         const errorData = error.response.data;
