@@ -1399,6 +1399,7 @@ function App() {
       <Routes>
         <Route path="/success" element={<PaymentSuccess />} />
         <Route path="/cancel" element={<PaymentCancel />} />
+        <Route path="/login/verify" element={<LoginVerify />} />
         <Route path="/*" element={<MainApp />} />
       </Routes>
     </BrowserRouter>
