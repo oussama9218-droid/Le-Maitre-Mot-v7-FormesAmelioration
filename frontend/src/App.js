@@ -645,8 +645,25 @@ function App() {
                 <h3 className="text-lg font-semibold text-gray-900 mb-2">
                   Lien envoyé !
                 </h3>
-                <p className="text-gray-600">
-                  Vérifiez votre boîte email et cliquez sur le lien de connexion.
+                <p className="text-gray-600 mb-4">
+                  En mode développement, le lien magique n'est pas envoyé par email.
+                </p>
+                <Button 
+                  onClick={async () => {
+                    try {
+                      const response = await axios.get(`${API}/auth/magic-links/${signupData.email}`);
+                      const magicLink = response.data.magic_link;
+                      window.open(magicLink, '_blank');
+                    } catch (error) {
+                      alert('Erreur lors de la récupération du lien magique');
+                    }
+                  }}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  Récupérer le lien magique
+                </Button>
+                <p className="text-xs text-gray-500 mt-2">
+                  Cliquez ci-dessus pour obtenir votre lien de connexion
                 </p>
               </div>
             ) : (
