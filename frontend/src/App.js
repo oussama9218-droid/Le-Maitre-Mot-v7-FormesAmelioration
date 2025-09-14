@@ -471,7 +471,7 @@ function App() {
                     
                     <Button 
                       onClick={() => exportPDF('corrige')}
-                      disabled={!currentDocument || exportingSolution || (quotaLoaded && quotaStatus.quota_exceeded)}
+                      disabled={!currentDocument || exportingSolution}
                       className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white disabled:opacity-50"
                     >
                       {exportingSolution ? (
