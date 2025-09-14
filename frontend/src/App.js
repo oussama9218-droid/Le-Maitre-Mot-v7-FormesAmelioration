@@ -66,7 +66,7 @@ function AuthVerify() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <GraduationCap className="mx-auto h-12 w-12 text-blue-600 mb-4" />
-          <CardTitle>LessonSmith - Vérification</CardTitle>
+          <CardTitle>Le Maître Mot - Vérification</CardTitle>
         </CardHeader>
         <CardContent className="text-center">
           {verifying ? (
