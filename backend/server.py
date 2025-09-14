@@ -512,9 +512,6 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
     except Exception as e:
         logger.error(f"Error getting current user: {e}")
     return None
-    except Exception as e:
-        logger.error(f"Error getting current user: {e}")
-    return None
 
 async def check_export_quota(user_id: str = None, guest_id: str = None):
     """Check if user can export (quota management)"""
