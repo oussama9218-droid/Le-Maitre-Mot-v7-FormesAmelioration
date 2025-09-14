@@ -941,6 +941,32 @@ async def signup_request(request: AuthRequest):
         logger.error(f"Error in signup: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de l'inscription")
 
+@api_router.get("/auth/magic-links/{email}")
+async def get_magic_link_for_testing(email: str):
+    """Get magic link for testing purposes (development only)"""
+    try:
+        # Find the most recent magic link for this email
+        magic_link = await db.magic_links.find_one(
+            {"email": email, "used": False},
+            sort=[("created_at", -1)]
+        )
+        
+        if not magic_link:
+            raise HTTPException(status_code=404, detail="Aucun lien magique trouvé pour cette adresse")
+        
+        return {
+            "email": email,
+            "magic_link": magic_link["magic_link"],
+            "token": magic_link["token"],
+            "created_at": magic_link["created_at"]
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting magic link: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération du lien")
+
 @api_router.get("/auth/verify")
 async def verify_magic_link(token: str):
     """Verify magic link and return auth token"""
@@ -952,6 +978,12 @@ async def verify_magic_link(token: str):
         
         if not user:
             raise HTTPException(status_code=400, detail="Lien invalide ou expiré")
+        
+        # Mark magic link as used
+        await db.magic_links.update_one(
+            {"token": token},
+            {"$set": {"used": True}}
+        )
         
         # Update last login
         await db.users.update_one(
