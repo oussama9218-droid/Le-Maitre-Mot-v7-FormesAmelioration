@@ -433,7 +433,15 @@ function MainApp() {
           {/* Quota Status */}
           <div className="mt-4">
             {quotaLoaded ? (
-              quotaStatus.quota_exceeded ? (
+              isPro ? (
+                <Alert className="max-w-md mx-auto border-blue-200 bg-blue-50">
+                  <Crown className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    <strong>Le Maître Mot Pro :</strong> Exports illimités
+                    {userEmail && <span className="block text-xs mt-1">({userEmail})</span>}
+                  </AlertDescription>
+                </Alert>
+              ) : quotaStatus.quota_exceeded ? (
                 <Alert className="max-w-md mx-auto border-orange-200 bg-orange-50">
                   <AlertCircle className="h-4 w-4 text-orange-600" />
                   <AlertDescription className="text-orange-800">
