@@ -949,9 +949,14 @@ function MainApp() {
                     </ul>
                     <Button 
                       onClick={() => handleUpgradeClick('monthly')}
-                      className="w-full bg-blue-600 hover:bg-blue-700"
+                      disabled={!paymentEmail || paymentLoading}
+                      className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
                     >
-                      <CreditCard className="mr-2 h-4 w-4" />
+                      {paymentLoading ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <CreditCard className="mr-2 h-4 w-4" />
+                      )}
                       Choisir Mensuel
                     </Button>
                   </CardContent>
