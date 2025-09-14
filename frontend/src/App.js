@@ -95,13 +95,19 @@ function App() {
         difficulte: difficulte,
         nb_exercices: nbExercices,
         guest_id: guestId
+      }, {
+        timeout: 30000  // 30 seconds timeout instead of default
       });
       
       setCurrentDocument(response.data.document);
       await fetchDocuments();
     } catch (error) {
       console.error("Erreur lors de la génération:", error);
-      alert("Erreur lors de la génération du document");
+      if (error.code === 'ECONNABORTED') {
+        alert("La génération prend trop de temps. Veuillez réessayer avec moins d'exercices.");
+      } else {
+        alert("Erreur lors de la génération du document");
+      }
     } finally {
       setIsGenerating(false);
     }
