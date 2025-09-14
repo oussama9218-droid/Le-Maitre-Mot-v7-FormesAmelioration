@@ -124,7 +124,91 @@ class LessonSmithAPITester:
 
     def test_get_documents(self):
         """Test getting user documents"""
-        return self.run_test("Get Documents", "GET", "documents", 200)
+        return self.run_test("Get Documents", "GET", f"documents?guest_id={self.guest_id}", 200)
+
+    def test_quota_check(self):
+        """Test quota checking for guest users"""
+        success, response = self.run_test("Quota Check", "GET", f"quota/check?guest_id={self.guest_id}", 200)
+        
+        if success and isinstance(response, dict):
+            exports_remaining = response.get('exports_remaining', 0)
+            max_exports = response.get('max_exports', 0)
+            quota_exceeded = response.get('quota_exceeded', False)
+            print(f"   Quota status: {exports_remaining}/{max_exports} remaining, exceeded: {quota_exceeded}")
+        
+        return success, response
+
+    def test_export_pdf_sujet(self):
+        """Test PDF export for sujet"""
+        if not self.generated_document_id:
+            print("⚠️  Skipping PDF export test - no document generated")
+            return False, {}
+        
+        export_data = {
+            "document_id": self.generated_document_id,
+            "export_type": "sujet",
+            "guest_id": self.guest_id
+        }
+        
+        print(f"   Exporting sujet PDF for document: {self.generated_document_id}")
+        success, response = self.run_test(
+            "Export Sujet PDF",
+            "POST",
+            "export",
+            200,
+            data=export_data,
+            timeout=30
+        )
+        
+        return success, response
+
+    def test_export_pdf_corrige(self):
+        """Test PDF export for corrigé"""
+        if not self.generated_document_id:
+            print("⚠️  Skipping PDF export test - no document generated")
+            return False, {}
+        
+        export_data = {
+            "document_id": self.generated_document_id,
+            "export_type": "corrige",
+            "guest_id": self.guest_id
+        }
+        
+        print(f"   Exporting corrigé PDF for document: {self.generated_document_id}")
+        success, response = self.run_test(
+            "Export Corrigé PDF",
+            "POST",
+            "export",
+            200,
+            data=export_data,
+            timeout=30
+        )
+        
+        return success, response
+
+    def test_signup_request(self):
+        """Test signup request functionality"""
+        signup_data = {
+            "email": f"test_{self.guest_id}@example.com",
+            "nom": "Test User",
+            "etablissement": "Test School"
+        }
+        
+        success, response = self.run_test(
+            "Signup Request",
+            "POST",
+            "auth/signup",
+            200,
+            data=signup_data
+        )
+        
+        if success and isinstance(response, dict):
+            message = response.get('message', '')
+            email = response.get('email', '')
+            print(f"   Signup response: {message}")
+            print(f"   Email: {email}")
+        
+        return success, response
 
     def test_vary_exercise(self):
         """Test exercise variation functionality"""
