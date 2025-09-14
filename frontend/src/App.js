@@ -136,8 +136,18 @@ function MainApp() {
   const [exportingSubject, setExportingSubject] = useState(false);
   const [exportingSolution, setExportingSolution] = useState(false);
 
-  // Initialize guest ID
+  // Initialize authentication and guest ID
   useEffect(() => {
+    // Check for stored auth token
+    const storedToken = localStorage.getItem('lessonsmith_auth_token');
+    if (storedToken) {
+      setAuthToken(storedToken);
+      setIsAuthenticated(true);
+      // In a real app, you'd verify the token with the server
+      // For now, we'll assume it's valid
+    }
+    
+    // Initialize guest ID for non-authenticated users
     let storedGuestId = localStorage.getItem('lessonsmith_guest_id');
     if (!storedGuestId) {
       storedGuestId = 'guest_' + Math.random().toString(36).substr(2, 9);
