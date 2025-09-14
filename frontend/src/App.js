@@ -235,21 +235,30 @@ function App() {
           
           {/* Quota Status */}
           <div className="mt-4">
-            {quotaStatus.quota_exceeded ? (
-              <Alert className="max-w-md mx-auto border-orange-200 bg-orange-50">
-                <AlertCircle className="h-4 w-4 text-orange-600" />
-                <AlertDescription className="text-orange-800">
-                  <strong>Limite atteinte :</strong> 3 exports gratuits utilisés. 
-                  <Button variant="link" className="p-0 h-auto text-orange-600 underline ml-1" onClick={() => setShowSignupModal(true)}>
-                    Créer un compte
-                  </Button> pour continuer.
-                </AlertDescription>
-              </Alert>
+            {quotaLoaded ? (
+              quotaStatus.quota_exceeded ? (
+                <Alert className="max-w-md mx-auto border-orange-200 bg-orange-50">
+                  <AlertCircle className="h-4 w-4 text-orange-600" />
+                  <AlertDescription className="text-orange-800">
+                    <strong>Limite atteinte :</strong> 3 exports gratuits utilisés. 
+                    <Button variant="link" className="p-0 h-auto text-orange-600 underline ml-1" onClick={() => setShowSignupModal(true)}>
+                      Créer un compte
+                    </Button> pour continuer.
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="max-w-md mx-auto border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertDescription className="text-green-800">
+                    <strong>Mode invité :</strong> {quotaStatus.exports_remaining} exports gratuits restants
+                  </AlertDescription>
+                </Alert>
+              )
             ) : (
-              <Alert className="max-w-md mx-auto border-green-200 bg-green-50">
-                <CheckCircle className="h-4 w-4 text-green-600" />
-                <AlertDescription className="text-green-800">
-                  <strong>Mode invité :</strong> {quotaStatus.exports_remaining} exports gratuits restants
+              <Alert className="max-w-md mx-auto border-gray-200 bg-gray-50">
+                <Loader2 className="h-4 w-4 text-gray-600 animate-spin" />
+                <AlertDescription className="text-gray-700">
+                  Chargement des quotas...
                 </AlertDescription>
               </Alert>
             )}
