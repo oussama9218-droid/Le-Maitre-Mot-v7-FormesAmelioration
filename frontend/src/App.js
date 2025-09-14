@@ -697,34 +697,68 @@ function MainApp() {
           <div className="mt-4">
             {quotaLoaded ? (
               isPro ? (
-                <Alert className="max-w-md mx-auto border-blue-200 bg-blue-50">
-                  <Crown className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    <strong>Le Maître Mot Pro :</strong> Exports illimités
-                    {userEmail && <span className="block text-xs mt-1">({userEmail})</span>}
-                  </AlertDescription>
-                </Alert>
+                <div className="flex flex-col items-center space-y-3">
+                  <Alert className="max-w-md mx-auto border-blue-200 bg-blue-50">
+                    <Crown className="h-4 w-4 text-blue-600" />
+                    <AlertDescription className="text-blue-800">
+                      <strong>Le Maître Mot Pro :</strong> Exports illimités
+                      {userEmail && <span className="block text-xs mt-1">({userEmail})</span>}
+                    </AlertDescription>
+                  </Alert>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={logout}
+                    className="text-xs flex items-center"
+                  >
+                    <LogOut className="h-3 w-3 mr-1" />
+                    Se déconnecter
+                  </Button>
+                </div>
               ) : quotaStatus.quota_exceeded ? (
-                <Alert className="max-w-md mx-auto border-orange-200 bg-orange-50">
-                  <AlertCircle className="h-4 w-4 text-orange-600" />
-                  <AlertDescription className="text-orange-800">
-                    <strong>Limite atteinte :</strong> 3 exports gratuits utilisés. 
-                    <Button 
-                      variant="link" 
-                      className="p-0 h-auto text-orange-600 underline ml-1" 
-                      onClick={() => setShowPaymentModal(true)}
-                    >
-                      Passer à Pro
-                    </Button> pour continuer.
-                  </AlertDescription>
-                </Alert>
+                <div className="flex flex-col items-center space-y-3">
+                  <Alert className="max-w-md mx-auto border-orange-200 bg-orange-50">
+                    <AlertCircle className="h-4 w-4 text-orange-600" />
+                    <AlertDescription className="text-orange-800">
+                      <strong>Limite atteinte :</strong> 3 exports gratuits utilisés.
+                      <div className="flex gap-2 mt-2">
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-orange-600 underline" 
+                          onClick={() => setShowPaymentModal(true)}
+                        >
+                          Passer à Pro
+                        </Button>
+                        <span className="text-orange-600">ou</span>
+                        <Button 
+                          variant="link" 
+                          className="p-0 h-auto text-orange-600 underline" 
+                          onClick={() => setShowLoginModal(true)}
+                        >
+                          Se connecter
+                        </Button>
+                      </div>
+                    </AlertDescription>
+                  </Alert>
+                </div>
               ) : (
-                <Alert className="max-w-md mx-auto border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertDescription className="text-green-800">
-                    <strong>Mode gratuit :</strong> {quotaStatus.exports_remaining} exports restants
-                  </AlertDescription>
-                </Alert>
+                <div className="flex flex-col items-center space-y-3">
+                  <Alert className="max-w-md mx-auto border-green-200 bg-green-50">
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      <strong>Mode gratuit :</strong> {quotaStatus.exports_remaining} exports restants
+                    </AlertDescription>
+                  </Alert>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowLoginModal(true)}
+                    className="text-xs flex items-center"
+                  >
+                    <LogIn className="h-3 w-3 mr-1" />
+                    Déjà Pro ? Se connecter
+                  </Button>
+                </div>
               )
             ) : (
               <Alert className="max-w-md mx-auto border-gray-200 bg-gray-50">
