@@ -3,7 +3,7 @@ import sys
 import json
 from datetime import datetime
 
-class LessonSmithAPITester:
+class LeMaitreMotAPITester:
     def __init__(self, base_url="https://lessonsmith.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
@@ -11,6 +11,7 @@ class LessonSmithAPITester:
         self.tests_passed = 0
         self.generated_document_id = None
         self.guest_id = f"test_guest_{datetime.now().strftime('%H%M%S')}"
+        self.initial_quota = None
 
     def run_test(self, name, method, endpoint, expected_status, data=None, timeout=30):
         """Run a single API test"""
