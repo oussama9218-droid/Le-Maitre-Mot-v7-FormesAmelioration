@@ -896,6 +896,28 @@ async def check_quota_status(guest_id: str):
             "quota_exceeded": False
         }
 
+@api_router.post("/quota/reset")
+async def reset_quota_for_testing(guest_id: str):
+    """Reset quota for testing purposes (development only)"""
+    try:
+        # Delete all exports for this guest
+        result = await db.exports.delete_many({"guest_id": guest_id})
+        
+        return {
+            "message": f"Quota réinitialisé pour {guest_id}",
+            "deleted_exports": result.deleted_count,
+            "new_quota": {
+                "exports_used": 0,
+                "exports_remaining": 3,
+                "max_exports": 3,
+                "quota_exceeded": False
+            }
+        }
+        
+    except Exception as e:
+        logger.error(f"Error resetting quota: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la réinitialisation")
+
 @api_router.post("/auth/signup")
 async def signup_request(request: AuthRequest):
     """Request signup with magic link"""
