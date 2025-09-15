@@ -610,11 +610,13 @@ function MainApp() {
         console.error('Session validation failed:', error);
       }
       
-      // Clear invalid session
+      // Clear ALL invalid session data (complete cleanup)
       localStorage.removeItem('lemaitremot_session_token');
+      localStorage.removeItem('lemaitremot_user_email');
       localStorage.removeItem('lemaitremot_login_method');
       
       setSessionToken("");
+      setUserEmail("");  // Added: Clear email state
       setIsPro(false);
       setProStatusChecked(true);
       
@@ -624,6 +626,8 @@ function MainApp() {
           console.log('Session expired - user needs to login again');
           alert('Votre session a expiré. Vous avez peut-être été déconnecté depuis un autre appareil.');
           setShowLoginModal(true);
+        } else {
+          console.log('Session invalidated silently (probably from another device)');
         }
       }
     }
