@@ -489,22 +489,6 @@ function MainApp() {
       
     } catch (error) {
       console.error("Erreur lors de l'export:", error);
-
-      // Create download link
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `LeMaitremot_${currentDocument.type_doc}_${currentDocument.matiere}_${currentDocument.niveau}_${exportType}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-
-      // Refresh quota
-      await fetchQuotaStatus();
-      
-    } catch (error) {
-      console.error("Erreur lors de l'export:", error);
       
       // Handle session expiry/invalidity (someone else logged in)
       if (error.response?.status === 401 || error.response?.status === 402) {
