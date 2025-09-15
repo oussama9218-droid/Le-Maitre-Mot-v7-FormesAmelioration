@@ -2383,11 +2383,11 @@ async def save_user_template(
         if existing_template:
             # Update existing
             update_data = {
-                "professor_name": template_data.professor_name,
-                "school_name": template_data.school_name,
-                "school_year": template_data.school_year,
-                "footer_text": template_data.footer_text,
-                "template_style": template_data.template_style,
+                "professor_name": professor_name,
+                "school_name": school_name,
+                "school_year": school_year,
+                "footer_text": footer_text,
+                "template_style": template_style,
                 "updated_at": datetime.now(timezone.utc)
             }
             
