@@ -1512,32 +1512,62 @@ async def create_pro_user_from_transaction(transaction: dict, status):
     try:
         package = PRICING_PACKAGES[transaction["package_id"]]
         
-        # Calculate expiration date
+        # Calculate precise expiration date based on subscription type
+        now = datetime.now(timezone.utc)
         if package["duration"] == "monthly":
-            expires = datetime.now(timezone.utc) + timedelta(days=30)
+            # Add exactly 1 month (30 days)
+            expires = now + timedelta(days=30)
+            logger.info(f"Monthly subscription: expires in 30 days ({expires.strftime('%d/%m/%Y %H:%M')})")
         else:  # yearly
-            expires = datetime.now(timezone.utc) + timedelta(days=365)
+            # Add exactly 1 year (365 days)
+            expires = now + timedelta(days=365)
+            logger.info(f"Yearly subscription: expires in 365 days ({expires.strftime('%d/%m/%Y %H:%M')})")
         
-        # Create Pro user
+        # Check if user already exists (upgrade/renewal scenario)
+        existing_user = await db.pro_users.find_one({"email": transaction["email"]})
+        
+        if existing_user:
+            # User exists - extend subscription from current expiration or now, whichever is later
+            current_expires = existing_user.get("subscription_expires")
+            if current_expires:
+                if isinstance(current_expires, str):
+                    current_expires = datetime.fromisoformat(current_expires).replace(tzinfo=timezone.utc)
+                elif isinstance(current_expires, datetime) and current_expires.tzinfo is None:
+                    current_expires = current_expires.replace(tzinfo=timezone.utc)
+                
+                # If current subscription is still active, extend from expiration date
+                if current_expires > now:
+                    if package["duration"] == "monthly":
+                        expires = current_expires + timedelta(days=30)
+                    else:  # yearly
+                        expires = current_expires + timedelta(days=365)
+                    logger.info(f"Extending existing subscription from {current_expires.strftime('%d/%m/%Y')} to {expires.strftime('%d/%m/%Y')}")
+        
+        # Create/Update Pro user
         pro_user = ProUser(
             email=transaction["email"],
-            nom=transaction.get("metadata", {}).get("nom"),
-            etablissement=transaction.get("metadata", {}).get("etablissement"),
+            nom=transaction.get("metadata", {}).get("nom") or existing_user.get("nom") if existing_user else None,
+            etablissement=transaction.get("metadata", {}).get("etablissement") or existing_user.get("etablissement") if existing_user else None,
             subscription_type=package["duration"],
-            subscription_expires=expires
+            subscription_expires=expires,
+            last_login=existing_user.get("last_login") if existing_user else None
         )
         
         # Save to database (upsert)
-        await db.pro_users.update_one(
+        result = await db.pro_users.update_one(
             {"email": transaction["email"]},
             {"$set": pro_user.dict()},
             upsert=True
         )
         
-        logger.info(f"Pro user created/updated: {transaction['email']}")
+        action = "updated" if result.matched_count > 0 else "created"
+        logger.info(f"Pro user {action}: {transaction['email']} - {package['duration']} subscription expires {expires.strftime('%d/%m/%Y %H:%M')}")
+        
+        return expires
         
     except Exception as e:
         logger.error(f"Error creating pro user: {e}")
+        return None
 
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
