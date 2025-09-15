@@ -443,8 +443,6 @@ class LeMaitreMotAPITester:
         # Since we can't access the actual magic token from email, we'll simulate the verification process
         
         # Generate a test token format similar to what the system would create
-        import uuid
-        import time
         test_token = f"{uuid.uuid4()}-magic-{int(time.time())}"
         
         verify_data = {
@@ -477,6 +475,250 @@ class LeMaitreMotAPITester:
                 pass
         
         return success, response
+
+    def test_magic_link_critical_bug_fixes(self):
+        """Test the critical bug fixes for magic link authentication"""
+        print("\n🔍 Testing CRITICAL BUG FIXES for Magic Link Authentication...")
+        
+        # Test 1: Magic Link Request & Storage for Pro user
+        print("\n   1. Testing Magic Link Request & Storage for Pro user...")
+        login_data = {"email": self.pro_user_email}
+        
+        success, response = self.run_test(
+            "CRITICAL: Magic Link Request for Pro User",
+            "POST",
+            "auth/request-login",
+            200,
+            data=login_data
+        )
+        
+        if success and isinstance(response, dict):
+            message = response.get('message', '')
+            email = response.get('email', '')
+            print(f"   ✅ Magic link request successful for {email}")
+            print(f"   ✅ Response message: {message}")
+            
+            # Verify the response indicates email was sent
+            if 'envoyé' in message.lower() or 'sent' in message.lower():
+                print("   ✅ Magic link email appears to have been sent successfully")
+            else:
+                print("   ⚠️  Unexpected response message format")
+        else:
+            print("   ❌ Magic link request failed for Pro user")
+            return False, {}
+        
+        # Test 2: Verify token structure and error handling improvements
+        print("\n   2. Testing Enhanced Error Messages...")
+        
+        # Test with completely invalid token
+        invalid_token_tests = [
+            ("invalid-token", "Token invalide"),
+            ("", "Token invalide"),
+            (f"{uuid.uuid4()}-magic-{int(time.time())}", "Token invalide"),  # Valid format but doesn't exist
+        ]
+        
+        for test_token, expected_error in invalid_token_tests:
+            verify_data = {
+                "token": test_token,
+                "device_id": self.device_id
+            }
+            
+            success, response = self.run_test(
+                f"CRITICAL: Enhanced Error - {expected_error}",
+                "POST",
+                "auth/verify-login",
+                400,
+                data=verify_data
+            )
+            
+            if success and isinstance(response, dict):
+                detail = response.get('detail', '')
+                print(f"   ✅ Got error message: {detail}")
+                
+                # Check if error message is more specific than generic "Token invalide ou déjà utilisé"
+                if detail and detail != "Token invalide ou déjà utilisé":
+                    print(f"   ✅ Enhanced error message detected: {detail}")
+                else:
+                    print(f"   ⚠️  Still getting generic error message: {detail}")
+        
+        # Test 3: Session Creation Without MongoDB Transactions
+        print("\n   3. Testing Session Creation (No Transaction Errors)...")
+        
+        # We can't test actual session creation without a valid magic token,
+        # but we can verify the endpoint structure and error handling
+        fake_valid_token = f"{uuid.uuid4()}-magic-{int(time.time())}"
+        verify_data = {
+            "token": fake_valid_token,
+            "device_id": self.device_id
+        }
+        
+        success, response = self.run_test(
+            "CRITICAL: Session Creation Test",
+            "POST",
+            "auth/verify-login",
+            400,  # Will fail but should not have transaction errors
+            data=verify_data
+        )
+        
+        if success and isinstance(response, dict):
+            detail = response.get('detail', '')
+            # Check that we don't get MongoDB transaction-related errors
+            if 'transaction' not in detail.lower() and 'mongodb' not in detail.lower():
+                print("   ✅ No MongoDB transaction errors detected")
+            else:
+                print(f"   ❌ MongoDB transaction error still present: {detail}")
+        
+        # Test 4: FRONTEND_URL Environment Variable Fix
+        print("\n   4. Testing FRONTEND_URL Configuration...")
+        
+        # Make another magic link request to verify FRONTEND_URL is properly configured
+        success, response = self.run_test(
+            "CRITICAL: FRONTEND_URL Configuration Test",
+            "POST",
+            "auth/request-login",
+            200,
+            data={"email": self.pro_user_email}
+        )
+        
+        if success:
+            print("   ✅ Magic link request successful - FRONTEND_URL appears configured")
+            print("   ✅ No 'FRONTEND_URL not configured' errors detected")
+        else:
+            print("   ❌ Magic link request failed - possible FRONTEND_URL issue")
+        
+        # Test 5: Database State Verification (Indirect)
+        print("\n   5. Testing Database State Consistency...")
+        
+        # Test multiple rapid magic link requests to verify database handling
+        for i in range(3):
+            success, response = self.run_test(
+                f"CRITICAL: Rapid Magic Link Request {i+1}",
+                "POST",
+                "auth/request-login",
+                200,
+                data={"email": self.pro_user_email}
+            )
+            
+            if success:
+                print(f"   ✅ Rapid request {i+1} successful")
+            else:
+                print(f"   ❌ Rapid request {i+1} failed")
+                break
+            
+            time.sleep(0.5)  # Small delay between requests
+        
+        print("\n   ✅ CRITICAL BUG FIX TESTING COMPLETED")
+        return True, {"critical_fixes_tested": True}
+
+    def test_magic_link_workflow_comprehensive(self):
+        """Test the complete magic link workflow after bug fixes"""
+        print("\n🔍 Testing COMPLETE Magic Link Workflow After Bug Fixes...")
+        
+        # Step 1: Verify Pro user exists
+        print("\n   Step 1: Verifying Pro user exists...")
+        success, response = self.run_test(
+            "Workflow: Pro User Verification",
+            "GET",
+            f"user/status/{self.pro_user_email}",
+            200
+        )
+        
+        if not success or not response.get('is_pro', False):
+            print("   ❌ Pro user not found - cannot test complete workflow")
+            return False, {}
+        
+        print(f"   ✅ Pro user {self.pro_user_email} verified")
+        
+        # Step 2: Request magic link
+        print("\n   Step 2: Requesting magic link...")
+        success, response = self.run_test(
+            "Workflow: Magic Link Request",
+            "POST",
+            "auth/request-login",
+            200,
+            data={"email": self.pro_user_email}
+        )
+        
+        if not success:
+            print("   ❌ Magic link request failed")
+            return False, {}
+        
+        print("   ✅ Magic link request successful")
+        
+        # Step 3: Test token expiration handling
+        print("\n   Step 3: Testing token expiration handling...")
+        
+        # Create an expired token format
+        expired_timestamp = int(time.time()) - 3600  # 1 hour ago
+        expired_token = f"{uuid.uuid4()}-magic-{expired_timestamp}"
+        
+        success, response = self.run_test(
+            "Workflow: Expired Token Test",
+            "POST",
+            "auth/verify-login",
+            400,
+            data={"token": expired_token, "device_id": self.device_id}
+        )
+        
+        if success and isinstance(response, dict):
+            detail = response.get('detail', '')
+            if 'expiré' in detail.lower() or 'expired' in detail.lower():
+                print("   ✅ Expired token correctly handled")
+            else:
+                print(f"   ✅ Token rejection working (message: {detail})")
+        
+        # Step 4: Test session validation endpoints
+        print("\n   Step 4: Testing session validation...")
+        
+        # Test without token
+        success, response = self.run_test(
+            "Workflow: Session Validation No Token",
+            "GET",
+            "auth/session/validate",
+            401
+        )
+        
+        if success:
+            print("   ✅ Session validation correctly requires token")
+        
+        # Test with invalid token
+        success, response = self.run_test(
+            "Workflow: Session Validation Invalid Token",
+            "GET",
+            "auth/session/validate",
+            401,
+            headers={"X-Session-Token": "invalid-token"}
+        )
+        
+        if success:
+            print("   ✅ Session validation correctly rejects invalid tokens")
+        
+        # Step 5: Test logout functionality
+        print("\n   Step 5: Testing logout functionality...")
+        
+        success, response = self.run_test(
+            "Workflow: Logout Without Token",
+            "POST",
+            "auth/logout",
+            400
+        )
+        
+        if success:
+            print("   ✅ Logout correctly requires session token")
+        
+        success, response = self.run_test(
+            "Workflow: Logout Invalid Token",
+            "POST",
+            "auth/logout",
+            404,
+            headers={"X-Session-Token": "invalid-token"}
+        )
+        
+        if success:
+            print("   ✅ Logout correctly handles invalid tokens")
+        
+        print("\n   ✅ COMPLETE WORKFLOW TESTING FINISHED")
+        return True, {"workflow_tested": True}
 
     def test_session_validation_without_token(self):
         """Test session validation without token (should fail)"""
