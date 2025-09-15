@@ -99,7 +99,7 @@ const TemplateSettings = ({ isPro, sessionToken, onTemplateChange }) => {
         formData.append('logo', logoFile);
       }
 
-      const response = await axios.post(`${API}/template/save`, formData, {
+      const response = await axios.post(`${API}/api/template/save`, formData, {
         headers: { 
           'X-Session-Token': sessionToken,
           'Content-Type': 'multipart/form-data'
