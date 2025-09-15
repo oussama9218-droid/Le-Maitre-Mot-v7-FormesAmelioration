@@ -1085,6 +1085,8 @@ async def request_login(request: LoginRequest):
 async def verify_login(request: VerifyLoginRequest):
     """Verify magic link token and create session"""
     try:
+        logger.info(f"Attempting to verify login with token: {request.token[:20]}...")
+        
         # Find magic token
         magic_token_doc = await db.magic_tokens.find_one({
             "token": request.token,
@@ -1092,10 +1094,24 @@ async def verify_login(request: VerifyLoginRequest):
         })
         
         if not magic_token_doc:
-            raise HTTPException(
-                status_code=400,
-                detail="Token invalide ou déjà utilisé"
-            )
+            logger.warning(f"Magic token not found or already used: {request.token[:20]}...")
+            
+            # Check if token exists but is used
+            used_token = await db.magic_tokens.find_one({"token": request.token})
+            if used_token:
+                logger.info("Token exists but is already used")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Token déjà utilisé"
+                )
+            else:
+                logger.info("Token does not exist in database")
+                raise HTTPException(
+                    status_code=400,
+                    detail="Token invalide"
+                )
+        
+        logger.info(f"Magic token found for email: {magic_token_doc.get('email')}")
         
         # Check token expiration
         expires_at = magic_token_doc.get('expires_at')
@@ -1107,6 +1123,7 @@ async def verify_login(request: VerifyLoginRequest):
         now = datetime.now(timezone.utc)
         
         if expires_at < now:
+            logger.warning(f"Token expired: expires_at={expires_at}, now={now}")
             # Token expired
             await db.magic_tokens.delete_one({"token": request.token})
             raise HTTPException(
@@ -1115,29 +1132,37 @@ async def verify_login(request: VerifyLoginRequest):
             )
         
         email = magic_token_doc.get('email')
+        logger.info(f"Token is valid for email: {email}")
         
         # Verify user is still Pro
         is_pro, user = await check_user_pro_status(email)
         if not is_pro:
+            logger.warning(f"User {email} is no longer Pro")
             raise HTTPException(
                 status_code=403,
                 detail="Abonnement Pro expiré"
             )
+        
+        logger.info(f"User {email} confirmed as Pro")
         
         # Mark token as used
         await db.magic_tokens.update_one(
             {"token": request.token},
             {"$set": {"used": True, "used_at": datetime.now(timezone.utc)}}
         )
+        logger.info(f"Magic token marked as used for {email}")
         
         # Create login session
         session_token = await create_login_session(email, request.device_id)
         
         if not session_token:
+            logger.error("Failed to create login session")
             raise HTTPException(
                 status_code=500,
                 detail="Erreur lors de la création de la session"
             )
+        
+        logger.info(f"Login session created successfully for {email}")
         
         return {
             "message": "Connexion réussie",
