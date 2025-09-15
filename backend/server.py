@@ -1213,6 +1213,48 @@ async def logout(request: Request):
             detail="Erreur lors de la déconnexion"
         )
 
+@api_router.get("/subscription/status/{email}")
+async def get_subscription_status(email: str):
+    """Get detailed subscription status for an email"""
+    try:
+        is_pro, user = await check_user_pro_status(email)
+        
+        if not is_pro or not user:
+            return {
+                "is_pro": False,
+                "message": "Aucun abonnement actif trouvé pour cette adresse email"
+            }
+        
+        subscription_expires = user.get("subscription_expires")
+        subscription_type = user.get("subscription_type", "inconnu")
+        
+        # Format dates
+        if isinstance(subscription_expires, str):
+            expires_date = datetime.fromisoformat(subscription_expires).replace(tzinfo=timezone.utc)
+        elif isinstance(subscription_expires, datetime):
+            expires_date = subscription_expires.replace(tzinfo=timezone.utc) if subscription_expires.tzinfo is None else subscription_expires
+        else:
+            expires_date = datetime.now(timezone.utc)
+        
+        now = datetime.now(timezone.utc)
+        days_remaining = (expires_date - now).days
+        
+        return {
+            "is_pro": True,
+            "email": email,
+            "subscription_type": subscription_type,
+            "subscription_expires": expires_date.isoformat(),
+            "expires_date_formatted": expires_date.strftime("%d/%m/%Y"),
+            "days_remaining": max(0, days_remaining),
+            "is_active": expires_date > now,
+            "last_login": user.get("last_login"),
+            "created_at": user.get("created_at")
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting subscription status for {email}: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la vérification du statut d'abonnement")
+
 @api_router.get("/quota/check")
 async def check_quota_status(guest_id: str):
     """Check current quota status for guest user"""
