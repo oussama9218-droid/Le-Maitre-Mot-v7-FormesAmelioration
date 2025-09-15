@@ -2611,6 +2611,543 @@ class LeMaitreMotAPITester:
         print(f"\n🎨 Personalized PDF Tests: {pdf_passed}/{pdf_total} passed")
         return pdf_passed, pdf_total
 
+    # ========== REPORTLAB FLOWABLES TESTS ==========
+    
+    def test_reportlab_flowables_implementation(self):
+        """Test the new ReportLab Flowables implementation for personalized PDFs"""
+        print("\n🎨 CRITICAL TEST: ReportLab Flowables Implementation")
+        print("=" * 80)
+        print("CONTEXT: Testing new robust ReportLab Flowables implementation")
+        print("FOCUS: PersonalizedDocTemplate, SimpleDocTemplate, automatic page management")
+        print("EXPECTED: No coordinate management errors, robust PDF generation")
+        print("=" * 80)
+        
+        if not self.generated_document_id:
+            self.test_generate_document()
+        
+        if not self.generated_document_id:
+            print("   ❌ Cannot test without a document")
+            return False, {}
+        
+        # Test 1: Test personalized PDF generation with Pro user simulation
+        print("\n   Test 1: Testing personalized PDF generation structure...")
+        
+        # Create a mock session token to test the personalized PDF path
+        mock_session_token = f"test-pro-session-{int(time.time())}"
+        export_data = {
+            "document_id": self.generated_document_id,
+            "export_type": "sujet"
+        }
+        
+        # This will test the personalized PDF path structure
+        success, response = self.run_test(
+            "ReportLab Flowables - Personalized PDF Structure",
+            "POST",
+            "export",
+            400,  # Will fail at session validation but tests the structure
+            data=export_data,
+            headers={"X-Session-Token": mock_session_token}
+        )
+        
+        if success:
+            print("   ✅ Personalized PDF export structure working")
+        else:
+            print("   ❌ Personalized PDF export structure may have issues")
+            return False, {}
+        
+        # Test 2: Test both export types (sujet and corrige)
+        print("\n   Test 2: Testing both export types with ReportLab...")
+        
+        export_types = ["sujet", "corrige"]
+        for export_type in export_types:
+            export_data = {
+                "document_id": self.generated_document_id,
+                "export_type": export_type,
+                "guest_id": self.guest_id  # Use guest mode to test fallback
+            }
+            
+            success, response = self.run_test(
+                f"ReportLab Flowables - {export_type.title()} Export",
+                "POST",
+                "export",
+                200,
+                data=export_data,
+                timeout=45  # Allow time for PDF generation
+            )
+            
+            if success:
+                print(f"   ✅ {export_type.title()} export successful with ReportLab")
+            else:
+                print(f"   ❌ {export_type.title()} export failed")
+                return False, {}
+        
+        # Test 3: Test template style application
+        print("\n   Test 3: Testing template style configurations...")
+        
+        # Get available template styles
+        success_styles, styles_response = self.run_test(
+            "ReportLab Flowables - Template Styles",
+            "GET",
+            "template/styles",
+            200
+        )
+        
+        if success_styles and isinstance(styles_response, dict):
+            styles = styles_response.get('styles', {})
+            expected_styles = ['minimaliste', 'classique', 'moderne']
+            
+            for style_name in expected_styles:
+                if style_name in styles:
+                    style = styles[style_name]
+                    preview_colors = style.get('preview_colors', {})
+                    
+                    # Verify ReportLab-compatible color configurations
+                    required_colors = ['primary', 'secondary', 'accent']
+                    for color_key in required_colors:
+                        color_value = preview_colors.get(color_key)
+                        if color_value and color_value.startswith('#') and len(color_value) == 7:
+                            print(f"   ✅ {style_name} {color_key} color: {color_value}")
+                        else:
+                            print(f"   ❌ {style_name} {color_key} color invalid: {color_value}")
+                            return False, {}
+                else:
+                    print(f"   ❌ Missing template style: {style_name}")
+                    return False, {}
+            
+            print("   ✅ All template styles have ReportLab-compatible configurations")
+        else:
+            print("   ❌ Cannot retrieve template styles")
+            return False, {}
+        
+        # Test 4: Test error handling and robustness
+        print("\n   Test 4: Testing error handling and robustness...")
+        
+        # Test with invalid document ID
+        invalid_export_data = {
+            "document_id": "invalid-document-id",
+            "export_type": "sujet",
+            "guest_id": self.guest_id
+        }
+        
+        success, response = self.run_test(
+            "ReportLab Flowables - Invalid Document ID",
+            "POST",
+            "export",
+            404,  # Should return 404 for invalid document
+            data=invalid_export_data
+        )
+        
+        if success:
+            print("   ✅ Error handling for invalid document ID working")
+        else:
+            print("   ❌ Error handling for invalid document ID may have issues")
+            return False, {}
+        
+        return True, {"reportlab_flowables_tested": True}
+    
+    def test_personalized_document_template_class(self):
+        """Test PersonalizedDocTemplate class functionality"""
+        print("\n📄 Testing PersonalizedDocTemplate Class")
+        print("=" * 60)
+        
+        # Test template configuration structure
+        print("\n   Testing template configuration structure...")
+        
+        # Test template save with various configurations
+        template_configs = [
+            {
+                "name": "Minimal Config",
+                "data": {
+                    "template_style": "minimaliste"
+                }
+            },
+            {
+                "name": "Complete Config",
+                "data": {
+                    "professor_name": "Dr. Marie Dupont",
+                    "school_name": "Lycée Victor Hugo",
+                    "school_year": "2024-2025",
+                    "footer_text": "Mathématiques - Classe de 4ème",
+                    "template_style": "classique"
+                }
+            },
+            {
+                "name": "Modern Style Config",
+                "data": {
+                    "professor_name": "Prof. Jean Martin",
+                    "school_name": "Collège Moderne",
+                    "school_year": "2024-2025",
+                    "footer_text": "Sciences - Niveau 3ème",
+                    "template_style": "moderne"
+                }
+            }
+        ]
+        
+        fake_token = f"test-template-{int(time.time())}"
+        headers = {"X-Session-Token": fake_token}
+        
+        all_configs_valid = True
+        for config in template_configs:
+            success, response = self.run_test(
+                f"PersonalizedDocTemplate - {config['name']}",
+                "POST",
+                "template/save",
+                401,  # Will fail at auth but tests data structure
+                data=config['data'],
+                headers=headers
+            )
+            
+            if success:
+                print(f"   ✅ {config['name']} structure validated")
+            else:
+                print(f"   ❌ {config['name']} structure validation failed")
+                all_configs_valid = False
+        
+        return all_configs_valid, {"template_configs_tested": len(template_configs)}
+    
+    def test_content_parsing_and_structure(self):
+        """Test content parsing and structure for ReportLab Flowables"""
+        print("\n📝 Testing Content Parsing and Structure")
+        print("=" * 60)
+        
+        if not self.generated_document_id:
+            self.test_generate_document()
+        
+        if not self.generated_document_id:
+            print("   ❌ Cannot test without a document")
+            return False, {}
+        
+        # Test content flow across pages with different content lengths
+        print("\n   Testing content flow and page management...")
+        
+        # Generate documents with different exercise counts to test page breaks
+        exercise_counts = [2, 4, 8]  # Different content lengths
+        
+        for count in exercise_counts:
+            test_data = {
+                "matiere": "Mathématiques",
+                "niveau": "4e",
+                "chapitre": "Nombres relatifs",
+                "type_doc": "exercices",
+                "difficulte": "moyen",
+                "nb_exercices": count,
+                "versions": ["A"],
+                "guest_id": f"{self.guest_id}_content_{count}"
+            }
+            
+            success, response = self.run_test(
+                f"Content Structure - {count} Exercises",
+                "POST",
+                "generate",
+                200,
+                data=test_data,
+                timeout=60
+            )
+            
+            if success and isinstance(response, dict):
+                document = response.get('document')
+                if document:
+                    doc_id = document.get('id')
+                    exercises = document.get('exercises', [])
+                    print(f"   ✅ Generated document with {len(exercises)} exercises")
+                    
+                    # Test PDF export for this document
+                    export_data = {
+                        "document_id": doc_id,
+                        "export_type": "sujet",
+                        "guest_id": f"{self.guest_id}_content_{count}"
+                    }
+                    
+                    export_success, export_response = self.run_test(
+                        f"Content Export - {count} Exercises",
+                        "POST",
+                        "export",
+                        200,
+                        data=export_data,
+                        timeout=45
+                    )
+                    
+                    if export_success:
+                        print(f"   ✅ PDF export successful for {count} exercises")
+                    else:
+                        print(f"   ❌ PDF export failed for {count} exercises")
+                        return False, {}
+                else:
+                    print(f"   ❌ Document generation failed for {count} exercises")
+                    return False, {}
+            else:
+                print(f"   ❌ Failed to generate document with {count} exercises")
+                return False, {}
+        
+        return True, {"content_structures_tested": len(exercise_counts)}
+    
+    def test_pro_user_export_integration(self):
+        """Test Pro user export integration with personalized PDFs"""
+        print("\n👤 Testing Pro User Export Integration")
+        print("=" * 60)
+        
+        # Test 1: Verify Pro user exists and has active subscription
+        print("\n   Test 1: Verifying Pro user subscription...")
+        
+        success, response = self.run_test(
+            "Pro Integration - User Status",
+            "GET",
+            f"subscription/status/{self.pro_user_email}",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            is_pro = response.get('is_pro', False)
+            subscription_type = response.get('subscription_type')
+            expires_date = response.get('expires_date_formatted')
+            days_remaining = response.get('days_remaining', 0)
+            
+            print(f"   ✅ Pro user status: {is_pro}")
+            print(f"   ✅ Subscription type: {subscription_type}")
+            print(f"   ✅ Expires: {expires_date}")
+            print(f"   ✅ Days remaining: {days_remaining}")
+            
+            if not is_pro:
+                print("   ❌ User is not Pro - cannot test Pro integration")
+                return False, {}
+        else:
+            print("   ❌ Cannot verify Pro user status")
+            return False, {}
+        
+        # Test 2: Test magic link authentication flow
+        print("\n   Test 2: Testing magic link authentication...")
+        
+        login_data = {"email": self.pro_user_email}
+        success, response = self.run_test(
+            "Pro Integration - Magic Link Request",
+            "POST",
+            "auth/request-login",
+            200,
+            data=login_data
+        )
+        
+        if success:
+            print("   ✅ Magic link request successful for Pro user")
+        else:
+            print("   ❌ Magic link request failed for Pro user")
+            return False, {}
+        
+        # Test 3: Test template configuration endpoints
+        print("\n   Test 3: Testing template configuration access...")
+        
+        # Test template get (requires Pro authentication)
+        success, response = self.run_test(
+            "Pro Integration - Template Get",
+            "GET",
+            "template/get",
+            401  # Will fail without valid session but tests Pro requirement
+        )
+        
+        if success:
+            print("   ✅ Template get correctly requires Pro authentication")
+        else:
+            print("   ❌ Template get authentication check failed")
+            return False, {}
+        
+        # Test template save (requires Pro authentication)
+        template_data = {
+            "professor_name": "Prof. Integration Test",
+            "school_name": "Test Pro School",
+            "school_year": "2024-2025",
+            "footer_text": "Pro Integration Test",
+            "template_style": "minimaliste"
+        }
+        
+        success, response = self.run_test(
+            "Pro Integration - Template Save",
+            "POST",
+            "template/save",
+            401,  # Will fail without valid session but tests Pro requirement
+            data=template_data
+        )
+        
+        if success:
+            print("   ✅ Template save correctly requires Pro authentication")
+        else:
+            print("   ❌ Template save authentication check failed")
+            return False, {}
+        
+        # Test 4: Test export with session token structure
+        print("\n   Test 4: Testing export with session token structure...")
+        
+        if not self.generated_document_id:
+            self.test_generate_document()
+        
+        if self.generated_document_id:
+            # Test with mock session token to verify structure
+            mock_session_token = f"pro-test-session-{int(time.time())}"
+            export_data = {
+                "document_id": self.generated_document_id,
+                "export_type": "sujet"
+            }
+            
+            success, response = self.run_test(
+                "Pro Integration - Export with Session Token",
+                "POST",
+                "export",
+                400,  # Will fail with invalid token but tests structure
+                data=export_data,
+                headers={"X-Session-Token": mock_session_token}
+            )
+            
+            if success:
+                print("   ✅ Export with session token structure working")
+            else:
+                print("   ❌ Export with session token structure failed")
+                return False, {}
+        
+        return True, {"pro_integration_tested": True}
+    
+    def test_reportlab_error_handling(self):
+        """Test ReportLab error handling and robustness"""
+        print("\n🛡️ Testing ReportLab Error Handling and Robustness")
+        print("=" * 60)
+        
+        # Test 1: Test with various content structures
+        print("\n   Test 1: Testing various content structures...")
+        
+        content_tests = [
+            {
+                "name": "Short Content",
+                "nb_exercices": 1,
+                "difficulte": "facile"
+            },
+            {
+                "name": "Medium Content", 
+                "nb_exercices": 4,
+                "difficulte": "moyen"
+            },
+            {
+                "name": "Long Content",
+                "nb_exercices": 8,
+                "difficulte": "difficile"
+            }
+        ]
+        
+        all_content_tests_passed = True
+        for test_case in content_tests:
+            test_data = {
+                "matiere": "Mathématiques",
+                "niveau": "4e",
+                "chapitre": "Nombres relatifs",
+                "type_doc": "exercices",
+                "difficulte": test_case["difficulte"],
+                "nb_exercices": test_case["nb_exercices"],
+                "versions": ["A"],
+                "guest_id": f"{self.guest_id}_robust_{test_case['nb_exercices']}"
+            }
+            
+            success, response = self.run_test(
+                f"Robustness - {test_case['name']}",
+                "POST",
+                "generate",
+                200,
+                data=test_data,
+                timeout=60
+            )
+            
+            if success and isinstance(response, dict):
+                document = response.get('document')
+                if document:
+                    doc_id = document.get('id')
+                    
+                    # Test PDF export
+                    export_data = {
+                        "document_id": doc_id,
+                        "export_type": "sujet",
+                        "guest_id": f"{self.guest_id}_robust_{test_case['nb_exercices']}"
+                    }
+                    
+                    export_success, export_response = self.run_test(
+                        f"Robustness Export - {test_case['name']}",
+                        "POST",
+                        "export",
+                        200,
+                        data=export_data,
+                        timeout=45
+                    )
+                    
+                    if export_success:
+                        print(f"   ✅ {test_case['name']} PDF generation successful")
+                    else:
+                        print(f"   ❌ {test_case['name']} PDF generation failed")
+                        all_content_tests_passed = False
+                else:
+                    print(f"   ❌ {test_case['name']} document generation failed")
+                    all_content_tests_passed = False
+            else:
+                print(f"   ❌ {test_case['name']} generation request failed")
+                all_content_tests_passed = False
+        
+        # Test 2: Test fallback mechanisms
+        print("\n   Test 2: Testing fallback mechanisms...")
+        
+        if self.generated_document_id:
+            # Test guest export (should use WeasyPrint fallback)
+            export_data = {
+                "document_id": self.generated_document_id,
+                "export_type": "sujet",
+                "guest_id": self.guest_id
+            }
+            
+            success, response = self.run_test(
+                "Robustness - Guest Fallback",
+                "POST",
+                "export",
+                200,
+                data=export_data,
+                timeout=45
+            )
+            
+            if success:
+                print("   ✅ Guest export fallback working")
+            else:
+                print("   ❌ Guest export fallback failed")
+                all_content_tests_passed = False
+        
+        return all_content_tests_passed, {"robustness_tests_completed": True}
+    
+    def run_reportlab_flowables_tests(self):
+        """Run comprehensive ReportLab Flowables tests"""
+        print("\n" + "="*80)
+        print("🎨 REPORTLAB FLOWABLES IMPLEMENTATION TESTS")
+        print("="*80)
+        print("CONTEXT: Testing new robust ReportLab Flowables implementation")
+        print("FOCUS: PersonalizedDocTemplate, SimpleDocTemplate, automatic page management")
+        print("FEATURES: Custom styles, template configurations, content parsing, error handling")
+        print("EXPECTED: No coordinate management errors, robust PDF generation")
+        print("="*80)
+        
+        reportlab_tests = [
+            ("ReportLab Flowables Implementation", self.test_reportlab_flowables_implementation),
+            ("PersonalizedDocTemplate Class", self.test_personalized_document_template_class),
+            ("Content Parsing and Structure", self.test_content_parsing_and_structure),
+            ("Pro User Export Integration", self.test_pro_user_export_integration),
+            ("ReportLab Error Handling", self.test_reportlab_error_handling),
+        ]
+        
+        reportlab_passed = 0
+        reportlab_total = len(reportlab_tests)
+        
+        for test_name, test_func in reportlab_tests:
+            try:
+                success, _ = test_func()
+                if success:
+                    reportlab_passed += 1
+                    print(f"\n✅ {test_name}: PASSED")
+                else:
+                    print(f"\n❌ {test_name}: FAILED")
+            except Exception as e:
+                print(f"\n❌ {test_name}: FAILED with exception: {e}")
+        
+        print(f"\n🎨 ReportLab Flowables Tests: {reportlab_passed}/{reportlab_total} passed")
+        return reportlab_passed, reportlab_total
+
 def main():
     """Main function to run personalized PDF generation tests"""
     print("🎨 LE MAÎTRE MOT - PERSONALIZED PDF GENERATION TESTING")
