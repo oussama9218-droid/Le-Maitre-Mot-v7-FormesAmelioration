@@ -60,7 +60,7 @@ const TemplateSettings = ({ isPro, sessionToken, onTemplateChange }) => {
     
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/template/get`, {
+      const response = await axios.get(`${API}/api/template/get`, {
         headers: { 'X-Session-Token': sessionToken }
       });
       
