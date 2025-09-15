@@ -1542,18 +1542,19 @@ class LeMaitreMotAPITester:
         return subscription_passed, subscription_total
 
 def main():
-    print("🔒 CRITICAL SECURITY TEST: Single Session Enforcement Verification")
+    print("💳 SUBSCRIPTION MANAGEMENT TESTING: Duplicate Prevention & Expiration Dates")
     print("=" * 80)
-    print("TESTING AFTER REMOVING EMAIL HEADER FALLBACK:")
-    print("1. Single session enforcement (old devices lose access)")
-    print("2. Email header fallback completely removed")
-    print("3. Export endpoint security verification")
-    print("4. Database session state validation")
+    print("TESTING SUBSCRIPTION IMPROVEMENTS:")
+    print("1. Duplicate subscription prevention for existing Pro users")
+    print("2. Professional error messages with subscription details")
+    print("3. Accurate expiration date calculations (30 days monthly, 365 days yearly)")
+    print("4. Access control based on subscription expiration")
+    print("5. Subscription status endpoint with detailed information")
     print("=" * 80)
     
     tester = LeMaitreMotAPITester()
     
-    # First run basic tests to set up document for security testing
+    # First run basic tests to set up document for testing
     basic_tests = [
         ("Root API", tester.test_root_endpoint),
         ("Catalog", tester.test_catalog_endpoint),
@@ -1569,12 +1570,12 @@ def main():
         except Exception as e:
             print(f"❌ {test_name} failed with exception: {e}")
     
-    # Run critical security tests
-    critical_passed, critical_total = tester.run_critical_security_tests()
+    # Run subscription management tests (main focus)
+    subscription_passed, subscription_total = tester.run_subscription_management_tests()
     
     # Run some authentication tests for context
     print("\n" + "="*60)
-    print("🔐 ADDITIONAL AUTHENTICATION CONTEXT TESTS")
+    print("🔐 AUTHENTICATION CONTEXT TESTS")
     print("="*60)
     
     context_tests = [
@@ -1595,33 +1596,40 @@ def main():
     # Print final results
     print("\n" + "=" * 80)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
-    print(f"🔒 Critical Security: {critical_passed}/{critical_total} critical tests passed")
+    print(f"💳 Subscription Management: {subscription_passed}/{subscription_total} tests passed")
     print(f"🔐 Context Tests: {context_passed}/{len(context_tests)} context tests passed")
     
     # Determine overall success
-    critical_success_rate = critical_passed / critical_total if critical_total > 0 else 0
+    subscription_success_rate = subscription_passed / subscription_total if subscription_total > 0 else 0
     
     print("\n" + "=" * 80)
-    print("🔍 CRITICAL SECURITY ANALYSIS:")
+    print("🔍 SUBSCRIPTION MANAGEMENT ANALYSIS:")
     print("=" * 80)
     
-    if critical_success_rate >= 1.0:
-        print("✅ CRITICAL SECURITY VERIFICATION: PASSED!")
-        print("✅ Single session enforcement appears to be working")
-        print("✅ Email header fallback has been successfully removed")
-        print("✅ Export endpoint properly secured")
-        print("✅ Old devices should lose access when new device logs in")
+    if subscription_success_rate >= 1.0:
+        print("✅ SUBSCRIPTION MANAGEMENT VERIFICATION: PASSED!")
+        print("✅ Duplicate subscription prevention working correctly")
+        print("✅ Professional error messages with subscription details")
+        print("✅ Expiration date calculations appear accurate")
+        print("✅ Access control based on subscription status working")
+        print("✅ Subscription status endpoint providing detailed information")
         return 0
-    elif critical_success_rate >= 0.67:
-        print("⚠️  PARTIAL SECURITY VERIFICATION")
-        print("⚠️  Some critical security tests passed, but issues remain")
-        print("⚠️  Review failed tests above for security vulnerabilities")
+    elif subscription_success_rate >= 0.8:
+        print("⚠️  MOSTLY SUCCESSFUL SUBSCRIPTION MANAGEMENT")
+        print("⚠️  Most subscription tests passed, minor issues may exist")
+        print("⚠️  Review failed tests above for potential improvements")
+        return 1
+    elif subscription_success_rate >= 0.6:
+        print("⚠️  PARTIAL SUBSCRIPTION MANAGEMENT SUCCESS")
+        print("⚠️  Some subscription features working, but significant issues remain")
+        print("⚠️  Review failed tests for critical subscription problems")
         return 1
     else:
-        print("❌ CRITICAL SECURITY FAILURE!")
-        print("❌ Single session enforcement may not be working")
-        print("❌ Email header fallback may still be active")
-        print("❌ SECURITY VULNERABILITY: Old devices may still have access")
+        print("❌ SUBSCRIPTION MANAGEMENT FAILURE!")
+        print("❌ Multiple subscription management features not working")
+        print("❌ Duplicate prevention may not be working")
+        print("❌ Expiration date calculations may be incorrect")
+        print("❌ Access control issues detected")
         return 2
 
 if __name__ == "__main__":
