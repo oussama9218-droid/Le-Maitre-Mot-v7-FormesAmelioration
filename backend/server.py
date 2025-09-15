@@ -1748,15 +1748,18 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         
         # Authenticate using session token only
         if session_token:
+            logger.info(f"Session token provided: {session_token[:20]}...")
             email = await validate_session_token(session_token)
             if email:
+                logger.info(f"Session token validated for email: {email}")
                 is_pro, user = await check_user_pro_status(email)
                 is_pro_user = is_pro
                 user_email = email
-                logger.info(f"Export request from Pro user via session: {email}, is_pro: {is_pro}")
+                logger.info(f"Pro status check result - email: {email}, is_pro: {is_pro}")
                 
                 # Load user template configuration if Pro
                 if is_pro:
+                    logger.info(f"Loading template config for Pro user: {email}")
                     try:
                         template_doc = await db.user_templates.find_one({"user_email": email})
                         if template_doc:
@@ -1769,7 +1772,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                                 'logo_url': template_doc.get('logo_url'),
                                 'logo_filename': template_doc.get('logo_filename')
                             }
-                            logger.info(f"Loaded template config for {email}: {template_config.get('template_style')}")
+                            logger.info(f"Loaded template config for {email}: {template_config}")
                         else:
                             # Default template for Pro users
                             template_config = {'template_style': 'minimaliste'}
@@ -1777,8 +1780,10 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                     except Exception as e:
                         logger.error(f"Error loading template config: {e}")
                         template_config = {'template_style': 'minimaliste'}
+                else:
+                    logger.info(f"User {email} is not Pro - using standard PDF generation")
             else:
-                logger.info("Invalid session token provided")
+                logger.info("Session token validation failed - treating as guest")
         else:
             logger.info("No session token provided - treating as guest user")
         
