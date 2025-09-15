@@ -220,7 +220,7 @@ CURRICULUM_DATA = {
     }
 }
 
-# PDF Templates
+# PDF Templates - Unified WeasyPrint approach
 TEMPLATE_STYLES = {
     "minimaliste": {
         "name": "Minimaliste",
