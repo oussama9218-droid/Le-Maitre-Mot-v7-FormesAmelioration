@@ -646,6 +646,32 @@ async def check_user_pro_status(email: str):
         logger.error(f"Error checking pro status: {e}")
         return False, None
 
+async def require_pro_user(request: Request):
+    """Middleware to require Pro user authentication"""
+    session_token = request.headers.get("X-Session-Token")
+    
+    if not session_token:
+        raise HTTPException(
+            status_code=401, 
+            detail="Authentification requise pour les fonctionnalités Pro"
+        )
+    
+    email = await validate_session_token(session_token)
+    if not email:
+        raise HTTPException(
+            status_code=401, 
+            detail="Session invalide ou expirée"
+        )
+    
+    is_pro, user = await check_user_pro_status(email)
+    if not is_pro:
+        raise HTTPException(
+            status_code=403, 
+            detail="Abonnement Pro requis pour cette fonctionnalité"
+        )
+    
+    return email
+
 async def send_magic_link_email(email: str, token: str):
     """Send magic link email via Brevo"""
     try:
