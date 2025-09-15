@@ -1799,6 +1799,177 @@ async def get_pricing():
     """Get pricing packages"""
     return {"packages": PRICING_PACKAGES}
 
+@api_router.get("/analytics/overview")
+async def get_analytics_overview(request: Request):
+    """Get basic analytics overview (Pro only)"""
+    try:
+        user_email = await require_pro_user(request)
+        logger.info(f"Analytics overview requested by Pro user: {user_email}")
+        
+        # Get user's documents count
+        user_documents = await db.documents.count_documents({"user_id": user_email})
+        guest_documents = await db.documents.count_documents({"guest_id": {"$regex": f".*{user_email.split('@')[0]}.*"}})
+        
+        # Get user's exports count
+        user_exports = await db.exports.count_documents({"user_email": user_email})
+        
+        # Get recent activity (last 30 days)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        recent_documents = await db.documents.count_documents({
+            "$or": [{"user_id": user_email}, {"guest_id": {"$regex": f".*{user_email.split('@')[0]}.*"}}],
+            "created_at": {"$gte": thirty_days_ago}
+        })
+        
+        recent_exports = await db.exports.count_documents({
+            "user_email": user_email,
+            "created_at": {"$gte": thirty_days_ago}
+        })
+        
+        # Get subject distribution
+        subject_pipeline = [
+            {"$match": {"$or": [{"user_id": user_email}, {"guest_id": {"$regex": f".*{user_email.split('@')[0]}.*"}}]}},
+            {"$group": {"_id": "$matiere", "count": {"$sum": 1}}}
+        ]
+        subject_stats = await db.documents.aggregate(subject_pipeline).to_list(None)
+        
+        # Get template usage stats
+        template_pipeline = [
+            {"$match": {"user_email": user_email}},
+            {"$group": {"_id": "$template_used", "count": {"$sum": 1}}}
+        ]
+        template_stats = await db.exports.aggregate(template_pipeline).to_list(None)
+        
+        return {
+            "user_analytics": {
+                "total_documents": user_documents + guest_documents,
+                "total_exports": user_exports,
+                "recent_activity": {
+                    "documents_last_30_days": recent_documents,
+                    "exports_last_30_days": recent_exports
+                },
+                "subject_distribution": [
+                    {"subject": stat["_id"], "count": stat["count"]} 
+                    for stat in subject_stats
+                ],
+                "template_usage": [
+                    {"template": stat["_id"] or "standard", "count": stat["count"]} 
+                    for stat in template_stats
+                ],
+                "subscription_info": {
+                    "type": "Pro",
+                    "analytics_enabled": True
+                }
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching analytics overview: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des analytics")
+
+@api_router.get("/analytics/usage")
+async def get_usage_analytics(request: Request, days: int = 30):
+    """Get detailed usage analytics over time (Pro only)"""
+    try:
+        user_email = await require_pro_user(request)
+        logger.info(f"Usage analytics requested by Pro user: {user_email} for {days} days")
+        
+        # Calculate date range
+        end_date = datetime.now(timezone.utc)
+        start_date = end_date - timedelta(days=days)
+        
+        # Daily document generation
+        daily_docs_pipeline = [
+            {
+                "$match": {
+                    "$or": [{"user_id": user_email}, {"guest_id": {"$regex": f".*{user_email.split('@')[0]}.*"}}],
+                    "created_at": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                    "documents": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+        daily_docs = await db.documents.aggregate(daily_docs_pipeline).to_list(None)
+        
+        # Daily exports
+        daily_exports_pipeline = [
+            {
+                "$match": {
+                    "user_email": user_email,
+                    "created_at": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {
+                "$group": {
+                    "_id": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                    "exports": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id": 1}}
+        ]
+        daily_exports = await db.exports.aggregate(daily_exports_pipeline).to_list(None)
+        
+        # Subject popularity over time
+        subject_timeline_pipeline = [
+            {
+                "$match": {
+                    "$or": [{"user_id": user_email}, {"guest_id": {"$regex": f".*{user_email.split('@')[0]}.*"}}],
+                    "created_at": {"$gte": start_date, "$lte": end_date}
+                }
+            },
+            {
+                "$group": {
+                    "_id": {
+                        "date": {"$dateToString": {"format": "%Y-%m-%d", "date": "$created_at"}},
+                        "subject": "$matiere"
+                    },
+                    "count": {"$sum": 1}
+                }
+            },
+            {"$sort": {"_id.date": 1}}
+        ]
+        subject_timeline = await db.documents.aggregate(subject_timeline_pipeline).to_list(None)
+        
+        return {
+            "usage_analytics": {
+                "period": {
+                    "start_date": start_date.isoformat(),
+                    "end_date": end_date.isoformat(),
+                    "days": days
+                },
+                "daily_activity": {
+                    "documents": [
+                        {"date": doc["_id"], "count": doc["documents"]} 
+                        for doc in daily_docs
+                    ],
+                    "exports": [
+                        {"date": exp["_id"], "count": exp["exports"]} 
+                        for exp in daily_exports
+                    ]
+                },
+                "subject_timeline": [
+                    {
+                        "date": item["_id"]["date"], 
+                        "subject": item["_id"]["subject"], 
+                        "count": item["count"]
+                    }
+                    for item in subject_timeline
+                ]
+            }
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching usage analytics: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la récupération des analytics d'usage")
+
 @api_router.post("/generate")
 async def generate_document(request: GenerateRequest):
     """Generate a document with exercises"""
