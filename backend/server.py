@@ -125,6 +125,20 @@ class VerifyLoginRequest(BaseModel):
     token: str
     device_id: str
 
+class UserTemplate(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    user_email: EmailStr
+    logo_filename: Optional[str] = None
+    logo_url: Optional[str] = None
+    professor_name: Optional[str] = None
+    school_name: Optional[str] = None
+    school_year: Optional[str] = None
+    footer_text: Optional[str] = None
+    template_style: str = "minimaliste"  # minimaliste, classique, moderne
+    colors: Optional[Dict] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
 class GenerateRequest(BaseModel):
     matiere: str
     niveau: str
