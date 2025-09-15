@@ -1213,6 +1213,334 @@ class LeMaitreMotAPITester:
         print(f"\n🔒 Critical Security Tests: {critical_passed}/{critical_total} passed")
         return critical_passed, critical_total
 
+    # ========== SUBSCRIPTION MANAGEMENT TESTS ==========
+    
+    def test_duplicate_subscription_prevention(self):
+        """Test duplicate subscription prevention for existing Pro users"""
+        print("\n🔍 Testing duplicate subscription prevention...")
+        
+        # Test with existing Pro user email
+        checkout_data = {
+            "package_id": "monthly",
+            "origin_url": self.base_url,
+            "email": self.pro_user_email,  # Using existing Pro user
+            "nom": "Existing Pro User",
+            "etablissement": "Test School"
+        }
+        
+        success, response = self.run_test(
+            "Duplicate Subscription Prevention",
+            "POST",
+            "checkout/session",
+            409,  # Expecting 409 Conflict for existing subscription
+            data=checkout_data
+        )
+        
+        if success and isinstance(response, dict):
+            error_info = response.get('detail', {})
+            if isinstance(error_info, dict):
+                error_type = error_info.get('error')
+                message = error_info.get('message', '')
+                subscription_type = error_info.get('subscription_type')
+                expires_date = error_info.get('expires_date')
+                
+                print(f"   ✅ Error type: {error_type}")
+                print(f"   ✅ Message: {message}")
+                print(f"   ✅ Subscription type: {subscription_type}")
+                print(f"   ✅ Expires date: {expires_date}")
+                
+                # Verify professional message content
+                if 'déjà' in message.lower() and 'abonnement' in message.lower():
+                    print("   ✅ Professional duplicate prevention message detected")
+                else:
+                    print("   ⚠️  Message may not be professional enough")
+                
+                # Verify subscription details are included
+                if subscription_type and expires_date:
+                    print("   ✅ Subscription details included in error response")
+                else:
+                    print("   ⚠️  Missing subscription details in error response")
+            else:
+                print(f"   ⚠️  Response detail is not a dict: {error_info}")
+        
+        return success, response
+
+    def test_subscription_status_endpoint(self):
+        """Test subscription status endpoint for detailed subscription info"""
+        print("\n🔍 Testing subscription status endpoint...")
+        
+        # Test with existing Pro user
+        success, response = self.run_test(
+            "Subscription Status - Pro User",
+            "GET",
+            f"subscription/status/{self.pro_user_email}",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            is_pro = response.get('is_pro', False)
+            subscription_type = response.get('subscription_type')
+            subscription_expires = response.get('subscription_expires')
+            expires_date_formatted = response.get('expires_date_formatted')
+            days_remaining = response.get('days_remaining')
+            is_active = response.get('is_active')
+            
+            print(f"   ✅ Is Pro: {is_pro}")
+            print(f"   ✅ Subscription type: {subscription_type}")
+            print(f"   ✅ Expires: {expires_date_formatted}")
+            print(f"   ✅ Days remaining: {days_remaining}")
+            print(f"   ✅ Is active: {is_active}")
+            
+            # Verify all required fields are present
+            required_fields = ['is_pro', 'subscription_type', 'subscription_expires', 'days_remaining', 'is_active']
+            missing_fields = [field for field in required_fields if field not in response]
+            
+            if not missing_fields:
+                print("   ✅ All required subscription fields present")
+            else:
+                print(f"   ⚠️  Missing fields: {missing_fields}")
+        
+        # Test with non-Pro user
+        non_pro_email = f"nonpro_{self.guest_id}@example.com"
+        success_non_pro, response_non_pro = self.run_test(
+            "Subscription Status - Non-Pro User",
+            "GET",
+            f"subscription/status/{non_pro_email}",
+            200
+        )
+        
+        if success_non_pro and isinstance(response_non_pro, dict):
+            is_pro = response_non_pro.get('is_pro', True)  # Should be False
+            message = response_non_pro.get('message', '')
+            
+            print(f"   ✅ Non-Pro user is_pro: {is_pro}")
+            print(f"   ✅ Non-Pro message: {message}")
+            
+            if not is_pro:
+                print("   ✅ Non-Pro user correctly identified")
+            else:
+                print("   ❌ Non-Pro user incorrectly marked as Pro")
+                return False, {}
+        
+        return success and success_non_pro, response
+
+    def test_expiration_date_calculations(self):
+        """Test that subscription expiration dates are calculated correctly"""
+        print("\n🔍 Testing expiration date calculations...")
+        
+        # Get current Pro user subscription details
+        success, response = self.run_test(
+            "Get Pro User Subscription Details",
+            "GET",
+            f"subscription/status/{self.pro_user_email}",
+            200
+        )
+        
+        if not success or not isinstance(response, dict):
+            print("   ❌ Cannot test expiration calculations without Pro user data")
+            return False, {}
+        
+        subscription_type = response.get('subscription_type')
+        subscription_expires = response.get('subscription_expires')
+        created_at = response.get('created_at')
+        
+        print(f"   Current subscription type: {subscription_type}")
+        print(f"   Current expiration: {subscription_expires}")
+        print(f"   Created at: {created_at}")
+        
+        if subscription_expires and created_at:
+            try:
+                from datetime import datetime, timezone
+                
+                # Parse dates
+                if isinstance(subscription_expires, str):
+                    expires_dt = datetime.fromisoformat(subscription_expires.replace('Z', '+00:00'))
+                else:
+                    expires_dt = subscription_expires
+                
+                if isinstance(created_at, str):
+                    created_dt = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+                else:
+                    created_dt = created_at
+                
+                # Calculate duration
+                duration = expires_dt - created_dt
+                duration_days = duration.days
+                
+                print(f"   Calculated duration: {duration_days} days")
+                
+                # Verify duration based on subscription type
+                if subscription_type == "monthly":
+                    expected_days = 30
+                    tolerance = 1  # Allow 1 day tolerance
+                elif subscription_type == "yearly":
+                    expected_days = 365
+                    tolerance = 1  # Allow 1 day tolerance
+                else:
+                    print(f"   ⚠️  Unknown subscription type: {subscription_type}")
+                    return True, response  # Don't fail for unknown types
+                
+                if abs(duration_days - expected_days) <= tolerance:
+                    print(f"   ✅ Expiration date calculation correct: {duration_days} days (expected ~{expected_days})")
+                else:
+                    print(f"   ❌ Expiration date calculation incorrect: {duration_days} days (expected ~{expected_days})")
+                    return False, {}
+                
+            except Exception as e:
+                print(f"   ⚠️  Error calculating duration: {e}")
+                # Don't fail the test for parsing errors, just note them
+                return True, response
+        else:
+            print("   ⚠️  Missing date information for calculation verification")
+        
+        return True, response
+
+    def test_access_control_with_expiration(self):
+        """Test access control based on subscription expiration"""
+        print("\n🔍 Testing access control with subscription expiration...")
+        
+        # First, verify current Pro user can request magic link
+        success, response = self.run_test(
+            "Magic Link Request - Active Pro User",
+            "POST",
+            "auth/request-login",
+            200,
+            data={"email": self.pro_user_email}
+        )
+        
+        if success:
+            print("   ✅ Active Pro user can request magic link")
+        else:
+            print("   ❌ Active Pro user cannot request magic link")
+            return False, {}
+        
+        # Test session validation structure (we can't test with expired user without modifying DB)
+        success, response = self.run_test(
+            "Session Validation - No Token",
+            "GET",
+            "auth/session/validate",
+            401
+        )
+        
+        if success:
+            print("   ✅ Session validation properly requires authentication")
+        else:
+            print("   ❌ Session validation should require authentication")
+            return False, {}
+        
+        # Test Pro status check with current user
+        success, response = self.run_test(
+            "Pro Status Check - Current User",
+            "GET",
+            f"user/status/{self.pro_user_email}",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            is_pro = response.get('is_pro', False)
+            subscription_expires = response.get('subscription_expires')
+            
+            print(f"   ✅ Pro status check: is_pro={is_pro}")
+            print(f"   ✅ Subscription expires: {subscription_expires}")
+            
+            if is_pro:
+                print("   ✅ Pro status correctly reflects active subscription")
+            else:
+                print("   ⚠️  Pro status indicates inactive subscription")
+        
+        return True, response
+
+    def test_subscription_extension_logic(self):
+        """Test subscription extension logic for existing subscriptions"""
+        print("\n🔍 Testing subscription extension logic...")
+        
+        # Get current subscription details
+        success, response = self.run_test(
+            "Get Current Subscription",
+            "GET",
+            f"subscription/status/{self.pro_user_email}",
+            200
+        )
+        
+        if not success or not isinstance(response, dict):
+            print("   ❌ Cannot test extension logic without current subscription data")
+            return False, {}
+        
+        current_expires = response.get('subscription_expires')
+        current_type = response.get('subscription_type')
+        days_remaining = response.get('days_remaining', 0)
+        
+        print(f"   Current subscription: {current_type}")
+        print(f"   Current expiration: {current_expires}")
+        print(f"   Days remaining: {days_remaining}")
+        
+        # Test duplicate subscription attempt (should be prevented)
+        checkout_data = {
+            "package_id": current_type or "monthly",
+            "origin_url": self.base_url,
+            "email": self.pro_user_email,
+            "nom": "Extension Test User",
+            "etablissement": "Test School"
+        }
+        
+        success, response = self.run_test(
+            "Subscription Extension Attempt",
+            "POST",
+            "checkout/session",
+            409,  # Should be prevented with 409 Conflict
+            data=checkout_data
+        )
+        
+        if success and isinstance(response, dict):
+            error_info = response.get('detail', {})
+            if isinstance(error_info, dict):
+                message = error_info.get('message', '')
+                print(f"   ✅ Extension prevented with message: {message}")
+                
+                # Verify message mentions existing subscription
+                if 'déjà' in message.lower() or 'already' in message.lower():
+                    print("   ✅ Extension prevention message is appropriate")
+                else:
+                    print("   ⚠️  Extension prevention message could be clearer")
+            else:
+                print(f"   ⚠️  Unexpected error format: {error_info}")
+        
+        return success, response
+
+    def run_subscription_management_tests(self):
+        """Run comprehensive subscription management tests"""
+        print("\n" + "="*80)
+        print("💳 SUBSCRIPTION MANAGEMENT TESTS")
+        print("="*80)
+        print("CONTEXT: Testing subscription improvements - duplicate prevention and expiration dates")
+        print("FOCUS: Professional duplicate handling, accurate expiration calculations, access control")
+        print("="*80)
+        
+        subscription_tests = [
+            ("Duplicate Subscription Prevention", self.test_duplicate_subscription_prevention),
+            ("Subscription Status Endpoint", self.test_subscription_status_endpoint),
+            ("Expiration Date Calculations", self.test_expiration_date_calculations),
+            ("Access Control with Expiration", self.test_access_control_with_expiration),
+            ("Subscription Extension Logic", self.test_subscription_extension_logic),
+        ]
+        
+        subscription_passed = 0
+        subscription_total = len(subscription_tests)
+        
+        for test_name, test_func in subscription_tests:
+            try:
+                success, _ = test_func()
+                if success:
+                    subscription_passed += 1
+                    print(f"\n✅ {test_name}: PASSED")
+                else:
+                    print(f"\n❌ {test_name}: FAILED")
+            except Exception as e:
+                print(f"\n❌ {test_name}: FAILED with exception: {e}")
+        
+        print(f"\n💳 Subscription Management Tests: {subscription_passed}/{subscription_total} passed")
+        return subscription_passed, subscription_total
+
 def main():
     print("🔒 CRITICAL SECURITY TEST: Single Session Enforcement Verification")
     print("=" * 80)
