@@ -125,6 +125,9 @@ backend:
         - working: true
         - agent: "testing"
         - comment: "✅ CRITICAL SECURITY VERIFIED: Single session enforcement is working correctly. Magic link system handles concurrent requests properly. Multiple magic link requests for same user work as expected. All authentication endpoints properly secured against invalid tokens. Database unique constraint on user_email confirmed active."
+        - working: true
+        - agent: "testing"
+        - comment: "✅ CRITICAL BUG FIXES VERIFIED: After reported 'Token invalide ou déjà utilisé' errors, comprehensive testing confirms all critical fixes are working: 1) MongoDB transactions removed successfully - no transaction errors detected, 2) FRONTEND_URL environment variable properly configured - magic link emails sending successfully, 3) Enhanced error messages implemented - now getting specific 'Token invalide' instead of generic 'Token invalide ou déjà utilisé', 4) Enhanced logging active - detailed verification process logs visible in backend, 5) Database state consistency verified through rapid request testing. Magic link authentication flow is fully functional after bug fixes."
 
   - task: "Session management with 24h expiration"
     implemented: true
@@ -146,6 +149,9 @@ backend:
         - working: true
         - agent: "testing"
         - comment: "✅ CRITICAL SECURITY VERIFIED: Session validation is bulletproof. All invalid session tokens properly rejected with 401 status. Session cleanup behavior working correctly. TTL index for automatic session expiry confirmed in MongoDB. Atomic session replacement with MongoDB transactions verified through database constraint testing."
+        - working: true
+        - agent: "testing"
+        - comment: "✅ CRITICAL BUG FIXES VERIFIED: Session management working perfectly after MongoDB transaction fixes. Session creation, validation, and cleanup all functioning without transaction errors. Session validation endpoints properly rejecting invalid tokens with 401 status. Logout functionality correctly handling missing (400) and invalid (404) tokens. No MongoDB transaction-related errors detected in session management flow."
 
   - task: "Token security and device management"
     implemented: true
@@ -167,6 +173,9 @@ backend:
         - working: true
         - agent: "testing"
         - comment: "✅ CRITICAL SECURITY VERIFIED: Single session per user enforcement is PERFECT. Database has unique index on login_sessions.user_email preventing multiple active sessions. Export endpoint properly validates session tokens and falls back to guest quota when tokens are invalid. Atomic session replacement confirmed working through comprehensive testing. NO SECURITY VULNERABILITIES DETECTED."
+        - working: true
+        - agent: "testing"
+        - comment: "✅ CRITICAL BUG FIXES VERIFIED: Token security and device management fully operational after bug fixes. Export endpoint working correctly with Pro user email headers (backwards compatibility confirmed). Session token validation working properly. Minor: Export with invalid session token returns 400 (Guest ID required) instead of 401, but this is acceptable behavior as it falls back to guest quota system. Core functionality intact and secure."
 
 frontend:
   - task: "Pro user login interface"
