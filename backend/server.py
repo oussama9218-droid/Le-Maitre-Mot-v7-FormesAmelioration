@@ -431,7 +431,19 @@ SUJET_TEMPLATE = """
     </div>
     
     <div class="content">
-        {{ document.exercices }}
+        {% for exercice in document.exercises %}
+            <div class="exercise">
+                <h3>Exercice {{ loop.index }}</h3>
+                <p>{{ exercice.enonce }}</p>
+                {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
+                    <ul>
+                        {% for option in exercice.donnees.options %}
+                            <li>{{ option }}</li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+        {% endfor %}
     </div>
     
     <div class="footer">
