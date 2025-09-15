@@ -684,6 +684,324 @@ async def require_pro_user(request: Request):
     
     return email
 
+class PersonalizedDocTemplate(BaseDocTemplate):
+    """Custom document template with personalized headers and footers"""
+    
+    def __init__(self, filename, template_config, document_info, **kwargs):
+        BaseDocTemplate.__init__(self, filename, **kwargs)
+        self.template_config = template_config
+        self.document_info = document_info
+        
+        # Get template style
+        self.style = TEMPLATE_STYLES.get(template_config.get('template_style', 'minimaliste'))
+        
+        # Create frame for content (with margins for header/footer)
+        content_frame = Frame(
+            2.5*cm, 2.5*cm,  # x, y
+            A4[0] - 5*cm, A4[1] - 5*cm,  # width, height
+            leftPadding=0, bottomPadding=0, rightPadding=0, topPadding=0
+        )
+        
+        # Create page template
+        template = PageTemplate(
+            id='personalized_template',
+            frames=[content_frame],
+            onPage=self.create_personalized_page
+        )
+        
+        self.addPageTemplates([template])
+    
+    def create_personalized_page(self, canvas, doc):
+        """Draw personalized header and footer on each page"""
+        try:
+            self.draw_personalized_header(canvas, doc)
+            self.draw_personalized_footer(canvas, doc)
+        except Exception as e:
+            logger.error(f"Error creating personalized page: {e}")
+            # Fallback to simple page
+            self.draw_simple_page(canvas, doc)
+    
+    def draw_personalized_header(self, canvas, doc):
+        """Draw personalized header"""
+        try:
+            width, height = A4
+            style = self.style
+            
+            # Header area
+            header_height = 80
+            y_start = height - 40
+            
+            # Background for header (subtle)
+            if style['primary_color']:
+                canvas.setFillColor(HexColor(style['primary_color']))
+                canvas.setFillAlpha(0.05)
+                canvas.rect(40, y_start - header_height + 20, width - 80, header_height - 20, fill=1, stroke=0)
+                canvas.setFillAlpha(1)
+            
+            # Logo placeholder (left side)
+            logo_x = 50
+            if self.template_config.get('logo_url') or self.template_config.get('logo_filename'):
+                try:
+                    # Logo placeholder
+                    canvas.setFillColor(HexColor(style['secondary_color']))
+                    canvas.rect(logo_x, y_start - 60, 40, 40, fill=1, stroke=0)
+                    canvas.setFillColor(HexColor('#FFFFFF'))
+                    canvas.setFont(style['header_font'], 8)
+                    canvas.drawCentredString(logo_x + 20, y_start - 40, "LOGO")
+                except Exception as e:
+                    logger.warning(f"Could not load logo: {e}")
+            
+            # Main title (center)
+            canvas.setFillColor(HexColor(style['primary_color']))
+            canvas.setFont(style['header_font'], style['header_font_size'])
+            title = f"{self.document_info['type_doc'].title()} - {self.document_info['matiere']}"
+            canvas.drawCentredString(width/2, y_start - 25, title)
+            
+            # Subtitle
+            canvas.setFont(style['content_font'], style['content_font_size'] - 1)
+            canvas.setFillColor(HexColor(style['secondary_color']))
+            subtitle = f"{self.document_info['niveau']} - {self.document_info['chapitre']}"
+            canvas.drawCentredString(width/2, y_start - 45, subtitle)
+            
+            # School info (right side)
+            text_x = width - 50
+            if self.template_config.get('school_name'):
+                canvas.setFont(style['content_font'], style['content_font_size'] - 1)
+                canvas.setFillColor(HexColor(style['primary_color']))
+                canvas.drawRightString(text_x, y_start - 25, self.template_config['school_name'])
+            
+            if self.template_config.get('professor_name'):
+                canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+                canvas.setFillColor(HexColor(style['secondary_color']))
+                canvas.drawRightString(text_x, y_start - 40, self.template_config['professor_name'])
+                
+            if self.template_config.get('school_year'):
+                canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+                canvas.setFillColor(HexColor(style['secondary_color']))
+                canvas.drawRightString(text_x, y_start - 55, self.template_config['school_year'])
+            
+            # Separator line
+            canvas.setStrokeColor(HexColor(style['accent_color']))
+            canvas.setLineWidth(1)
+            canvas.line(50, y_start - 70, width - 50, y_start - 70)
+            
+        except Exception as e:
+            logger.error(f"Error drawing personalized header: {e}")
+    
+    def draw_personalized_footer(self, canvas, doc):
+        """Draw personalized footer"""
+        try:
+            width, height = A4
+            style = self.style
+            
+            # Footer area
+            footer_y = 40
+            
+            # Separator line
+            canvas.setStrokeColor(HexColor(style['accent_color']))
+            canvas.setLineWidth(0.5)
+            canvas.line(50, footer_y + 20, width - 50, footer_y + 20)
+            
+            # Custom footer text (left)
+            if self.template_config.get('footer_text'):
+                canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+                canvas.setFillColor(HexColor(style['secondary_color']))
+                footer_text = self.template_config['footer_text'][:80]  # Limit length
+                canvas.drawString(50, footer_y, footer_text)
+            
+            # School year (center)
+            if self.template_config.get('school_year'):
+                canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+                canvas.setFillColor(HexColor(style['secondary_color']))
+                canvas.drawCentredString(width/2, footer_y, self.template_config['school_year'])
+            
+            # Page number (right)
+            canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+            canvas.setFillColor(HexColor(style['primary_color']))
+            page_text = f"Page {doc.page}/{doc.pageTemplate.id}"
+            canvas.drawRightString(width - 50, footer_y, page_text)
+            
+        except Exception as e:
+            logger.error(f"Error drawing personalized footer: {e}")
+    
+    def draw_simple_page(self, canvas, doc):
+        """Fallback simple page design"""
+        try:
+            width, height = A4
+            canvas.setFont("Helvetica", 14)
+            canvas.drawCentredString(width/2, height - 50, f"{self.document_info['matiere']} - {self.document_info['niveau']}")
+            canvas.setFont("Helvetica", 10)
+            canvas.drawRightString(width - 50, 30, f"Page {doc.page}")
+        except Exception as e:
+            logger.error(f"Error drawing simple page: {e}")
+
+def create_personalized_styles(template_config):
+    """Create ReportLab styles based on template configuration"""
+    style_name = template_config.get('template_style', 'minimaliste')
+    template_style = TEMPLATE_STYLES.get(style_name)
+    
+    # Get base styles
+    styles = getSampleStyleSheet()
+    
+    # Create custom styles
+    custom_styles = {}
+    
+    # Title style
+    custom_styles['CustomTitle'] = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Title'],
+        fontName=template_style['header_font'],
+        fontSize=template_style['header_font_size'],
+        textColor=HexColor(template_style['primary_color']),
+        alignment=TA_CENTER,
+        spaceAfter=20,
+        spaceBefore=10
+    )
+    
+    # Subtitle style
+    custom_styles['CustomSubtitle'] = ParagraphStyle(
+        'CustomSubtitle',
+        parent=styles['Normal'],
+        fontName=template_style['content_font'],
+        fontSize=template_style['content_font_size'] + 1,
+        textColor=HexColor(template_style['secondary_color']),
+        alignment=TA_CENTER,
+        spaceAfter=15,
+        spaceBefore=5
+    )
+    
+    # Normal content style
+    custom_styles['CustomNormal'] = ParagraphStyle(
+        'CustomNormal',
+        parent=styles['Normal'],
+        fontName=template_style['content_font'],
+        fontSize=template_style['content_font_size'],
+        textColor=HexColor(template_style['primary_color']),
+        alignment=TA_JUSTIFY,
+        spaceAfter=8,
+        spaceBefore=0,
+        leftIndent=0,
+        rightIndent=0
+    )
+    
+    # Exercise title style
+    custom_styles['CustomExerciseTitle'] = ParagraphStyle(
+        'CustomExerciseTitle',
+        parent=styles['Normal'],
+        fontName=template_style['header_font'],
+        fontSize=template_style['content_font_size'] + 2,
+        textColor=HexColor(template_style['accent_color']),
+        alignment=TA_LEFT,
+        spaceAfter=10,
+        spaceBefore=15,
+        leftIndent=0,
+        bulletIndent=0
+    )
+    
+    return custom_styles
+
+async def create_personalized_pdf(document, template_config, export_type="sujet"):
+    """Create PDF with personalized template using ReportLab Flowables"""
+    try:
+        logger.info(f"🎨 CREATING PERSONALIZED PDF with ReportLab Flowables")
+        logger.info(f"Template style: {template_config.get('template_style', 'minimaliste')}")
+        logger.info(f"Export type: {export_type}")
+        
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file.close()
+        
+        # Document info for header/footer
+        document_info = {
+            'type_doc': document.type_doc,
+            'matiere': document.matiere,
+            'niveau': document.niveau,
+            'chapitre': document.chapitre
+        }
+        
+        # Create custom document template
+        doc_template = PersonalizedDocTemplate(
+            temp_file.name,
+            template_config,
+            document_info,
+            pagesize=A4,
+            rightMargin=2.5*cm,
+            leftMargin=2.5*cm,
+            topMargin=3.5*cm,
+            bottomMargin=2.5*cm
+        )
+        
+        # Create styles
+        custom_styles = create_personalized_styles(template_config)
+        
+        # Build content
+        story = []
+        
+        # Main title
+        main_title = f"{document.type_doc.title()}"
+        story.append(Paragraph(main_title, custom_styles['CustomTitle']))
+        story.append(Spacer(1, 20))
+        
+        # Document parameters
+        params_text = f"<b>Difficulté :</b> {document.difficulte.title()} • <b>Nombre d'exercices :</b> {document.nb_exercices}"
+        story.append(Paragraph(params_text, custom_styles['CustomSubtitle']))
+        story.append(Spacer(1, 30))
+        
+        # Content
+        content_to_show = document.solutions if export_type == "corrige" else document.exercices
+        
+        # Parse content and create flowables
+        content_lines = content_to_show.split('\n')
+        current_exercise = None
+        exercise_content = []
+        
+        for line in content_lines:
+            line = line.strip()
+            if not line:
+                if exercise_content:
+                    story.append(Spacer(1, 6))
+                continue
+            
+            # Check if it's an exercise title (starts with number or specific pattern)
+            if (line.startswith(('Exercice', 'Exercise', '1.', '2.', '3.', '4.', '5.', '6.', '7.', '8.', '9.')) or 
+                any(line.startswith(f'{i}.') for i in range(1, 21))):
+                
+                # Add previous exercise content if exists
+                if exercise_content:
+                    content_para = '<br/>'.join(exercise_content)
+                    story.append(Paragraph(content_para, custom_styles['CustomNormal']))
+                    story.append(Spacer(1, 15))
+                    exercise_content = []
+                
+                # Add exercise title
+                story.append(Paragraph(f"<b>{line}</b>", custom_styles['CustomExerciseTitle']))
+                current_exercise = line
+            else:
+                # Regular content line
+                exercise_content.append(line)
+        
+        # Add final exercise content
+        if exercise_content:
+            content_para = '<br/>'.join(exercise_content)
+            story.append(Paragraph(content_para, custom_styles['CustomNormal']))
+        
+        # Add some space at the end
+        story.append(Spacer(1, 50))
+        
+        # Build PDF
+        doc_template.build(story)
+        
+        logger.info(f"✅ PERSONALIZED PDF CREATED SUCCESSFULLY: {temp_file.name}")
+        return temp_file.name
+        
+    except Exception as e:
+        logger.error(f"❌ ERROR in personalized PDF creation: {e}")
+        logger.error(f"Exception type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        # Return None to trigger fallback
+        return None
+
 def draw_header(canvas, doc, template_config, document_info):
     """Draw personalized header based on template configuration"""
     try:
