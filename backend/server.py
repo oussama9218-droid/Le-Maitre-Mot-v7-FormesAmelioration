@@ -1271,12 +1271,12 @@ async def check_quota_status(guest_id: str):
 async def export_pdf(request: ExportRequest, http_request: Request):
     """Export document as PDF"""
     try:
-        # Check authentication methods (backwards compatibility)
-        user_email = http_request.headers.get("X-User-Email")
+        # Check authentication - ONLY session token method (no legacy email fallback)
         session_token = http_request.headers.get("X-Session-Token")
         is_pro_user = False
+        user_email = None
         
-        # Try session token first (new method)
+        # Authenticate using session token only
         if session_token:
             email = await validate_session_token(session_token)
             if email:
@@ -1284,11 +1284,10 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 is_pro_user = is_pro
                 user_email = email
                 logger.info(f"Export request from Pro user via session: {email}, is_pro: {is_pro}")
-        # Fall back to email header (old method)
-        elif user_email:
-            is_pro, user = await check_user_pro_status(user_email)
-            is_pro_user = is_pro
-            logger.info(f"Export request from Pro user via email header: {user_email}, is_pro: {is_pro}")
+            else:
+                logger.info("Invalid session token provided")
+        else:
+            logger.info("No session token provided - treating as guest user")
         
         # Pro users have unlimited exports
         if not is_pro_user:
