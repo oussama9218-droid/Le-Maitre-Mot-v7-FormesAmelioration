@@ -777,7 +777,7 @@ def draw_footer(canvas, doc, template_config, page_num, total_pages):
         if template_config.get('school_year'):
             canvas.setFont(style['content_font'], style['content_font_size'] - 2)
             canvas.setFillColor(HexColor(style['secondary_color']))
-            canvas.drawCentredText(width/2, footer_y, template_config['school_year'])
+            canvas.drawCentredString(width/2, footer_y, template_config['school_year'])
         
         # Page number (right)
         canvas.setFont(style['content_font'], style['content_font_size'] - 2)
