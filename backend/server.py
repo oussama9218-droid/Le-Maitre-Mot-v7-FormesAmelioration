@@ -1036,7 +1036,22 @@ CORRIGE_PRO_TEMPLATE = """
         </div>
         
         <div class="content">
-            {{ document.solutions }}
+            {% for exercice in document.exercises %}
+                <div class="solution">
+                    <h3>Exercice {{ loop.index }} - Corrigé</h3>
+                    {% if exercice.solution.etapes %}
+                        <p><strong>Solution détaillée:</strong></p>
+                        <ol>
+                            {% for etape in exercice.solution.etapes %}
+                                <li>{{ etape }}</li>
+                            {% endfor %}
+                        </ol>
+                    {% endif %}
+                    {% if exercice.solution.resultat %}
+                        <p><strong>Résultat final:</strong> {{ exercice.solution.resultat }}</p>
+                    {% endif %}
+                </div>
+            {% endfor %}
         </div>
         
         <div class="footer">
