@@ -1623,7 +1623,13 @@ def format_exercises_for_export(exercises: List[dict], options: AdvancedPDFOptio
         elif options.exercise_separator == "space" and i < len(exercises):
             formatted_exercise += "\n\n"
         elif options.exercise_separator == "box":
-            formatted_exercise = f"┌{'─' * (len(formatted_exercise.split('\n')[0]) + 4)}┐\n│  {formatted_exercise.replace('\n', '\n│  ')}  │\n└{'─' * (len(formatted_exercise.split('\n')[0]) + 4)}┘"
+            newline = '\n'
+            lines = formatted_exercise.split(newline)
+            box_width = len(lines[0]) + 4
+            top_border = '┌' + '─' * box_width + '┐'
+            bottom_border = '└' + '─' * box_width + '┘'
+            content_lines = newline.join([f'│  {line}  │' for line in lines])
+            formatted_exercise = f"{top_border}{newline}{content_lines}{newline}{bottom_border}"
         
         formatted_content.append(formatted_exercise)
     
