@@ -1453,8 +1453,9 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
     """Generate quick fallback exercises"""
     exercises = []
     
-    # Quick templates based on chapter
+    # Quick templates based on chapter and subject
     templates = {
+        # Mathématiques
         "Nombres relatifs": [
             "Calculer : {a} + {b} - ({c})",
             "Déterminer le signe de : {a} × {b}",
@@ -1469,6 +1470,40 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
             "Calculer : 1/{a} + 1/{b}",
             "Simplifier : {a}/{b}",
             "Comparer : 1/{a} et 1/{b}"
+        ],
+        
+        # Français
+        "Récits d'aventures": [
+            "Identifier les étapes du schéma narratif dans un extrait",
+            "Relever le vocabulaire de l'action dans le texte",
+            "Expliquer les motivations du héros"
+        ],
+        "Grammaire - La phrase": [
+            "Identifier le sujet et le verbe dans la phrase",
+            "Transformer la phrase en phrase interrogative",
+            "Corriger les erreurs de ponctuation"
+        ],
+        "Conjugaison - Présent, passé, futur": [
+            "Conjuguer le verbe au temps demandé",
+            "Identifier le temps des verbes soulignés",
+            "Transformer la phrase au temps indiqué"
+        ],
+        
+        # Physique-Chimie
+        "Matière, mouvement, énergie, information": [
+            "Classer ces objets selon leur état physique",
+            "Identifier les propriétés de la matière observées",
+            "Décrire les changements observés"
+        ],
+        "Organisation et transformations de la matière": [
+            "Identifier s'il s'agit d'un mélange ou d'un corps pur",
+            "Décrire la transformation observée",
+            "Expliquer le changement d'état"
+        ],
+        "Mouvement et interactions": [
+            "Décrire le mouvement de l'objet",
+            "Identifier les forces qui s'exercent",
+            "Calculer la vitesse moyenne"
         ]
     }
     
