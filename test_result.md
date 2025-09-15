@@ -321,9 +321,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Subject selector functionality after UI bug fix"
-    - "Template Settings component loading"
-    - "Workflow progression testing"
+    - "ReportLab Flowables implementation verification completed"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
