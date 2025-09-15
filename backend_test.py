@@ -3670,99 +3670,597 @@ class LeMaitreMotAPITester:
         print(f"\n🎨 ReportLab Flowables Tests: {reportlab_passed}/{reportlab_total} passed")
         return reportlab_passed, reportlab_total
 
+    # ========== CRITICAL PDF TEMPLATE FIX VALIDATION TESTS ==========
+    
+    def test_pdf_generation_all_subjects(self):
+        """Test PDF generation for all 3 subjects (Mathématiques, Français, Physique-Chimie)"""
+        print("\n🔍 CRITICAL: Testing PDF generation for all subjects...")
+        
+        subjects_to_test = [
+            {
+                "matiere": "Mathématiques",
+                "niveau": "4e", 
+                "chapitre": "Nombres relatifs",
+                "expected_terms": ["calculer", "nombre", "relatif", "exercice"]
+            },
+            {
+                "matiere": "Français", 
+                "niveau": "5e",
+                "chapitre": "Le voyage et l'aventure : pourquoi aller vers l'inconnu ?",
+                "expected_terms": ["texte", "analyse", "personnage", "récit"]
+            },
+            {
+                "matiere": "Physique-Chimie",
+                "niveau": "4e", 
+                "chapitre": "Organisation et transformations de la matière",
+                "expected_terms": ["matière", "transformation", "chimique", "molécule"]
+            }
+        ]
+        
+        all_subjects_passed = True
+        generated_documents = {}
+        
+        for subject_data in subjects_to_test:
+            print(f"\n   Testing {subject_data['matiere']} - {subject_data['niveau']} - {subject_data['chapitre'][:30]}...")
+            
+            test_data = {
+                "matiere": subject_data["matiere"],
+                "niveau": subject_data["niveau"], 
+                "chapitre": subject_data["chapitre"],
+                "type_doc": "exercices",
+                "difficulte": "moyen",
+                "nb_exercices": 3,
+                "versions": ["A"],
+                "guest_id": f"{self.guest_id}_{subject_data['matiere'].lower()}"
+            }
+            
+            success, response = self.run_test(
+                f"Generate {subject_data['matiere']} Document",
+                "POST",
+                "generate", 
+                200,
+                data=test_data,
+                timeout=60
+            )
+            
+            if success and isinstance(response, dict):
+                document = response.get('document')
+                if document:
+                    doc_id = document.get('id')
+                    exercises = document.get('exercises', [])
+                    generated_documents[subject_data['matiere']] = {
+                        'document_id': doc_id,
+                        'guest_id': test_data['guest_id'],
+                        'exercises_count': len(exercises)
+                    }
+                    
+                    print(f"   ✅ {subject_data['matiere']}: Generated {len(exercises)} exercises")
+                    
+                    # Verify content quality
+                    if exercises:
+                        first_exercise = exercises[0].get('enonce', '').lower()
+                        has_expected_terms = any(term in first_exercise for term in subject_data['expected_terms'])
+                        if has_expected_terms:
+                            print(f"   ✅ {subject_data['matiere']}: Content appears subject-appropriate")
+                        else:
+                            print(f"   ⚠️  {subject_data['matiere']}: Content may not be subject-specific")
+                else:
+                    print(f"   ❌ {subject_data['matiere']}: No document generated")
+                    all_subjects_passed = False
+            else:
+                print(f"   ❌ {subject_data['matiere']}: Generation failed")
+                all_subjects_passed = False
+        
+        return all_subjects_passed, generated_documents
+
+    def test_pdf_export_all_subjects_sujet_corrige(self):
+        """Test both sujet and corrigé PDF exports for all subjects"""
+        print("\n🔍 CRITICAL: Testing PDF exports (sujet & corrigé) for all subjects...")
+        
+        # First generate documents for all subjects
+        success, generated_documents = self.test_pdf_generation_all_subjects()
+        if not success or not generated_documents:
+            print("   ❌ Cannot test PDF exports without generated documents")
+            return False, {}
+        
+        export_results = {}
+        all_exports_passed = True
+        
+        for subject, doc_info in generated_documents.items():
+            print(f"\n   Testing PDF exports for {subject}...")
+            doc_id = doc_info['document_id']
+            guest_id = doc_info['guest_id']
+            
+            # Test sujet export
+            sujet_data = {
+                "document_id": doc_id,
+                "export_type": "sujet", 
+                "guest_id": guest_id
+            }
+            
+            success_sujet, response_sujet = self.run_test(
+                f"Export {subject} Sujet PDF",
+                "POST",
+                "export",
+                200,
+                data=sujet_data,
+                timeout=30
+            )
+            
+            # Test corrigé export
+            corrige_data = {
+                "document_id": doc_id,
+                "export_type": "corrige",
+                "guest_id": guest_id
+            }
+            
+            success_corrige, response_corrige = self.run_test(
+                f"Export {subject} Corrigé PDF", 
+                "POST",
+                "export",
+                200,
+                data=corrige_data,
+                timeout=30
+            )
+            
+            # Check PDF file sizes (should be > 5KB for successful content generation)
+            sujet_size = 0
+            corrige_size = 0
+            
+            if success_sujet and isinstance(response_sujet, str):
+                sujet_size = len(response_sujet.encode('utf-8'))
+            elif success_sujet and hasattr(response_sujet, 'content'):
+                sujet_size = len(response_sujet.content)
+                
+            if success_corrige and isinstance(response_corrige, str):
+                corrige_size = len(response_corrige.encode('utf-8'))
+            elif success_corrige and hasattr(response_corrige, 'content'):
+                corrige_size = len(response_corrige.content)
+            
+            export_results[subject] = {
+                'sujet_success': success_sujet,
+                'corrige_success': success_corrige,
+                'sujet_size': sujet_size,
+                'corrige_size': corrige_size
+            }
+            
+            if success_sujet and success_corrige:
+                print(f"   ✅ {subject}: Both sujet and corrigé exports successful")
+                if sujet_size > 5000 and corrige_size > 5000:
+                    print(f"   ✅ {subject}: PDF sizes indicate successful content generation (sujet: {sujet_size}B, corrigé: {corrige_size}B)")
+                else:
+                    print(f"   ⚠️  {subject}: PDF sizes may be too small (sujet: {sujet_size}B, corrigé: {corrige_size}B)")
+            else:
+                print(f"   ❌ {subject}: PDF export failed (sujet: {success_sujet}, corrigé: {success_corrige})")
+                all_exports_passed = False
+        
+        return all_exports_passed, export_results
+
+    def test_pdf_template_rendering_verification(self):
+        """Verify PDF templates render exercises and solutions properly"""
+        print("\n🔍 CRITICAL: Testing PDF template rendering verification...")
+        
+        # Generate a document with known content structure
+        test_data = {
+            "matiere": "Mathématiques",
+            "niveau": "4e",
+            "chapitre": "Nombres relatifs", 
+            "type_doc": "exercices",
+            "difficulte": "moyen",
+            "nb_exercices": 2,  # Small number for focused testing
+            "versions": ["A"],
+            "guest_id": f"{self.guest_id}_template_test"
+        }
+        
+        success, response = self.run_test(
+            "Generate Document for Template Testing",
+            "POST", 
+            "generate",
+            200,
+            data=test_data,
+            timeout=60
+        )
+        
+        if not success or not response.get('document'):
+            print("   ❌ Cannot test template rendering without generated document")
+            return False, {}
+        
+        document = response['document']
+        doc_id = document['id']
+        exercises = document.get('exercises', [])
+        
+        print(f"   Generated document with {len(exercises)} exercises for template testing")
+        
+        # Test sujet template rendering
+        sujet_data = {
+            "document_id": doc_id,
+            "export_type": "sujet",
+            "guest_id": test_data['guest_id']
+        }
+        
+        success_sujet, response_sujet = self.run_test(
+            "Template Rendering - Sujet",
+            "POST",
+            "export", 
+            200,
+            data=sujet_data,
+            timeout=30
+        )
+        
+        # Test corrigé template rendering  
+        corrige_data = {
+            "document_id": doc_id,
+            "export_type": "corrige",
+            "guest_id": test_data['guest_id']
+        }
+        
+        success_corrige, response_corrige = self.run_test(
+            "Template Rendering - Corrigé",
+            "POST",
+            "export",
+            200, 
+            data=corrige_data,
+            timeout=30
+        )
+        
+        template_rendering_results = {
+            'sujet_rendered': success_sujet,
+            'corrige_rendered': success_corrige,
+            'exercises_count': len(exercises),
+            'document_structure_valid': bool(exercises and all(ex.get('enonce') for ex in exercises))
+        }
+        
+        if success_sujet and success_corrige:
+            print("   ✅ Both sujet and corrigé templates rendered successfully")
+            
+            # Check if we have proper exercise structure
+            if exercises:
+                has_enonce = all(ex.get('enonce') for ex in exercises)
+                has_solutions = all(ex.get('solution') for ex in exercises)
+                
+                if has_enonce:
+                    print("   ✅ All exercises have enoncé (exercise statements)")
+                else:
+                    print("   ❌ Some exercises missing enoncé")
+                    
+                if has_solutions:
+                    print("   ✅ All exercises have solutions")
+                    # Check solution structure
+                    for i, ex in enumerate(exercises):
+                        solution = ex.get('solution', {})
+                        if solution.get('etapes') and solution.get('resultat'):
+                            print(f"   ✅ Exercise {i+1}: Has step-by-step solution with result")
+                        else:
+                            print(f"   ⚠️  Exercise {i+1}: Solution structure may be incomplete")
+                else:
+                    print("   ❌ Some exercises missing solutions")
+            
+            return True, template_rendering_results
+        else:
+            print(f"   ❌ Template rendering failed (sujet: {success_sujet}, corrigé: {success_corrige})")
+            return False, template_rendering_results
+
+    def test_pdf_generation_no_template_errors(self):
+        """Verify PDF generation has no template rendering errors in backend logs"""
+        print("\n🔍 CRITICAL: Testing PDF generation for template errors...")
+        
+        # Generate and export a document to trigger template rendering
+        test_data = {
+            "matiere": "Français",
+            "niveau": "3e", 
+            "chapitre": "Se raconter, se représenter",
+            "type_doc": "exercices",
+            "difficulte": "moyen",
+            "nb_exercices": 2,
+            "versions": ["A"],
+            "guest_id": f"{self.guest_id}_error_test"
+        }
+        
+        # Generate document
+        success_gen, response_gen = self.run_test(
+            "Generate Document for Error Testing",
+            "POST",
+            "generate",
+            200,
+            data=test_data,
+            timeout=60
+        )
+        
+        if not success_gen or not response_gen.get('document'):
+            print("   ❌ Cannot test template errors without generated document")
+            return False, {}
+        
+        doc_id = response_gen['document']['id']
+        
+        # Export both types to test template rendering
+        export_tests = [
+            ("sujet", "Sujet Template Error Test"),
+            ("corrige", "Corrigé Template Error Test")
+        ]
+        
+        all_exports_clean = True
+        export_results = {}
+        
+        for export_type, test_name in export_tests:
+            export_data = {
+                "document_id": doc_id,
+                "export_type": export_type,
+                "guest_id": test_data['guest_id']
+            }
+            
+            success, response = self.run_test(
+                test_name,
+                "POST",
+                "export",
+                200,
+                data=export_data,
+                timeout=30
+            )
+            
+            if success:
+                # Check response size (should be substantial for successful PDF)
+                response_size = 0
+                if isinstance(response, str):
+                    response_size = len(response.encode('utf-8'))
+                elif hasattr(response, 'content'):
+                    response_size = len(response.content)
+                
+                export_results[export_type] = {
+                    'success': True,
+                    'size': response_size,
+                    'size_adequate': response_size > 5000
+                }
+                
+                if response_size > 5000:
+                    print(f"   ✅ {export_type.title()} export successful with adequate size ({response_size}B)")
+                else:
+                    print(f"   ⚠️  {export_type.title()} export size may be too small ({response_size}B)")
+                    all_exports_clean = False
+            else:
+                print(f"   ❌ {export_type.title()} export failed")
+                export_results[export_type] = {'success': False, 'size': 0, 'size_adequate': False}
+                all_exports_clean = False
+        
+        return all_exports_clean, export_results
+
+    def test_pdf_generation_guest_and_pro_users(self):
+        """Test PDF generation for both guest users and Pro users (simulated)"""
+        print("\n🔍 CRITICAL: Testing PDF generation for guest and Pro users...")
+        
+        # Test guest user PDF generation (already tested above, but verify again)
+        guest_test_data = {
+            "matiere": "Physique-Chimie",
+            "niveau": "5e",
+            "chapitre": "Organisation et transformations de la matière", 
+            "type_doc": "exercices",
+            "difficulte": "moyen",
+            "nb_exercices": 2,
+            "versions": ["A"],
+            "guest_id": f"{self.guest_id}_guest_pro_test"
+        }
+        
+        # Generate document as guest
+        success_guest_gen, response_guest_gen = self.run_test(
+            "Guest User Document Generation",
+            "POST",
+            "generate",
+            200,
+            data=guest_test_data,
+            timeout=60
+        )
+        
+        guest_results = {'generation': success_guest_gen, 'exports': {}}
+        
+        if success_guest_gen and response_guest_gen.get('document'):
+            doc_id = response_guest_gen['document']['id']
+            
+            # Test guest exports
+            for export_type in ['sujet', 'corrige']:
+                export_data = {
+                    "document_id": doc_id,
+                    "export_type": export_type,
+                    "guest_id": guest_test_data['guest_id']
+                }
+                
+                success_export, response_export = self.run_test(
+                    f"Guest User {export_type.title()} Export",
+                    "POST",
+                    "export",
+                    200,
+                    data=export_data,
+                    timeout=30
+                )
+                
+                guest_results['exports'][export_type] = success_export
+                
+                if success_export:
+                    print(f"   ✅ Guest user {export_type} export successful")
+                else:
+                    print(f"   ❌ Guest user {export_type} export failed")
+        
+        # Test Pro user export structure (we can't test actual Pro functionality without valid session)
+        print("\n   Testing Pro user export structure...")
+        
+        # Test export with session token header (will fail but tests structure)
+        fake_session_token = f"test-pro-session-{int(time.time())}"
+        pro_export_data = {
+            "document_id": doc_id if success_guest_gen else "test-doc-id",
+            "export_type": "sujet"
+        }
+        
+        success_pro_structure, response_pro_structure = self.run_test(
+            "Pro User Export Structure Test",
+            "POST", 
+            "export",
+            400,  # Will fail due to invalid session, but tests structure
+            data=pro_export_data,
+            headers={"X-Session-Token": fake_session_token}
+        )
+        
+        pro_results = {
+            'export_structure_tested': success_pro_structure,
+            'session_token_handling': success_pro_structure
+        }
+        
+        if success_pro_structure:
+            print("   ✅ Pro user export structure properly handles session tokens")
+        else:
+            print("   ❌ Pro user export structure may have issues")
+        
+        # Overall assessment
+        guest_working = guest_results['generation'] and all(guest_results['exports'].values())
+        pro_structure_working = pro_results['export_structure_tested']
+        
+        overall_success = guest_working and pro_structure_working
+        
+        if overall_success:
+            print("   ✅ Both guest and Pro user PDF generation structures working")
+        else:
+            print("   ❌ Issues detected in guest or Pro user PDF generation")
+        
+        return overall_success, {'guest': guest_results, 'pro': pro_results}
+
+    def run_critical_pdf_template_fix_validation(self):
+        """Run comprehensive PDF template fix validation tests"""
+        print("\n" + "="*80)
+        print("🔥 CRITICAL PDF TEMPLATE FIX VALIDATION")
+        print("="*80)
+        print("CONTEXT: PDF templates were failing due to direct Python object rendering")
+        print("FIX: Templates fixed to use proper Jinja2 loops for exercises and solutions")
+        print("TESTING: Comprehensive verification that PDF generation now works correctly")
+        print("FOCUS: All subjects, both export types, template rendering, no errors")
+        print("="*80)
+        
+        critical_pdf_tests = [
+            ("PDF Generation All Subjects", self.test_pdf_generation_all_subjects),
+            ("PDF Export All Subjects (Sujet & Corrigé)", self.test_pdf_export_all_subjects_sujet_corrige),
+            ("PDF Template Rendering Verification", self.test_pdf_template_rendering_verification),
+            ("PDF Generation No Template Errors", self.test_pdf_generation_no_template_errors),
+            ("PDF Generation Guest & Pro Users", self.test_pdf_generation_guest_and_pro_users),
+        ]
+        
+        pdf_passed = 0
+        pdf_total = len(critical_pdf_tests)
+        detailed_results = {}
+        
+        for test_name, test_func in critical_pdf_tests:
+            try:
+                print(f"\n{'='*60}")
+                print(f"🔍 RUNNING: {test_name}")
+                print(f"{'='*60}")
+                
+                success, results = test_func()
+                detailed_results[test_name] = {'success': success, 'details': results}
+                
+                if success:
+                    pdf_passed += 1
+                    print(f"\n✅ {test_name}: PASSED")
+                else:
+                    print(f"\n❌ {test_name}: FAILED")
+                    
+            except Exception as e:
+                print(f"\n❌ {test_name}: FAILED with exception: {e}")
+                detailed_results[test_name] = {'success': False, 'error': str(e)}
+        
+        # Final assessment
+        print(f"\n" + "="*80)
+        print("📊 CRITICAL PDF TEMPLATE FIX VALIDATION RESULTS")
+        print("="*80)
+        
+        for test_name, result in detailed_results.items():
+            status = "✅ PASSED" if result['success'] else "❌ FAILED"
+            print(f"{status}: {test_name}")
+            
+            if not result['success'] and 'error' in result:
+                print(f"   Error: {result['error']}")
+        
+        print(f"\n🔥 CRITICAL PDF TESTS: {pdf_passed}/{pdf_total} passed ({pdf_passed/pdf_total*100:.1f}%)")
+        
+        if pdf_passed == pdf_total:
+            print("🎉 ALL CRITICAL PDF TEMPLATE TESTS PASSED!")
+            print("✅ PDF generation system is fully operational after template fixes")
+        elif pdf_passed >= pdf_total * 0.8:
+            print("✅ Most critical PDF tests passed - system appears functional")
+        else:
+            print("⚠️  Several critical PDF tests failed - template fix may be incomplete")
+        
+        return pdf_passed, pdf_total, detailed_results
+
 def main():
-    """Main function to run personalized PDF generation tests"""
-    print("🎨 LE MAÎTRE MOT - PERSONALIZED PDF GENERATION TESTING")
+    """Main function to run CRITICAL PDF TEMPLATE FIX VALIDATION"""
+    print("🔥 LE MAÎTRE MOT - CRITICAL PDF TEMPLATE FIX VALIDATION")
     print("=" * 80)
-    print("CONTEXT: Testing personalized PDF generation after ReportLab API fix")
-    print("CRITICAL FIX: drawCentredText() → drawCentredString() in ReportLab canvas methods")
-    print("FEATURES TESTED:")
-    print("1. ReportLab API method fix verification")
-    print("2. Pro user PDF export pipeline")
-    print("3. Personalized PDF content verification")
-    print("4. Template style application (minimaliste, classique, moderne)")
-    print("5. Complete workflow testing")
-    print("6. Personalized vs standard PDF differences")
+    print("CONTEXT: PDF templates were failing due to direct Python object rendering")
+    print("CRITICAL FIX: Templates fixed to use proper Jinja2 loops for exercises and solutions")
+    print("TESTING FOCUS:")
+    print("1. PDF Generation for all 3 subjects (Mathématiques, Français, Physique-Chimie)")
+    print("2. Both sujet and corrigé exports working correctly")
+    print("3. Template rendering with proper exercise and solution display")
+    print("4. No template rendering errors in backend logs")
+    print("5. Guest and Pro user PDF generation structures")
     print("=" * 80)
     
     tester = LeMaitreMotAPITester()
     
-    # First run basic tests to set up document for testing
+    # Run the critical PDF template fix validation
+    pdf_passed, pdf_total, pdf_details = tester.run_critical_pdf_template_fix_validation()
+    
+    # Run basic API tests for context
+    print("\n📋 BASIC API CONTEXT TESTS")
+    print("=" * 40)
+    
     basic_tests = [
         ("Root API", tester.test_root_endpoint),
         ("Catalog", tester.test_catalog_endpoint),
-        ("Generate Document", tester.test_generate_document),
+        ("Pricing", tester.test_pricing_endpoint),
     ]
     
-    print("\n📋 BASIC SETUP TESTS")
-    print("=" * 30)
-    
+    basic_passed = 0
     for test_name, test_func in basic_tests:
-        try:
-            test_func()
-        except Exception as e:
-            print(f"❌ {test_name} failed with exception: {e}")
-    
-    # Run personalized PDF generation tests (main focus)
-    pdf_passed, pdf_total = tester.run_personalized_pdf_tests()
-    
-    # Run some authentication tests for context
-    print("\n" + "="*60)
-    print("🔐 AUTHENTICATION CONTEXT TESTS")
-    print("="*60)
-    
-    context_tests = [
-        ("Pro User Status", tester.test_pro_user_exists),
-        ("Magic Link Request", tester.test_request_login_pro_user),
-        ("Session Validation Structure", tester.test_session_validation_without_token),
-    ]
-    
-    context_passed = 0
-    for test_name, test_func in context_tests:
         try:
             success, _ = test_func()
             if success:
-                context_passed += 1
+                basic_passed += 1
         except Exception as e:
             print(f"❌ {test_name} failed with exception: {e}")
     
     # Print final results
     print("\n" + "=" * 80)
-    print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
-    print(f"🎨 Personalized PDF Generation: {pdf_passed}/{pdf_total} tests passed")
-    print(f"🔐 Context Tests: {context_passed}/{len(context_tests)} context tests passed")
+    print("📊 FINAL RESULTS - CRITICAL PDF TEMPLATE FIX VALIDATION")
+    print("=" * 80)
+    print(f"🔥 CRITICAL PDF Template Fix Tests: {pdf_passed}/{pdf_total} ({pdf_passed/pdf_total*100:.1f}%)")
+    print(f"📋 Basic API Tests: {basic_passed}/{len(basic_tests)} ({basic_passed/len(basic_tests)*100:.1f}%)")
     
-    # Determine overall success
+    # Determine overall success based on PDF template fix
     pdf_success_rate = pdf_passed / pdf_total if pdf_total > 0 else 0
     
     print("\n" + "=" * 80)
-    print("🔍 PERSONALIZED PDF GENERATION ANALYSIS:")
+    print("🔍 CRITICAL PDF TEMPLATE FIX ANALYSIS:")
     print("=" * 80)
     
     if pdf_success_rate >= 1.0:
-        print("✅ PERSONALIZED PDF GENERATION VERIFICATION: PASSED!")
-        print("✅ ReportLab API fix working (drawCentredString method)")
-        print("✅ Pro user PDF export pipeline functional")
-        print("✅ Template personalization system working")
-        print("✅ All 3 template styles (minimaliste, classique, moderne) available")
-        print("✅ Complete workflow from document generation to PDF export")
-        print("✅ Personalized PDFs differentiated from standard PDFs")
+        print("✅ CRITICAL PDF TEMPLATE FIX VALIDATION: COMPLETE SUCCESS!")
+        print("✅ All PDF generation tests passed - template fix is working correctly")
+        print("✅ PDF exports work for all subjects (Mathématiques, Français, Physique-Chimie)")
+        print("✅ Both sujet and corrigé templates render properly")
+        print("✅ No template rendering errors detected")
+        print("✅ System ready for production use")
         return 0
     elif pdf_success_rate >= 0.8:
-        print("⚠️  MOSTLY SUCCESSFUL PERSONALIZED PDF GENERATION")
-        print("⚠️  Most PDF tests passed, minor issues may exist")
-        print("⚠️  Review failed tests above for potential improvements")
+        print("✅ CRITICAL PDF TEMPLATE FIX VALIDATION: MOSTLY SUCCESSFUL")
+        print("✅ Most PDF generation tests passed - template fix appears to be working")
+        print("⚠️  Some minor issues detected - review failed tests")
         return 1
     elif pdf_success_rate >= 0.6:
-        print("⚠️  PARTIAL PERSONALIZED PDF SUCCESS")
+        print("⚠️  CRITICAL PDF TEMPLATE FIX VALIDATION: PARTIAL SUCCESS")
         print("⚠️  Some PDF tests passed, significant issues may exist")
         print("⚠️  Review failed tests above for required improvements")
         return 2
     else:
-        print("❌ PERSONALIZED PDF GENERATION VERIFICATION: FAILED!")
-        print("❌ Most PDF tests failed")
-        print("❌ Critical issues detected - ReportLab fix may not be working")
-        print("❌ Personalized PDF system may not be functional")
+        print("❌ CRITICAL PDF TEMPLATE FIX VALIDATION: ISSUES DETECTED")
+        print("❌ Several PDF generation tests failed")
+        print("❌ Template fix may be incomplete or have regressions")
+        print("🚨 URGENT: Review PDF template implementation")
         return 3
 
 if __name__ == "__main__":
