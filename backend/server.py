@@ -1213,7 +1213,10 @@ async def logout(request: Request):
             detail="Erreur lors de la déconnexion"
         )
 
-@api_router.get("/auth/session/validate")
+@api_router.get("/quota/check")
+async def check_quota_status(guest_id: str):
+    """Check current quota status for guest user"""
+    return await check_guest_quota(guest_id)
 async def validate_session(request: Request):
     """Validate current session and return user info"""
     try:
