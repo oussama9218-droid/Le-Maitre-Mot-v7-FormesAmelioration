@@ -48,7 +48,7 @@ const TemplateSettings = ({ isPro, sessionToken, onTemplateChange }) => {
 
   const loadTemplateStyles = async () => {
     try {
-      const response = await axios.get(`${API}/template/styles`);
+      const response = await axios.get(`${API}/api/template/styles`);
       setTemplateStyles(response.data.styles);
     } catch (error) {
       console.error('Error loading template styles:', error);
