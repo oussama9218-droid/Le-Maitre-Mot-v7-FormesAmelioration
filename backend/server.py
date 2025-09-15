@@ -382,79 +382,226 @@ SUJET_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 11pt;
-            line-height: 1.4;
-            margin: 0;
-            padding: 20px;
-            color: #333;
+        @page {
+            size: A4;
+            margin: 2cm;
         }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .page-container {
+            background: white;
+            padding: 30px;
+            margin: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            min-height: calc(100vh - 40px);
+        }
+        
         .header {
             text-align: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #ddd;
+            margin-bottom: 40px;
+            padding: 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
         }
+        
         .title {
-            font-size: 18pt;
+            font-size: 24pt;
             font-weight: bold;
-            margin-bottom: 10px;
-            color: #2c3e50;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
+        
         .subtitle {
-            font-size: 12pt;
-            color: #666;
-            margin-bottom: 5px;
+            font-size: 16pt;
+            margin-bottom: 8px;
+            opacity: 0.9;
         }
+        
         .document-info {
-            font-size: 10pt;
-            color: #888;
+            font-size: 12pt;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
         }
-        .content {
-            white-space: pre-line;
+        
+        .student-info {
+            float: right;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 15px;
+            background: #ecf0f1;
+            margin-bottom: 30px;
+            width: 300px;
+        }
+        
+        .student-info h4 {
+            margin: 0 0 10px 0;
+            color: #3498db;
+            font-size: 14pt;
+        }
+        
+        .student-line {
+            border-bottom: 1px solid #bdc3c7;
+            margin: 8px 0;
+            height: 25px;
+        }
+        
+        .exercise {
+            margin: 30px 0;
+            page-break-inside: avoid;
+            border-left: 4px solid #e74c3c;
+            padding-left: 20px;
+            background: #fafafa;
+            border-radius: 0 10px 10px 0;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        
+        .exercise-header {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 12px 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 10px 10px 0 0;
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .exercise p {
+            font-size: 13pt;
+            line-height: 1.8;
+            margin: 15px 0;
             text-align: justify;
         }
+        
+        .answer-space {
+            border: 2px dashed #3498db;
+            background: #f8f9fa;
+            min-height: 120px;
+            margin: 20px 0;
+            border-radius: 8px;
+            position: relative;
+        }
+        
+        .answer-space::before {
+            content: "Espace de réponse";
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            color: #7f8c8d;
+            font-size: 11pt;
+            font-style: italic;
+        }
+        
+        .qcm-options {
+            margin: 15px 0;
+        }
+        
+        .qcm-options li {
+            margin: 12px 0;
+            font-size: 13pt;
+            list-style: none;
+            position: relative;
+            padding-left: 35px;
+        }
+        
+        .qcm-options li::before {
+            content: "☐";
+            position: absolute;
+            left: 0;
+            font-size: 16pt;
+            color: #3498db;
+        }
+        
+        .points-badge {
+            float: right;
+            background: #27ae60;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 11pt;
+            font-weight: bold;
+        }
+        
         .footer {
-            position: fixed;
-            bottom: 20px;
-            width: 100%;
             text-align: center;
-            font-size: 9pt;
-            color: #666;
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 2px solid #ecf0f1;
+            color: #7f8c8d;
+            font-size: 11pt;
+        }
+        
+        .decoration {
+            text-align: center;
+            font-size: 20pt;
+            color: #f39c12;
+            margin: 20px 0;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <div class="title">{{ document.type_doc.title() }}</div>
-        <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
-        <div class="subtitle">{{ document.chapitre }}</div>
-        <div class="document-info">
-            Difficulté: {{ document.difficulte.title() }} | 
-            {{ document.nb_exercices }} exercices | 
-            Créé le {{ date_creation }}
+    <div class="page-container">
+        <div class="student-info">
+            <h4>📝 Informations élève</h4>
+            <div>Nom : <div class="student-line"></div></div>
+            <div>Prénom : <div class="student-line"></div></div>
+            <div>Classe : <div class="student-line"></div></div>
+            <div>Date : <div class="student-line"></div></div>
         </div>
-    </div>
-    
-    <div class="content">
-        {% for exercice in document.exercises %}
-            <div class="exercise">
-                <h3>Exercice {{ loop.index }}</h3>
-                <p>{{ exercice.enonce }}</p>
-                {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
-                    <ul>
-                        {% for option in exercice.donnees.options %}
-                            <li>{{ option }}</li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
+        
+        <div class="header">
+            <div class="title">{{ document.type_doc.title() }}</div>
+            <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
+            <div class="subtitle">📚 {{ document.chapitre }}</div>
+            <div class="document-info">
+                🎯 Difficulté: {{ document.difficulte.title() }} | 
+                📝 {{ document.nb_exercices }} exercices | 
+                📅 {{ date_creation }}
             </div>
-        {% endfor %}
-    </div>
-    
-    <div class="footer">
-        Le Maître Mot - Générateur de documents pédagogiques
+        </div>
+        
+        <div class="decoration">✨ Bon travail ! ✨</div>
+        
+        <div class="content">
+            {% for exercice in document.exercises %}
+                <div class="exercise">
+                    <div class="exercise-header">
+                        🔢 Exercice {{ loop.index }}
+                        <span class="points-badge">4 points</span>
+                    </div>
+                    <p>{{ exercice.enonce }}</p>
+                    
+                    {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
+                        <ul class="qcm-options">
+                            {% for option in exercice.donnees.options %}
+                                <li>{{ option }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <div class="answer-space"></div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="footer">
+            🌟 Le Maître Mot - Générateur de documents pédagogiques 🌟<br>
+            <small>Bonne chance pour tes exercices !</small>
+        </div>
     </div>
 </body>
 </html>
