@@ -252,7 +252,9 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Template personalization system"
+    - "Subject selector functionality after UI bug fix"
+    - "Template Settings component loading"
+    - "Workflow progression testing"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
