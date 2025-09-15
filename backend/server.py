@@ -2359,8 +2359,11 @@ async def save_user_template(
     try:
         user_email = await require_pro_user(request)
         
+        # Debug logging
+        logger.info(f"🔍 Template save request for {user_email}: {template_data.dict()}")
+        
         # Validate template style
-        if template_style not in TEMPLATE_STYLES:
+        if template_data.template_style not in TEMPLATE_STYLES:
             raise HTTPException(status_code=400, detail="Style de template invalide")
         
         # Get current template or create new one
@@ -2369,13 +2372,15 @@ async def save_user_template(
         if existing_template:
             # Update existing
             update_data = {
-                "professor_name": professor_name,
-                "school_name": school_name,
-                "school_year": school_year,
-                "footer_text": footer_text,
-                "template_style": template_style,
+                "professor_name": template_data.professor_name,
+                "school_name": template_data.school_name,
+                "school_year": template_data.school_year,
+                "footer_text": template_data.footer_text,
+                "template_style": template_data.template_style,
                 "updated_at": datetime.now(timezone.utc)
             }
+            
+            logger.info(f"🔍 Updating existing template with data: {update_data}")
             
             await db.user_templates.update_one(
                 {"user_email": user_email},
