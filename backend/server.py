@@ -267,146 +267,70 @@ SUJET_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>{{ document.type_doc|title }} - {{ document.matiere }} {{ document.niveau }}</title>
+    <meta charset="UTF-8">
     <style>
-        @page {
-            size: A4;
-            margin: 2cm 1.5cm 2cm 1.5cm;
-            @top-center {
-                content: "{{ document.matiere }} - {{ document.niveau }} - {{ document.chapitre }}";
-                font-family: 'Arial', sans-serif;
-                font-size: 10pt;
-                color: #666;
-            }
-            @bottom-center {
-                content: "Page " counter(page) " / " counter(pages);
-                font-family: 'Arial', sans-serif;
-                font-size: 10pt;
-                color: #666;
-            }
-        }
-        
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             font-size: 11pt;
             line-height: 1.4;
+            margin: 0;
+            padding: 20px;
             color: #333;
         }
-        
         .header {
             text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 1cm;
-            margin-bottom: 1.5cm;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
         }
-        
         .title {
             font-size: 18pt;
             font-weight: bold;
-            margin-bottom: 0.5cm;
+            margin-bottom: 10px;
+            color: #2c3e50;
         }
-        
         .subtitle {
-            font-size: 14pt;
+            font-size: 12pt;
             color: #666;
-            margin-bottom: 0.3cm;
+            margin-bottom: 5px;
         }
-        
-        .info-line {
+        .document-info {
             font-size: 10pt;
             color: #888;
         }
-        
-        .exercise {
-            margin-bottom: 2cm;
-            page-break-inside: avoid;
-        }
-        
-        .exercise-header {
-            font-weight: bold;
-            font-size: 12pt;
-            margin-bottom: 0.5cm;
-            padding: 0.3cm;
-            background-color: #f5f5f5;
-            border-left: 4px solid #333;
-        }
-        
-        .exercise-content {
-            margin-left: 0.5cm;
-            margin-bottom: 1cm;
-        }
-        
-        .exercise-text {
+        .content {
+            white-space: pre-line;
             text-align: justify;
-            margin-bottom: 1cm;
         }
-        
-        .answer-space {
-            border: 1px solid #ddd;
-            min-height: 3cm;
-            margin-top: 0.5cm;
-            background-color: #fafafa;
-        }
-        
-        .answer-lines {
-            height: 2.5cm;
-            background-image: repeating-linear-gradient(
-                transparent,
-                transparent 0.6cm,
-                #ddd 0.6cm,
-                #ddd 0.62cm
-            );
-        }
-        
-        .difficulty-badge {
-            display: inline-block;
-            padding: 0.1cm 0.3cm;
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
             font-size: 9pt;
-            background-color: #e8f4f8;
-            border: 1px solid #bee5eb;
-            border-radius: 0.2cm;
-            margin-left: 0.5cm;
-        }
-        
-        .points {
-            float: right;
-            font-size: 10pt;
             color: #666;
-            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="title">{{ document.type_doc|title }}</div>
+        <div class="title">{{ document.type_doc.title() }}</div>
         <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
         <div class="subtitle">{{ document.chapitre }}</div>
-        <div class="info-line">
-            Difficulté: {{ document.difficulte|title }} | 
+        <div class="document-info">
+            Difficulté: {{ document.difficulte.title() }} | 
             {{ document.nb_exercices }} exercices | 
-            Généré le {{ date_creation }}
+            Créé le {{ date_creation }}
         </div>
     </div>
     
-    {% for exercise in document.exercises %}
-    <div class="exercise">
-        <div class="exercise-header">
-            Exercice {{ loop.index }}
-            <span class="difficulty-badge">{{ exercise.difficulte }}</span>
-            <span class="points">
-                {% set total_points = exercise.bareme|sum(attribute='points') %}
-                ({{ "%.1f"|format(total_points) }} pts)
-            </span>
-        </div>
-        <div class="exercise-content">
-            <div class="exercise-text">{{ exercise.enonce }}</div>
-            <div class="answer-space">
-                <div class="answer-lines"></div>
-            </div>
-        </div>
+    <div class="content">
+        {{ document.exercices }}
     </div>
-    {% endfor %}
+    
+    <div class="footer">
+        Le Maître Mot - Générateur de documents pédagogiques
+    </div>
 </body>
 </html>
 """
