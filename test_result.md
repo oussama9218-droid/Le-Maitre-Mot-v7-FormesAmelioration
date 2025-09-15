@@ -244,6 +244,42 @@ frontend:
         - agent: "main"
         - comment: "Session management fully implemented with periodic validation, silent checks every minute, and automatic logout detection"
 
+  - task: "Subject selector functionality after UI bug fix"
+    implemented: true
+    working: "NA"
+    file: "App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Fixed critical UI bug where clicking 'matière' (subject) selector opened logo upload window. Applied CSS positioning fix (added 'relative' class to drag & drop container). Need to verify main workflow works correctly."
+
+  - task: "Template Settings component loading"
+    implemented: true
+    working: "NA"
+    file: "components/TemplateSettings.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Fixed API endpoint URLs in TemplateSettings component. Need to verify component loads without errors and template styles endpoint works (no 404 errors)."
+
+  - task: "Workflow progression testing"
+    implemented: true
+    working: "NA"
+    file: "App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "Need to verify complete workflow: matière → niveau → chapitre progression works correctly after UI bug fixes."
+
 metadata:
   created_by: "main_agent"
   version: "1.0"
