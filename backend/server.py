@@ -1337,6 +1337,115 @@ async def get_subscription_status(email: str):
         logger.error(f"Error getting subscription status for {email}: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de la vérification du statut d'abonnement")
 
+@api_router.get("/template/styles")
+async def get_template_styles():
+    """Get available template styles (public endpoint)"""
+    return {
+        "styles": {
+            style_id: {
+                "name": style["name"],
+                "description": style["description"],
+                "preview_colors": {
+                    "primary": style["primary_color"],
+                    "secondary": style["secondary_color"], 
+                    "accent": style["accent_color"]
+                }
+            }
+            for style_id, style in TEMPLATE_STYLES.items()
+        }
+    }
+
+@api_router.get("/template/get")
+async def get_user_template(request: Request):
+    """Get user's template configuration (Pro only)"""
+    try:
+        user_email = await require_pro_user(request)
+        
+        # Find user template
+        template_doc = await db.user_templates.find_one({"user_email": user_email})
+        
+        if not template_doc:
+            # Return default template
+            default_template = UserTemplate(
+                user_email=user_email,
+                template_style="minimaliste"
+            )
+            return default_template.dict()
+        
+        # Convert to UserTemplate object
+        template = UserTemplate(**template_doc)
+        return template.dict()
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting user template: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors du chargement du template")
+
+@api_router.post("/template/save")
+async def save_user_template(
+    request: Request,
+    professor_name: str = None,
+    school_name: str = None,
+    school_year: str = None,
+    footer_text: str = None,
+    template_style: str = "minimaliste"
+):
+    """Save user's template configuration (Pro only)"""
+    try:
+        user_email = await require_pro_user(request)
+        
+        # Validate template style
+        if template_style not in TEMPLATE_STYLES:
+            raise HTTPException(status_code=400, detail="Style de template invalide")
+        
+        # Get current template or create new one
+        existing_template = await db.user_templates.find_one({"user_email": user_email})
+        
+        if existing_template:
+            # Update existing
+            update_data = {
+                "professor_name": professor_name,
+                "school_name": school_name,
+                "school_year": school_year,
+                "footer_text": footer_text,
+                "template_style": template_style,
+                "updated_at": datetime.now(timezone.utc)
+            }
+            
+            await db.user_templates.update_one(
+                {"user_email": user_email},
+                {"$set": update_data}
+            )
+            
+            # Get updated template
+            updated_template = await db.user_templates.find_one({"user_email": user_email})
+            template = UserTemplate(**updated_template)
+        else:
+            # Create new template
+            template = UserTemplate(
+                user_email=user_email,
+                professor_name=professor_name,
+                school_name=school_name,
+                school_year=school_year,
+                footer_text=footer_text,
+                template_style=template_style
+            )
+            
+            await db.user_templates.insert_one(template.dict())
+        
+        logger.info(f"Template saved for user: {user_email}")
+        return {
+            "message": "Template sauvegardé avec succès",
+            "template": template.dict()
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error saving user template: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde du template")
+
 @api_router.get("/quota/check")
 async def check_quota_status(guest_id: str):
     """Check current quota status for guest user"""
