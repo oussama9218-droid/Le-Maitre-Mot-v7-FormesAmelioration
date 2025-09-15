@@ -154,6 +154,27 @@ class ExportRequest(BaseModel):
     export_type: str  # "sujet" or "corrige"
     guest_id: Optional[str] = None
 
+class AdvancedPDFOptions(BaseModel):
+    page_format: str = "A4"  # A4, A4_compact, US_Letter
+    margin_preset: str = "standard"  # standard, compact, generous
+    custom_margins: Optional[Dict[str, str]] = None  # Override margin_preset if provided
+    show_difficulty: bool = True
+    show_creation_date: bool = True
+    show_exercise_numbers: bool = True
+    show_point_values: bool = True
+    include_instructions: bool = True
+    page_numbering: str = "bottom_center"  # bottom_center, bottom_right, top_right, none
+    exercise_separator: str = "line"  # line, space, box, none
+    question_numbering: str = "arabic"  # arabic, roman, letters, none
+    color_scheme: str = "professional"  # professional, academic, modern, minimal
+    font_scaling: float = 1.0  # 0.8 to 1.2
+
+class EnhancedExportRequest(BaseModel):
+    document_id: str
+    export_type: str  # "sujet" or "corrige"
+    guest_id: Optional[str] = None
+    advanced_options: Optional[AdvancedPDFOptions] = None
+
 class CheckoutRequest(BaseModel):
     package_id: str  # "monthly" or "yearly"
     origin_url: str
