@@ -717,13 +717,13 @@ def draw_header(canvas, doc, template_config, document_info):
         canvas.setFillColor(HexColor(style['primary_color']))
         canvas.setFont(style['header_font'], style['header_font_size'])
         title = f"{document_info['type_doc'].title()} - {document_info['matiere']}"
-        canvas.drawCentredText(width/2, y_start - 25, title)
+        canvas.drawCentredString(width/2, y_start - 25, title)
         
         # Subtitle
         canvas.setFont(style['content_font'], style['content_font_size'] - 1)
         canvas.setFillColor(HexColor(style['secondary_color']))
         subtitle = f"{document_info['niveau']} - {document_info['chapitre']}"
-        canvas.drawCentredText(width/2, y_start - 45, subtitle)
+        canvas.drawCentredString(width/2, y_start - 45, subtitle)
         
         # School info (right side)
         text_x = width - 50
