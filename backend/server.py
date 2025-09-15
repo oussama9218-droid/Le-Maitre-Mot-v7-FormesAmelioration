@@ -2274,6 +2274,95 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         logger.error(f"Error exporting PDF: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de l'export PDF")
 
+@api_router.post("/export/advanced")
+async def export_pdf_advanced(request: EnhancedExportRequest, http_request: Request):
+    """Export document as PDF with advanced layout options (Pro only)"""
+    try:
+        # Check authentication - Pro only feature
+        session_token = http_request.headers.get("X-Session-Token")
+        if not session_token:
+            raise HTTPException(status_code=401, detail="Session token requis pour les options avancées")
+        
+        email = await validate_session_token(session_token)
+        if not email:
+            raise HTTPException(status_code=401, detail="Session token invalide")
+        
+        is_pro, user = await check_user_pro_status(email)
+        if not is_pro:
+            raise HTTPException(status_code=403, detail="Fonctionnalité Pro uniquement")
+        
+        logger.info(f"Advanced PDF export requested by Pro user: {email}")
+        
+        # Get document
+        document = await db.documents.find_one({"id": request.document_id})
+        if not document:
+            raise HTTPException(status_code=404, detail="Document non trouvé")
+        
+        # Load user template configuration
+        template_config = {}
+        template_doc = await db.user_templates.find_one({"user_email": email})
+        if template_doc:
+            template_config = {
+                'template_style': template_doc.get('template_style', 'minimaliste'),
+                'professor_name': template_doc.get('professor_name'),
+                'school_name': template_doc.get('school_name'),
+                'school_year': template_doc.get('school_year'),
+                'footer_text': template_doc.get('footer_text'),
+                'logo_url': template_doc.get('logo_url'),
+                'logo_filename': template_doc.get('logo_filename')
+            }
+        else:
+            template_config = {'template_style': 'minimaliste'}
+        
+        # Apply advanced options
+        advanced_opts = request.advanced_options or AdvancedPDFOptions()
+        
+        # Generate content with advanced formatting
+        if request.export_type == "sujet":
+            content = format_exercises_for_export(document["exercises"], advanced_opts)
+        else:  # corrige
+            content = format_solutions_for_export(document["exercises"], advanced_opts)
+        
+        # Generate PDF with advanced layout
+        pdf_content = await generate_advanced_pdf(
+            document, content, request.export_type, template_config, advanced_opts
+        )
+        
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file.write(pdf_content)
+        temp_file.close()
+        
+        # Generate filename
+        filename = f"LeMaitremot_{request.export_type}_{document['matiere']}_{document['niveau']}_advanced.pdf"
+        
+        # Record export
+        export_record = {
+            "id": str(uuid.uuid4()),
+            "document_id": request.document_id,
+            "export_type": request.export_type,
+            "user_email": email,
+            "is_pro": True,
+            "template_used": template_config.get('template_style', 'minimaliste'),
+            "advanced_options": advanced_opts.dict(),
+            "created_at": datetime.now(timezone.utc)
+        }
+        await db.exports.insert_one(export_record)
+        
+        logger.info(f"✅ Advanced PDF generated successfully: {filename}")
+        
+        return FileResponse(
+            temp_file.name,
+            media_type='application/pdf',
+            filename=filename
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting advanced PDF: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'export PDF avancé")
+
 @api_router.post("/checkout/session")
 async def create_checkout_session(request: CheckoutRequest, http_request: Request):
     """Create Stripe checkout session"""
