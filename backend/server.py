@@ -1660,6 +1660,23 @@ def format_solutions_for_export(exercises: List[dict], options: AdvancedPDFOptio
     
     return "\n\n".join(formatted_content)
 
+def get_template_colors_and_fonts(template_config: dict) -> dict:
+    """Get template colors and fonts based on style"""
+    style_name = template_config.get('template_style', 'minimaliste')
+    template_style = TEMPLATE_STYLES.get(style_name, TEMPLATE_STYLES['minimaliste'])
+    
+    return {
+        'template_colors': {
+            'primary': template_style['primary_color'],
+            'secondary': template_style['secondary_color'],
+            'accent': template_style['accent_color']
+        },
+        'template_fonts': {
+            'header': template_style['header_font'],
+            'content': template_style['content_font']
+        }
+    }
+
 async def generate_advanced_pdf(document: dict, content: str, export_type: str, template_config: dict, options: AdvancedPDFOptions) -> bytes:
     """Generate PDF with advanced layout options"""
     # Get layout settings
