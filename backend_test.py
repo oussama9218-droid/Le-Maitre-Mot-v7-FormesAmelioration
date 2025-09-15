@@ -2011,14 +2011,14 @@ class LeMaitreMotAPITester:
         return subscription_passed, subscription_total
 
 def main():
-    print("💳 SUBSCRIPTION MANAGEMENT TESTING: Duplicate Prevention & Expiration Dates")
+    print("🎨 TEMPLATE PERSONALIZATION SYSTEM TESTING")
     print("=" * 80)
-    print("TESTING SUBSCRIPTION IMPROVEMENTS:")
-    print("1. Duplicate subscription prevention for existing Pro users")
-    print("2. Professional error messages with subscription details")
-    print("3. Accurate expiration date calculations (30 days monthly, 365 days yearly)")
-    print("4. Access control based on subscription expiration")
-    print("5. Subscription status endpoint with detailed information")
+    print("TESTING TEMPLATE PERSONALIZATION FEATURES:")
+    print("1. Template styles endpoint (public access)")
+    print("2. Pro user template management (get/save)")
+    print("3. Feature gating verification (Pro-only access)")
+    print("4. Template data validation")
+    print("5. Database integration testing")
     print("=" * 80)
     
     tester = LeMaitreMotAPITester()
@@ -2039,8 +2039,8 @@ def main():
         except Exception as e:
             print(f"❌ {test_name} failed with exception: {e}")
     
-    # Run subscription management tests (main focus)
-    subscription_passed, subscription_total = tester.run_subscription_management_tests()
+    # Run template personalization tests (main focus)
+    template_passed, template_total = tester.run_template_personalization_tests()
     
     # Run some authentication tests for context
     print("\n" + "="*60)
@@ -2065,41 +2065,39 @@ def main():
     # Print final results
     print("\n" + "=" * 80)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
-    print(f"💳 Subscription Management: {subscription_passed}/{subscription_total} tests passed")
+    print(f"🎨 Template Personalization: {template_passed}/{template_total} tests passed")
     print(f"🔐 Context Tests: {context_passed}/{len(context_tests)} context tests passed")
     
     # Determine overall success
-    subscription_success_rate = subscription_passed / subscription_total if subscription_total > 0 else 0
+    template_success_rate = template_passed / template_total if template_total > 0 else 0
     
     print("\n" + "=" * 80)
-    print("🔍 SUBSCRIPTION MANAGEMENT ANALYSIS:")
+    print("🔍 TEMPLATE PERSONALIZATION ANALYSIS:")
     print("=" * 80)
     
-    if subscription_success_rate >= 1.0:
-        print("✅ SUBSCRIPTION MANAGEMENT VERIFICATION: PASSED!")
-        print("✅ Duplicate subscription prevention working correctly")
-        print("✅ Professional error messages with subscription details")
-        print("✅ Expiration date calculations appear accurate")
-        print("✅ Access control based on subscription status working")
-        print("✅ Subscription status endpoint providing detailed information")
+    if template_success_rate >= 1.0:
+        print("✅ TEMPLATE PERSONALIZATION VERIFICATION: PASSED!")
+        print("✅ Template styles endpoint accessible to all users")
+        print("✅ Template management properly restricted to Pro users")
+        print("✅ Feature gating working correctly (401/403 for unauthorized)")
+        print("✅ Template data validation functioning")
+        print("✅ Database integration endpoints properly structured")
         return 0
-    elif subscription_success_rate >= 0.8:
-        print("⚠️  MOSTLY SUCCESSFUL SUBSCRIPTION MANAGEMENT")
-        print("⚠️  Most subscription tests passed, minor issues may exist")
+    elif template_success_rate >= 0.8:
+        print("⚠️  MOSTLY SUCCESSFUL TEMPLATE PERSONALIZATION")
+        print("⚠️  Most template tests passed, minor issues may exist")
         print("⚠️  Review failed tests above for potential improvements")
         return 1
-    elif subscription_success_rate >= 0.6:
-        print("⚠️  PARTIAL SUBSCRIPTION MANAGEMENT SUCCESS")
-        print("⚠️  Some subscription features working, but significant issues remain")
-        print("⚠️  Review failed tests for critical subscription problems")
-        return 1
-    else:
-        print("❌ SUBSCRIPTION MANAGEMENT FAILURE!")
-        print("❌ Multiple subscription management features not working")
-        print("❌ Duplicate prevention may not be working")
-        print("❌ Expiration date calculations may be incorrect")
-        print("❌ Access control issues detected")
+    elif template_success_rate >= 0.6:
+        print("⚠️  PARTIAL TEMPLATE PERSONALIZATION SUCCESS")
+        print("⚠️  Some template tests passed, significant issues may exist")
+        print("⚠️  Review failed tests above for required improvements")
         return 2
+    else:
+        print("❌ TEMPLATE PERSONALIZATION VERIFICATION: FAILED!")
+        print("❌ Most template tests failed")
+        print("❌ Significant issues detected - review implementation")
+        return 3
 
 if __name__ == "__main__":
     sys.exit(main())
