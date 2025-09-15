@@ -466,11 +466,16 @@ function MainApp() {
       if (error.response?.status === 401 || error.response?.status === 402) {
         if (sessionToken && isPro) {
           console.log('Session invalidated - user may have been logged out by another device');
-          // Clear session and show login modal
+          // Clear ALL session data completely
           localStorage.removeItem('lemaitremot_session_token');
+          localStorage.removeItem('lemaitremot_user_email');
           localStorage.removeItem('lemaitremot_login_method');
+          
           setSessionToken("");
+          setUserEmail("");
           setIsPro(false);
+          setProStatusChecked(true);
+          
           alert('Votre session a expiré ou a été fermée depuis un autre appareil. Veuillez vous reconnecter.');
           setShowLoginModal(true);
           return;
