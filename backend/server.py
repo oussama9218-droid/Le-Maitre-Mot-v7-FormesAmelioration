@@ -2343,14 +2343,17 @@ async def get_user_template(request: Request):
         logger.error(f"Error getting user template: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors du chargement du template")
 
+class TemplateSaveRequest(BaseModel):
+    professor_name: Optional[str] = None
+    school_name: Optional[str] = None
+    school_year: Optional[str] = None
+    footer_text: Optional[str] = None
+    template_style: str = "minimaliste"
+
 @api_router.post("/template/save")
 async def save_user_template(
-    request: Request,
-    professor_name: str = None,
-    school_name: str = None,
-    school_year: str = None,
-    footer_text: str = None,
-    template_style: str = "minimaliste"
+    template_data: TemplateSaveRequest,
+    request: Request
 ):
     """Save user's template configuration (Pro only)"""
     try:
