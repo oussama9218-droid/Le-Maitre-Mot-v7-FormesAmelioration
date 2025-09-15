@@ -709,7 +709,7 @@ def draw_header(canvas, doc, template_config, document_info):
                 canvas.rect(logo_x, y_start - 60, 40, 40, fill=1, stroke=0)
                 canvas.setFillColor(HexColor('#FFFFFF'))
                 canvas.setFont(style['header_font'], 8)
-                canvas.drawCentredText(logo_x + 20, y_start - 40, "LOGO")
+                canvas.drawCentredString(logo_x + 20, y_start - 40, "LOGO")
             except Exception as e:
                 logger.warning(f"Could not load logo: {e}")
         
