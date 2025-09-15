@@ -22,9 +22,11 @@ from reportlab.lib.pagesizes import A4, letter
 from reportlab.lib.units import cm, mm
 from reportlab.lib.colors import HexColor
 from reportlab.lib.utils import ImageReader
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT, TA_JUSTIFY
+from reportlab.platypus.frames import Frame
+from reportlab.platypus.doctemplate import PageTemplate, BaseDocTemplate
 from PIL import Image
 import io
 
