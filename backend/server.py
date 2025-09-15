@@ -315,6 +315,34 @@ TEMPLATE_STYLES = {
     }
 }
 
+# Advanced PDF Layout Options
+PDF_LAYOUT_OPTIONS = {
+    "page_formats": {
+        "A4": {"width": "21cm", "height": "29.7cm"},
+        "A4_compact": {"width": "21cm", "height": "29.7cm", "margin": "1.5cm"},
+        "US_Letter": {"width": "8.5in", "height": "11in"}
+    },
+    "margin_presets": {
+        "standard": {"top": "2.5cm", "bottom": "2.5cm", "left": "2cm", "right": "2cm"},
+        "compact": {"top": "1.5cm", "bottom": "1.5cm", "left": "1.5cm", "right": "1.5cm"},
+        "generous": {"top": "3cm", "bottom": "3cm", "left": "2.5cm", "right": "2.5cm"}
+    },
+    "content_options": {
+        "show_difficulty": True,
+        "show_creation_date": True,
+        "show_exercise_numbers": True,
+        "show_point_values": True,
+        "include_instructions": True,
+        "page_numbering": "bottom_center"  # Options: bottom_center, bottom_right, top_right, none
+    },
+    "visual_enhancements": {
+        "exercise_separator": "line",  # Options: line, space, box, none
+        "question_numbering": "arabic",  # Options: arabic, roman, letters, none
+        "color_scheme": "professional",  # Options: professional, academic, modern, minimal
+        "font_scaling": 1.0  # Multiplier for font sizes (0.8 to 1.2)
+    }
+}
+
 SUJET_TEMPLATE = """
 <!DOCTYPE html>
 <html>
