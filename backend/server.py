@@ -1251,8 +1251,9 @@ async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, t
         "3e": "Niveau avancé - préparation au lycée, concepts abstraits, démonstrations"
     }
     
-    # Chapter-specific examples
+    # Chapter-specific examples by subject
     chapter_examples = {
+        # Mathématiques
         "Volumes": {
             "6e": "Utiliser des objets du quotidien (boîtes, bouteilles), unités simples (cm³, L), calculs avec nombres entiers ou décimaux simples",
             "5e": "Prismes et cylindres, conversions d'unités, calculs avec fractions simples",
@@ -1263,6 +1264,38 @@ async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, t
             "5e": "Introduction intuitive avec température, altitude, calculs simples",
             "4e": "Opérations complètes, règles des signes, problèmes contextualisés",
             "3e": "Applications complexes, équations, inéquations"
+        },
+        
+        # Français
+        "Récits d'aventures": {
+            "6e": "Lecture d'extraits d'aventures, compréhension du schéma narratif, vocabulaire de l'action et du suspense"
+        },
+        "Grammaire - La phrase": {
+            "6e": "Types et formes de phrases, ponctuation, reconnaissance sujet/verbe/complément"
+        },
+        "Le voyage et l'aventure : pourquoi aller vers l'inconnu ?": {
+            "5e": "Analyse de textes narratifs, étude des motifs du départ, expression écrite créative"
+        },
+        "Dire l'amour": {
+            "4e": "Poésie lyrique, registres de langue, figures de style, expression des sentiments"
+        },
+        "Se raconter, se représenter": {
+            "3e": "Autobiographie, mémoires, analyse de l'écriture de soi, réflexion sur l'identité"
+        },
+        
+        # Physique-Chimie
+        "Matière, mouvement, énergie, information": {
+            "6e": "États de la matière, observations simples, classification des objets"
+        },
+        "Organisation et transformations de la matière": {
+            "5e": "Mélanges et corps purs, changements d'état, transformations chimiques simples",
+            "4e": "Atomes et molécules, réactions chimiques, conservation de la masse",
+            "3e": "Ions, pH, électrolyse, synthèse chimique"
+        },
+        "Mouvement et interactions": {
+            "5e": "Description du mouvement, vitesse, interactions mécaniques",
+            "4e": "Référentiel, relativité du mouvement, forces et effets",
+            "3e": "Gravitation, poids et masse, interactions fondamentales"
         }
     }
     
