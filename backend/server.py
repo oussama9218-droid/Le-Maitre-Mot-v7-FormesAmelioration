@@ -2138,6 +2138,23 @@ async def check_quota_status(guest_id: str):
     """Check current quota status for guest user"""
     return await check_guest_quota(guest_id)
 
+def get_template_colors_and_fonts(template_config):
+    """Get CSS colors and fonts for WeasyPrint templates based on template configuration"""
+    style_name = template_config.get('template_style', 'minimaliste')
+    template_style = TEMPLATE_STYLES.get(style_name, TEMPLATE_STYLES['minimaliste'])
+    
+    return {
+        'template_colors': {
+            'primary': template_style['primary_color'],
+            'secondary': template_style['secondary_color'],
+            'accent': template_style['accent_color']
+        },
+        'template_fonts': {
+            'header': template_style['header_font'].replace('-', ' '),
+            'content': template_style['content_font'].replace('-', ' ')
+        }
+    }
+
 @api_router.post("/export")
 async def export_pdf(request: ExportRequest, http_request: Request):
     """Export document as PDF with personalized template if Pro user"""
