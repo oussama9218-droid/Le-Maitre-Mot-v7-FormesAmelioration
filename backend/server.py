@@ -682,6 +682,232 @@ async def require_pro_user(request: Request):
     
     return email
 
+def draw_header(canvas, doc, template_config, document_info):
+    """Draw personalized header based on template configuration"""
+    try:
+        style = TEMPLATE_STYLES.get(template_config.get('template_style', 'minimaliste'))
+        width, height = A4
+        
+        # Header area
+        header_height = 80
+        y_start = height - 40
+        
+        # Background for header (subtle)
+        if style['primary_color']:
+            canvas.setFillColor(HexColor(style['primary_color']))
+            canvas.setFillAlpha(0.05)
+            canvas.rect(40, y_start - header_height + 20, width - 80, header_height - 20, fill=1, stroke=0)
+            canvas.setFillAlpha(1)
+        
+        # Logo (left side)
+        logo_x = 50
+        if template_config.get('logo_url') or template_config.get('logo_filename'):
+            try:
+                # TODO: Implement logo loading and drawing
+                # Placeholder for now
+                canvas.setFillColor(HexColor(style['secondary_color']))
+                canvas.rect(logo_x, y_start - 60, 40, 40, fill=1, stroke=0)
+                canvas.setFillColor(HexColor('#FFFFFF'))
+                canvas.setFont(style['header_font'], 8)
+                canvas.drawCentredText(logo_x + 20, y_start - 40, "LOGO")
+            except Exception as e:
+                logger.warning(f"Could not load logo: {e}")
+        
+        # Title (center)
+        canvas.setFillColor(HexColor(style['primary_color']))
+        canvas.setFont(style['header_font'], style['header_font_size'])
+        title = f"{document_info['type_doc'].title()} - {document_info['matiere']}"
+        canvas.drawCentredText(width/2, y_start - 25, title)
+        
+        # Subtitle
+        canvas.setFont(style['content_font'], style['content_font_size'] - 1)
+        canvas.setFillColor(HexColor(style['secondary_color']))
+        subtitle = f"{document_info['niveau']} - {document_info['chapitre']}"
+        canvas.drawCentredText(width/2, y_start - 45, subtitle)
+        
+        # School info (right side)
+        text_x = width - 50
+        if template_config.get('school_name'):
+            canvas.setFont(style['content_font'], style['content_font_size'] - 1)
+            canvas.setFillColor(HexColor(style['primary_color']))
+            canvas.drawRightString(text_x, y_start - 25, template_config['school_name'])
+        
+        if template_config.get('professor_name'):
+            canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+            canvas.setFillColor(HexColor(style['secondary_color']))
+            canvas.drawRightString(text_x, y_start - 40, template_config['professor_name'])
+            
+        if template_config.get('school_year'):
+            canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+            canvas.setFillColor(HexColor(style['secondary_color']))
+            canvas.drawRightString(text_x, y_start - 55, template_config['school_year'])
+        
+        # Separator line
+        canvas.setStrokeColor(HexColor(style['accent_color']))
+        canvas.setLineWidth(1)
+        canvas.line(50, y_start - 70, width - 50, y_start - 70)
+        
+    except Exception as e:
+        logger.error(f"Error drawing header: {e}")
+        # Fallback to simple header
+        canvas.setFont("Helvetica", 14)
+        canvas.drawCentredText(width/2, height - 50, f"{document_info['matiere']} - {document_info['niveau']}")
+
+def draw_footer(canvas, doc, template_config, page_num, total_pages):
+    """Draw personalized footer based on template configuration"""
+    try:
+        style = TEMPLATE_STYLES.get(template_config.get('template_style', 'minimaliste'))
+        width, height = A4
+        
+        # Footer area
+        footer_y = 40
+        
+        # Separator line
+        canvas.setStrokeColor(HexColor(style['accent_color']))
+        canvas.setLineWidth(0.5)
+        canvas.line(50, footer_y + 20, width - 50, footer_y + 20)
+        
+        # Custom footer text (left)
+        if template_config.get('footer_text'):
+            canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+            canvas.setFillColor(HexColor(style['secondary_color']))
+            canvas.drawString(50, footer_y, template_config['footer_text'][:80])  # Limit length
+        
+        # School year (center)
+        if template_config.get('school_year'):
+            canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+            canvas.setFillColor(HexColor(style['secondary_color']))
+            canvas.drawCentredText(width/2, footer_y, template_config['school_year'])
+        
+        # Page number (right)
+        canvas.setFont(style['content_font'], style['content_font_size'] - 2)
+        canvas.setFillColor(HexColor(style['primary_color']))
+        page_text = f"Page {page_num}/{total_pages}"
+        canvas.drawRightString(width - 50, footer_y, page_text)
+        
+    except Exception as e:
+        logger.error(f"Error drawing footer: {e}")
+        # Fallback to simple footer
+        canvas.setFont("Helvetica", 10)
+        canvas.drawRightString(width - 50, 30, f"Page {page_num}/{total_pages}")
+
+def apply_template_style(canvas, style_name):
+    """Apply template-specific styling to canvas"""
+    style = TEMPLATE_STYLES.get(style_name, TEMPLATE_STYLES['minimaliste'])
+    
+    # Set default font
+    canvas.setFont(style['content_font'], style['content_font_size'])
+    canvas.setFillColor(HexColor(style['primary_color']))
+    
+    return style
+
+async def create_personalized_pdf(document, template_config, export_type="sujet"):
+    """Create PDF with personalized template using ReportLab"""
+    try:
+        logger.info(f"Creating personalized PDF with template: {template_config.get('template_style', 'minimaliste')}")
+        
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file.close()
+        
+        # Initialize ReportLab document
+        doc_canvas = canvas.Canvas(temp_file.name, pagesize=A4)
+        width, height = A4
+        
+        # Apply template style
+        style = apply_template_style(doc_canvas, template_config.get('template_style', 'minimaliste'))
+        
+        # Document info for header
+        document_info = {
+            'type_doc': document.type_doc,
+            'matiere': document.matiere,
+            'niveau': document.niveau,
+            'chapitre': document.chapitre
+        }
+        
+        # Draw header
+        draw_header(doc_canvas, None, template_config, document_info)
+        
+        # Content area
+        content_y_start = height - 120  # After header
+        content_y_end = 100  # Before footer
+        current_y = content_y_start
+        
+        # Title
+        doc_canvas.setFont(style['header_font'], style['header_font_size'])
+        doc_canvas.setFillColor(HexColor(style['primary_color']))
+        title = f"{document.type_doc.title()}"
+        doc_canvas.drawCentredText(width/2, current_y, title)
+        current_y -= 40
+        
+        # Document parameters
+        doc_canvas.setFont(style['content_font'], style['content_font_size'] - 1)
+        doc_canvas.setFillColor(HexColor(style['secondary_color']))
+        params_text = f"Difficulté : {document.difficulte.title()} • {document.nb_exercices} exercices"
+        doc_canvas.drawCentredText(width/2, current_y, params_text)
+        current_y -= 30
+        
+        # Content
+        content_to_show = document.solutions if export_type == "corrige" else document.exercices
+        
+        # Split content into lines and pages
+        lines = content_to_show.split('\n')
+        line_height = style['content_font_size'] + 4
+        
+        page_num = 1
+        for line in lines:
+            if current_y < content_y_end:
+                # Draw footer for current page
+                draw_footer(doc_canvas, None, template_config, page_num, 1)  # Will calculate total later
+                
+                # New page
+                doc_canvas.showPage()
+                page_num += 1
+                
+                # Apply style again for new page
+                apply_template_style(doc_canvas, template_config.get('template_style', 'minimaliste'))
+                
+                # Draw header for new page
+                draw_header(doc_canvas, None, template_config, document_info)
+                current_y = content_y_start
+            
+            # Draw line
+            doc_canvas.setFont(style['content_font'], style['content_font_size'])
+            doc_canvas.setFillColor(HexColor(style['primary_color']))
+            
+            # Handle long lines
+            if len(line) > 80:
+                words = line.split(' ')
+                current_line = ''
+                for word in words:
+                    if len(current_line + word) < 80:
+                        current_line += word + ' '
+                    else:
+                        if current_line:
+                            doc_canvas.drawString(50, current_y, current_line.strip())
+                            current_y -= line_height
+                        current_line = word + ' '
+                if current_line:
+                    doc_canvas.drawString(50, current_y, current_line.strip())
+                    current_y -= line_height
+            else:
+                doc_canvas.drawString(50, current_y, line)
+                current_y -= line_height
+        
+        # Draw footer for last page
+        draw_footer(doc_canvas, None, template_config, page_num, page_num)
+        
+        # Save PDF
+        doc_canvas.save()
+        
+        logger.info(f"PDF created successfully: {temp_file.name}")
+        return temp_file.name
+        
+    except Exception as e:
+        logger.error(f"Error creating personalized PDF: {e}")
+        # Fallback to WeasyPrint
+        return None
+
 async def send_magic_link_email(email: str, token: str):
     """Send magic link email via Brevo"""
     try:
