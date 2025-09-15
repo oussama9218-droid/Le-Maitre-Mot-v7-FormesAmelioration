@@ -1368,6 +1368,36 @@ async def create_checkout_session(request: CheckoutRequest, http_request: Reques
         if request.package_id not in PRICING_PACKAGES:
             raise HTTPException(status_code=400, detail="Package invalide")
         
+        # Check if email is already subscribed (anti-duplicate protection)
+        if request.email:
+            is_pro, existing_user = await check_user_pro_status(request.email)
+            if is_pro and existing_user:
+                subscription_expires = existing_user.get("subscription_expires")
+                subscription_type = existing_user.get("subscription_type", "inconnu")
+                
+                # Format expiration date for display
+                if isinstance(subscription_expires, str):
+                    expires_date = datetime.fromisoformat(subscription_expires).replace(tzinfo=timezone.utc)
+                elif isinstance(subscription_expires, datetime):
+                    expires_date = subscription_expires.replace(tzinfo=timezone.utc) if subscription_expires.tzinfo is None else subscription_expires
+                else:
+                    expires_date = datetime.now(timezone.utc) + timedelta(days=30)  # fallback
+                
+                formatted_date = expires_date.strftime("%d/%m/%Y")
+                
+                logger.info(f"Duplicate subscription attempt for {request.email} - already Pro until {formatted_date}")
+                
+                raise HTTPException(
+                    status_code=409,  # Conflict
+                    detail={
+                        "error": "already_subscribed",
+                        "message": f"Cette adresse email dispose déjà d'un abonnement {subscription_type} actif jusqu'au {formatted_date}. Pour modifier votre abonnement, veuillez nous contacter.",
+                        "subscription_type": subscription_type,
+                        "expires_date": formatted_date,
+                        "action": "contact_support"
+                    }
+                )
+        
         package = PRICING_PACKAGES[request.package_id]
         logger.info(f"Creating checkout session for package: {package}")
         
