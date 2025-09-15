@@ -2231,53 +2231,56 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             doc['created_at'] = datetime.fromisoformat(doc['created_at'])
         document = Document(**doc)
         
-        # Generate PDF
-        pdf_path = None
+        # UNIFIED WEASYPRINT APPROACH - Choose template based on Pro status
+        logger.info(f"🎨 UNIFIED PDF GENERATION - Pro user: {is_pro_user}")
         
-        logger.info(f"PDF generation decision - is_pro_user: {is_pro_user}, template_config: {bool(template_config)}")
-        
-        # Try personalized PDF for Pro users
         if is_pro_user and template_config:
-            logger.info(f"🎨 ATTEMPTING PERSONALIZED PDF GENERATION for user {user_email}")
-            logger.info(f"Template style: {template_config.get('template_style')}")
-            try:
-                pdf_path = await create_personalized_pdf(document, template_config, request.export_type)
-                if pdf_path:
-                    logger.info("✅ PERSONALIZED PDF CREATED SUCCESSFULLY!")
-                else:
-                    logger.warning("❌ Personalized PDF creation returned None - falling back")
-            except Exception as e:
-                logger.error(f"❌ ERROR in personalized PDF creation: {e}")
-                logger.error(f"Exception type: {type(e).__name__}")
-                import traceback
-                logger.error(f"Traceback: {traceback.format_exc()}")
-                pdf_path = None
+            # Use Pro templates with personalization
+            logger.info("📄 Using Pro templates with personalization")
+            template_content = SUJET_PRO_TEMPLATE if request.export_type == "sujet" else CORRIGE_PRO_TEMPLATE
+            
+            # Get colors and fonts for template
+            template_styles = get_template_colors_and_fonts(template_config)
+            
+            # Render context for Pro templates
+            render_context = {
+                'document': document,
+                'date_creation': document.created_at.strftime("%d/%m/%Y à %H:%M"),
+                'template_config': template_config,
+                'template_style': template_config.get('template_style', 'minimaliste'),
+                **template_styles
+            }
+            
+            # Generate filename with template suffix
+            template_suffix = f"_{template_config.get('template_style', 'pro')}"
+            filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}{template_suffix}.pdf"
+            
         else:
-            logger.info(f"Using standard PDF generation - is_pro: {is_pro_user}, has_template: {bool(template_config)}")
-        
-        # Fallback to WeasyPrint for non-Pro or if personalized fails
-        if not pdf_path:
-            logger.info("📄 USING STANDARD WEASYPRINT PDF GENERATION")
-            
-            # Select template
+            # Use standard templates for Free users
+            logger.info("📄 Using standard templates for Free users")
             template_content = SUJET_TEMPLATE if request.export_type == "sujet" else CORRIGE_TEMPLATE
-            template = Template(template_content)
             
-            # Render HTML
-            html_content = template.render(
-                document=document,
-                date_creation=document.created_at.strftime("%d/%m/%Y à %H:%M")
-            )
+            # Render context for standard templates
+            render_context = {
+                'document': document,
+                'date_creation': document.created_at.strftime("%d/%m/%Y à %H:%M")
+            }
             
-            # Generate PDF
-            pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
-            
-            # Create temporary file
-            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-            temp_file.write(pdf_bytes)
-            temp_file.close()
-            pdf_path = temp_file.name
-            logger.info("✅ Standard PDF created successfully")
+            # Generate standard filename
+            filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}.pdf"
+        
+        # Render HTML with Jinja2
+        template = Template(template_content)
+        html_content = template.render(**render_context)
+        
+        # Generate PDF with WeasyPrint
+        logger.info("🔧 Generating PDF with WeasyPrint...")
+        pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
+        
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file.write(pdf_bytes)
+        temp_file.close()
         
         # Track export for guest quota (only for non-Pro users)
         if not is_pro_user and request.guest_id:
@@ -2293,15 +2296,19 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             }
             await db.exports.insert_one(export_record)
         
-        # Generate filename
-        template_suffix = f"_{template_config.get('template_style', 'standard')}" if is_pro_user else ""
-        filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}{template_suffix}.pdf"
+        logger.info(f"✅ PDF generated successfully: {filename}")
         
         return FileResponse(
-            pdf_path,
+            temp_file.name,
             media_type='application/pdf',
             filename=filename
         )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error exporting PDF: {e}")
+        raise HTTPException(status_code=500, detail="Erreur lors de l'export PDF")
         
     except HTTPException:
         raise
