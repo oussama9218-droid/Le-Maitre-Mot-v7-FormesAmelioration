@@ -240,9 +240,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Magic link authentication endpoints"
-    - "Session management with 24h expiration"
-    - "Pro user login interface"
+    - "Subscription management improvements"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
