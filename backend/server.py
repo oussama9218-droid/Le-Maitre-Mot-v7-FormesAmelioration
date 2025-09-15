@@ -2157,7 +2157,7 @@ def get_template_colors_and_fonts(template_config):
 
 @api_router.post("/export")
 async def export_pdf(request: ExportRequest, http_request: Request):
-    """Export document as PDF with personalized template if Pro user"""
+    """Export document as PDF using unified WeasyPrint approach"""
     try:
         # Check authentication - ONLY session token method (no legacy email fallback)
         session_token = http_request.headers.get("X-Session-Token")
