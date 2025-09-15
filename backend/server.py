@@ -1815,18 +1815,30 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         # Generate PDF
         pdf_path = None
         
+        logger.info(f"PDF generation decision - is_pro_user: {is_pro_user}, template_config: {bool(template_config)}")
+        
         # Try personalized PDF for Pro users
         if is_pro_user and template_config:
+            logger.info(f"🎨 ATTEMPTING PERSONALIZED PDF GENERATION for user {user_email}")
+            logger.info(f"Template style: {template_config.get('template_style')}")
             try:
                 pdf_path = await create_personalized_pdf(document, template_config, request.export_type)
-                logger.info("Created personalized PDF successfully")
+                if pdf_path:
+                    logger.info("✅ PERSONALIZED PDF CREATED SUCCESSFULLY!")
+                else:
+                    logger.warning("❌ Personalized PDF creation returned None - falling back")
             except Exception as e:
-                logger.error(f"Error creating personalized PDF, falling back to standard: {e}")
+                logger.error(f"❌ ERROR in personalized PDF creation: {e}")
+                logger.error(f"Exception type: {type(e).__name__}")
+                import traceback
+                logger.error(f"Traceback: {traceback.format_exc()}")
                 pdf_path = None
+        else:
+            logger.info(f"Using standard PDF generation - is_pro: {is_pro_user}, has_template: {bool(template_config)}")
         
         # Fallback to WeasyPrint for non-Pro or if personalized fails
         if not pdf_path:
-            logger.info("Using standard WeasyPrint PDF generation")
+            logger.info("📄 USING STANDARD WEASYPRINT PDF GENERATION")
             
             # Select template
             template_content = SUJET_TEMPLATE if request.export_type == "sujet" else CORRIGE_TEMPLATE
@@ -1846,6 +1858,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             temp_file.write(pdf_bytes)
             temp_file.close()
             pdf_path = temp_file.name
+            logger.info("✅ Standard PDF created successfully")
         
         # Track export for guest quota (only for non-Pro users)
         if not is_pro_user and request.guest_id:
