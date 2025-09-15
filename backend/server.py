@@ -339,191 +339,70 @@ CORRIGE_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="utf-8">
-    <title>Corrigé - {{ document.type_doc|title }} - {{ document.matiere }} {{ document.niveau }}</title>
+    <meta charset="UTF-8">
     <style>
-        @page {
-            size: A4;
-            margin: 2cm 1.5cm 2cm 1.5cm;
-            @top-center {
-                content: "CORRIGÉ - {{ document.matiere }} - {{ document.niveau }} - {{ document.chapitre }}";
-                font-family: 'Arial', sans-serif;
-                font-size: 10pt;
-                color: #666;
-            }
-            @bottom-center {
-                content: "Page " counter(page) " / " counter(pages);
-                font-family: 'Arial', sans-serif;
-                font-size: 10pt;
-                color: #666;
-            }
-        }
-        
         body {
-            font-family: 'Arial', sans-serif;
+            font-family: Arial, sans-serif;
             font-size: 11pt;
             line-height: 1.4;
+            margin: 0;
+            padding: 20px;
             color: #333;
         }
-        
         .header {
             text-align: center;
-            border-bottom: 2px solid #d32f2f;
-            padding-bottom: 1cm;
-            margin-bottom: 1.5cm;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #ddd;
         }
-        
         .title {
             font-size: 18pt;
             font-weight: bold;
-            margin-bottom: 0.5cm;
-            color: #d32f2f;
+            margin-bottom: 10px;
+            color: #2c3e50;
         }
-        
         .subtitle {
-            font-size: 14pt;
+            font-size: 12pt;
             color: #666;
-            margin-bottom: 0.3cm;
+            margin-bottom: 5px;
         }
-        
-        .info-line {
+        .document-info {
             font-size: 10pt;
             color: #888;
         }
-        
-        .exercise {
-            margin-bottom: 2cm;
-            page-break-inside: avoid;
-        }
-        
-        .exercise-header {
-            font-weight: bold;
-            font-size: 12pt;
-            margin-bottom: 0.5cm;
-            padding: 0.3cm;
-            background-color: #ffebee;
-            border-left: 4px solid #d32f2f;
-        }
-        
-        .exercise-content {
-            margin-left: 0.5cm;
-            margin-bottom: 1cm;
-        }
-        
-        .exercise-text {
+        .content {
+            white-space: pre-line;
             text-align: justify;
-            margin-bottom: 1cm;
-            font-style: italic;
-            color: #555;
         }
-        
-        .solution {
-            background-color: #f8f9fa;
-            padding: 0.5cm;
-            border-radius: 0.3cm;
-            border-left: 4px solid #28a745;
-        }
-        
-        .solution-title {
-            font-weight: bold;
-            color: #28a745;
-            margin-bottom: 0.5cm;
-        }
-        
-        .step {
-            margin-bottom: 0.3cm;
-            padding-left: 0.5cm;
-        }
-        
-        .step-number {
-            font-weight: bold;
-            color: #28a745;
-        }
-        
-        .final-result {
-            background-color: #d4edda;
-            padding: 0.3cm;
-            margin-top: 0.5cm;
-            border-radius: 0.2cm;
-            font-weight: bold;
-        }
-        
-        .bareme {
-            margin-top: 1cm;
-            padding: 0.5cm;
-            background-color: #e3f2fd;
-            border-radius: 0.3cm;
-        }
-        
-        .bareme-title {
-            font-weight: bold;
-            color: #1976d2;
-            margin-bottom: 0.3cm;
-        }
-        
-        .bareme-item {
-            font-size: 10pt;
-            margin-bottom: 0.1cm;
-        }
-        
-        .points {
-            float: right;
-            font-size: 10pt;
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 9pt;
             color: #666;
-            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="title">CORRIGÉ - {{ document.type_doc|title }}</div>
+        <div class="title">{{ document.type_doc.title() }} - Corrigé</div>
         <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
         <div class="subtitle">{{ document.chapitre }}</div>
-        <div class="info-line">
-            Difficulté: {{ document.difficulte|title }} | 
+        <div class="document-info">
+            Difficulté: {{ document.difficulte.title() }} | 
             {{ document.nb_exercices }} exercices | 
-            Généré le {{ date_creation }}
+            Créé le {{ date_creation }}
         </div>
     </div>
     
-    {% for exercise in document.exercises %}
-    <div class="exercise">
-        <div class="exercise-header">
-            Exercice {{ loop.index }} - Solution
-            <span class="points">
-                {% set total_points = exercise.bareme|sum(attribute='points') %}
-                ({{ "%.1f"|format(total_points) }} pts)
-            </span>
-        </div>
-        <div class="exercise-content">
-            <div class="exercise-text">{{ exercise.enonce }}</div>
-            
-            <div class="solution">
-                <div class="solution-title">Solution détaillée :</div>
-                {% for etape in exercise.solution.etapes %}
-                <div class="step">
-                    <span class="step-number">{{ loop.index }}.</span> {{ etape }}
-                </div>
-                {% endfor %}
-                
-                <div class="final-result">
-                    Résultat final : {{ exercise.solution.resultat }}
-                </div>
-            </div>
-            
-            {% if exercise.bareme %}
-            <div class="bareme">
-                <div class="bareme-title">Barème de notation :</div>
-                {% for item in exercise.bareme %}
-                <div class="bareme-item">
-                    • {{ item.etape }} : {{ item.points }} pt(s)
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-        </div>
+    <div class="content">
+        {{ document.solutions }}
     </div>
-    {% endfor %}
+    
+    <div class="footer">
+        Le Maître Mot - Générateur de documents pédagogiques
+    </div>
 </body>
 </html>
 """
