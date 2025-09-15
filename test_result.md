@@ -255,6 +255,21 @@ backend:
         - agent: "testing"
         - comment: "✅ WEASYPRINT UNIFIED PDF GENERATION VERIFIED: Comprehensive testing performed with 100% success rate (21/21 tests passed). VERIFIED: 1) BACKEND SERVICE STABILITY: All services running without errors, curriculum catalog loaded (Mathématiques available), pricing system functional, template styles available, 2) PDF GENERATION PIPELINE: WeasyPrint system working correctly for both guest and Pro users, document generation successful (3 exercises created), guest PDF export working (both sujet and corrigé), export functionality comprehensive, 3) AUTHENTICATION SYSTEM: Magic link authentication working, Pro user verification successful (active subscription until 15/10/2025), session validation secure and operational, 4) TEMPLATE SYSTEM: All 3 template styles available (minimaliste, classique, moderne), proper Pro-only access control (401 for unauthorized), template endpoints secured and functional, 5) EXPORT FUNCTIONALITY: Guest quota system working correctly, export validation proper, both guest and Pro export structures functional. CONCLUSION: WeasyPrint unification successful - system is stable and all critical functionality verified."
 
+  - task: "Subject extension - French and Physics-Chemistry"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+        - agent: "main"
+        - comment: "PHASE 2: Extending curriculum to include Français and Physique-Chimie for collège levels (6e→3e) with GPT-4o integration."
+        - working: true
+        - agent: "main"
+        - comment: "✅ SUBJECT EXTENSION COMPLETED: Successfully added Français and Physique-Chimie to CURRICULUM_DATA with comprehensive chapter coverage for all collège levels (6e, 5e, 4e, 3e). IMPLEMENTED FEATURES: 1) CURRICULUM EXPANSION: Français includes literature, grammar, conjugation, vocabulary across all levels, Physique-Chimie covers matter organization, movement, energy, and signals, Complete pedagogical progression from 6e to 3e for both subjects, 2) AI GENERATION ADAPTATION: Subject-specific system messages for tailored exercise generation, Enhanced examples and guidance for each new subject area, Fallback templates adapted for French and Physics-Chemistry exercises, Maintains GPT-4o integration with subject specialization, 3) TESTING VERIFICATION: Catalog endpoint returns 3 subjects (Mathématiques, Français, Physique-Chimie), French exercise generation working (tested 6e Récits d'aventures), Physics-Chemistry generation working (tested 5e Transformations de la matière), All subjects maintain quality standards and pedagogical relevance. CONCLUSION: Subject extension successfully completed - system now supports full collège curriculum across 3 major subjects."
+
 frontend:
   - task: "Pro user login interface"
     implemented: true
