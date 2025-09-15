@@ -524,7 +524,18 @@ function MainApp() {
       }
     } catch (error) {
       console.error('Erreur lors du paiement:', error);
-      alert('Erreur lors de la création de la session de paiement');
+      
+      // Handle duplicate subscription error
+      if (error.response?.status === 409) {
+        const errorData = error.response.data;
+        if (errorData.error === "already_subscribed") {
+          alert(`⚠️ Abonnement existant détecté\n\n${errorData.message}\n\nSi vous souhaitez modifier votre abonnement, veuillez nous contacter.`);
+        } else {
+          alert('Cette adresse email dispose déjà d\'un abonnement actif.');
+        }
+      } else {
+        alert('Erreur lors de la création de la session de paiement');
+      }
     } finally {
       setPaymentLoading(false);
     }
