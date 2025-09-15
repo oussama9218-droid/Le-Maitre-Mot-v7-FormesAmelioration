@@ -751,7 +751,7 @@ def draw_header(canvas, doc, template_config, document_info):
         logger.error(f"Error drawing header: {e}")
         # Fallback to simple header
         canvas.setFont("Helvetica", 14)
-        canvas.drawCentredText(width/2, height - 50, f"{document_info['matiere']} - {document_info['niveau']}")
+        canvas.drawCentredString(width/2, height - 50, f"{document_info['matiere']} - {document_info['niveau']}")
 
 def draw_footer(canvas, doc, template_config, page_num, total_pages):
     """Draw personalized footer based on template configuration"""
