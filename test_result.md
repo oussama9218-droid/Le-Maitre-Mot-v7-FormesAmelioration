@@ -336,7 +336,8 @@ metadata:
 
 test_plan:
   current_focus:
-    - "ReportLab Flowables implementation verification completed"
+    - "WeasyPrint unified PDF generation verification"
+    - "Personalized PDF generation with template system"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
