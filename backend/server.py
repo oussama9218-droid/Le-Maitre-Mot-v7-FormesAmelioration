@@ -1997,6 +1997,51 @@ async def save_user_template(
         logger.error(f"Error saving user template: {e}")
         raise HTTPException(status_code=500, detail="Erreur lors de la sauvegarde du template")
 
+@api_router.get("/pdf/options")
+async def get_pdf_options():
+    """Get available PDF layout options (public endpoint)"""
+    return {
+        "layout_options": {
+            "page_formats": [
+                {"id": "A4", "name": "A4 Standard", "description": "Format A4 classique (21 × 29,7 cm)"},
+                {"id": "A4_compact", "name": "A4 Compact", "description": "Format A4 avec marges réduites"},
+                {"id": "US_Letter", "name": "US Letter", "description": "Format américain (8,5 × 11 pouces)"}
+            ],
+            "margin_presets": [
+                {"id": "standard", "name": "Standard", "description": "Marges équilibrées (2,5cm haut/bas, 2cm gauche/droite)"},
+                {"id": "compact", "name": "Compact", "description": "Marges réduites (1,5cm partout)"},
+                {"id": "generous", "name": "Généreux", "description": "Marges importantes (3cm haut/bas, 2,5cm gauche/droite)"}
+            ],
+            "content_options": [
+                {"id": "show_difficulty", "name": "Afficher la difficulté", "default": True},
+                {"id": "show_creation_date", "name": "Afficher la date de création", "default": True},
+                {"id": "show_exercise_numbers", "name": "Numéroter les exercices", "default": True},
+                {"id": "show_point_values", "name": "Afficher les barèmes", "default": True},
+                {"id": "include_instructions", "name": "Inclure les consignes", "default": True}
+            ],
+            "visual_options": [
+                {"id": "page_numbering", "name": "Numérotation des pages", "options": [
+                    {"value": "bottom_center", "label": "Bas centré"},
+                    {"value": "bottom_right", "label": "Bas droite"},
+                    {"value": "top_right", "label": "Haut droite"},
+                    {"value": "none", "label": "Aucune"}
+                ]},
+                {"id": "exercise_separator", "name": "Séparateur d'exercices", "options": [
+                    {"value": "line", "label": "Ligne"},
+                    {"value": "space", "label": "Espace"},
+                    {"value": "box", "label": "Encadré"},
+                    {"value": "none", "label": "Aucun"}
+                ]},
+                {"id": "question_numbering", "name": "Numérotation des questions", "options": [
+                    {"value": "arabic", "label": "1, 2, 3..."},
+                    {"value": "roman", "label": "I, II, III..."},
+                    {"value": "letters", "label": "a, b, c..."},
+                    {"value": "none", "label": "Aucune"}
+                ]}
+            ]
+        }
+    }
+
 @api_router.get("/quota/check")
 async def check_quota_status(guest_id: str):
     """Check current quota status for guest user"""
