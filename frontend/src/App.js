@@ -938,14 +938,26 @@ function MainApp() {
 
               <Separator />
 
-              {/* Step 3 */}
-              <div>
-                <div className="flex items-center mb-4">
-                  <div className="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</div>
+              {/* Template Settings */}
+              <TemplateSettings 
+                isPro={isPro}
+                sessionToken={sessionToken}
+                onTemplateChange={(template) => {
+                  setUserTemplate(template);
+                  setTemplateUpdated(true);
+                }}
+              />
+
+              <Separator />
+
+              {/* Step 3: Generate Document */}
+              <div className="space-y-4">
+                <div className="flex items-center mb-3">
+                  <div className="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center text-sm font-bold mr-3">3</div>
                   <h3 className="text-lg font-semibold text-gray-900">Génération</h3>
                 </div>
 
-                <Button 
+                <Button
                   onClick={generateDocument}
                   disabled={!selectedMatiere || !selectedNiveau || !selectedChapitre || isGenerating}
                   className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white py-3 rounded-lg font-semibold transition-all duration-200"
