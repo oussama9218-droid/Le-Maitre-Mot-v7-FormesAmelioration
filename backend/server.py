@@ -832,266 +832,454 @@ CORRIGE_TEMPLATE = """
 </html>
 """
 
-# Pro Templates with personalization
+# Pro Templates - Ultra Professional Design
 SUJET_PRO_TEMPLATE = """
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
     <style>
-        /* Template style variables based on selected style */
+        @page {
+            size: A4;
+            margin: 0;
+            @top-center {
+                content: "{{ school_name or 'Établissement Scolaire' }}";
+                font-size: 8pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: counter(page) "/" counter(pages);
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+        
+        /* Template style variables */
         :root {
-            --primary-color: {{ template_colors.primary }};
-            --secondary-color: {{ template_colors.secondary }};
-            --accent-color: {{ template_colors.accent }};
-            --header-font: {{ template_fonts.header }};
-            --content-font: {{ template_fonts.content }};
+            --primary-color: {{ template_colors.primary or '#1a365d' }};
+            --secondary-color: {{ template_colors.secondary or '#4a5568' }};
+            --accent-color: {{ template_colors.accent or '#3182ce' }};
+            --header-font: {{ template_fonts.header or 'Times New Roman' }};
+            --content-font: {{ template_fonts.content or 'Arial' }};
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
-            font-family: var(--content-font), Arial, sans-serif;
+            font-family: var(--content-font), "Segoe UI", sans-serif;
             font-size: 11pt;
             line-height: 1.5;
-            margin: 0;
-            padding: 0;
-            color: var(--primary-color);
+            color: #2d3748;
+            background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%);
         }
         
-        .page {
-            padding: 2.5cm;
+        .document-container {
+            background: white;
             min-height: 100vh;
             position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
         
-        .header {
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 120pt;
+            color: rgba(0,0,0,0.03);
+            z-index: 1;
+            pointer-events: none;
+            font-weight: bold;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-decoration {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+        
+        .header-decoration::before {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            width: 140px;
+            height: 140px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 50%;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--accent-color);
-            background: linear-gradient(90deg, var(--primary-color)05, transparent);
-            padding: 20px;
-            border-radius: 8px;
         }
         
         .logo-section {
-            width: 80px;
-            height: 60px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-right: 40px;
+        }
+        
+        .logo-section img {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 10px;
         }
         
         .logo-placeholder {
-            width: 60px;
-            height: 60px;
-            background: var(--secondary-color);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 8pt;
+            color: var(--primary-color);
+            font-size: 14pt;
             font-weight: bold;
+            text-align: center;
         }
         
         .title-section {
             flex: 1;
             text-align: center;
-            padding: 0 20px;
         }
         
         .main-title {
-            font-family: var(--header-font), Arial, sans-serif;
-            font-size: 20pt;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 8px;
+            font-family: var(--header-font), "Times New Roman", serif;
+            font-size: 28pt;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         
-        .subtitle {
-            font-size: 14pt;
-            color: var(--secondary-color);
-            margin-bottom: 5px;
+        .subject-info {
+            font-size: 16pt;
+            font-weight: 500;
+            margin-bottom: 8px;
+            opacity: 0.95;
         }
         
         .chapter-info {
-            font-size: 12pt;
-            color: var(--accent-color);
+            font-size: 14pt;
             font-style: italic;
+            opacity: 0.9;
         }
         
-        .school-section {
-            width: 200px;
+        .institution-section {
             text-align: right;
+            min-width: 200px;
         }
         
         .school-name {
-            font-size: 12pt;
+            font-size: 16pt;
             font-weight: bold;
-            color: var(--primary-color);
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+        
+        .professor-info {
+            font-size: 12pt;
             margin-bottom: 5px;
+            opacity: 0.9;
         }
         
-        .professor-name {
-            font-size: 10pt;
-            color: var(--secondary-color);
-            margin-bottom: 3px;
-        }
-        
-        .school-year {
-            font-size: 10pt;
-            color: var(--secondary-color);
-        }
-        
-        .document-params {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 15px;
-            background: var(--accent-color)10;
-            border-radius: 6px;
+        .academic-year {
             font-size: 11pt;
-            color: var(--secondary-color);
+            font-style: italic;
+            opacity: 0.8;
         }
         
-        .content {
-            white-space: pre-line;
-            text-align: justify;
+        .document-metadata {
+            background: #f8fafc;
+            border-left: 5px solid var(--accent-color);
+            padding: 20px 30px;
+            margin: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 11pt;
-            line-height: 1.6;
-            margin-bottom: 100px;
+            color: #4a5568;
         }
         
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
+        .metadata-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 2.5cm;
-            border-top: 1px solid var(--accent-color);
-            background: white;
-            font-size: 9pt;
-            color: var(--secondary-color);
+            margin: 0 15px;
         }
         
-        .footer-left {
-            flex: 1;
-        }
-        
-        .footer-center {
-            flex: 1;
-            text-align: center;
-            color: var(--secondary-color);
-        }
-        
-        .footer-right {
-            flex: 1;
-            text-align: right;
-            color: var(--primary-color);
+        .metadata-icon {
+            margin-right: 8px;
+            color: var(--accent-color);
             font-weight: bold;
         }
         
-        /* Style-specific adjustments */
-        .style-classique {
-            font-family: 'Times New Roman', serif;
+        .content-section {
+            padding: 40px;
+            position: relative;
+            z-index: 2;
         }
         
-        .style-classique .header {
-            border-bottom: 3px double var(--accent-color);
+        .exercise-container {
+            background: white;
+            border-radius: 12px;
+            margin: 30px 0;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+            page-break-inside: avoid;
         }
         
-        .style-moderne {
-            font-family: 'Helvetica', sans-serif;
+        .exercise-header {
+            background: linear-gradient(90deg, var(--accent-color), #4299e1);
+            color: white;
+            padding: 15px 25px;
+            font-size: 16pt;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .style-moderne .header {
-            background: linear-gradient(135deg, var(--primary-color)08, var(--accent-color)08);
-            border: none;
-            border-left: 4px solid var(--accent-color);
+        .exercise-number {
+            display: flex;
+            align-items: center;
         }
         
-        @media print {
-            .page {
-                page-break-after: always;
-            }
-            
-            .page:last-child {
-                page-break-after: avoid;
-            }
+        .exercise-number::before {
+            content: "📝";
+            margin-right: 10px;
+            font-size: 18pt;
+        }
+        
+        .points-indicator {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+        
+        .exercise-content {
+            padding: 25px;
+            line-height: 1.6;
+        }
+        
+        .exercise-statement {
+            font-size: 12pt;
+            color: #2d3748;
+            margin-bottom: 25px;
+            text-align: justify;
+            font-weight: 500;
+        }
+        
+        .answer-zone {
+            background: #f7fafc;
+            border: 2px dashed var(--accent-color);
+            border-radius: 8px;
+            min-height: 150px;
+            padding: 20px;
+            position: relative;
+            margin-top: 20px;
+        }
+        
+        .answer-zone::before {
+            content: "Zone de réponse";
+            position: absolute;
+            top: 12px;
+            left: 20px;
+            font-size: 10pt;
+            color: #718096;
+            font-style: italic;
+        }
+        
+        .answer-lines {
+            height: 100px;
+            background-image: repeating-linear-gradient(
+                transparent,
+                transparent 24px,
+                #cbd5e0 24px,
+                #cbd5e0 25px
+            );
+            margin-top: 25px;
+        }
+        
+        .qcm-options {
+            list-style: none;
+            margin: 20px 0;
+        }
+        
+        .qcm-options li {
+            margin: 12px 0;
+            padding: 12px 15px;
+            background: #f8fafc;
+            border-radius: 8px;
+            border-left: 4px solid #e2e8f0;
+            position: relative;
+            font-size: 12pt;
+            transition: all 0.2s ease;
+        }
+        
+        .qcm-options li::before {
+            content: "⬜";
+            position: absolute;
+            left: -25px;
+            font-size: 14pt;
+            color: var(--accent-color);
+        }
+        
+        .footer-section {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            margin-top: 50px;
+        }
+        
+        .footer-content {
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+        
+        .creation-info {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 9pt;
+            color: #718096;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            border-radius: 5px;
+            z-index: 3;
+        }
+        
+        .quality-seal {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 80px;
+            height: 80px;
+            background: var(--accent-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 8pt;
+            text-align: center;
+            font-weight: bold;
+            z-index: 3;
+            opacity: 0.8;
         }
     </style>
 </head>
-<body class="style-{{ template_style }}">
-    <div class="page">
-        <div class="header">
-            <div class="logo-section">
-                {% if template_config.logo_url %}
-                    <img src="{{ template_config.logo_url }}" alt="Logo" style="max-width: 60px; max-height: 60px;">
-                {% else %}
-                    <div class="logo-placeholder">LOGO</div>
-                {% endif %}
-            </div>
-            
-            <div class="title-section">
-                <div class="main-title">{{ document.type_doc.title() }}</div>
-                <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
-                <div class="chapter-info">{{ document.chapitre }}</div>
-            </div>
-            
-            <div class="school-section">
-                {% if template_config.school_name %}
-                    <div class="school-name">{{ template_config.school_name }}</div>
-                {% endif %}
-                {% if template_config.professor_name %}
-                    <div class="professor-name">{{ template_config.professor_name }}</div>
-                {% endif %}
-                {% if template_config.school_year %}
-                    <div class="school-year">{{ template_config.school_year }}</div>
-                {% endif %}
-            </div>
+<body>
+    <div class="document-container">
+        <div class="watermark">{{ school_name or 'EXCELLENCE' }}</div>
+        
+        <div class="creation-info">
+            📅 {{ date_creation }}
         </div>
         
-        <div class="document-params">
-            <strong>Difficulté :</strong> {{ document.difficulte.title() }} • 
-            <strong>Nombre d'exercices :</strong> {{ document.nb_exercices }} • 
-            <strong>Créé le :</strong> {{ date_creation }}
-        </div>
-        
-        <div class="content">
-            {% for exercice in document.exercises %}
-                <div class="exercise">
-                    <h3>Exercice {{ loop.index }}</h3>
-                    <p>{{ exercice.enonce }}</p>
-                    {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
-                        <ul>
-                            {% for option in exercice.donnees.options %}
-                                <li>{{ option }}</li>
-                            {% endfor %}
-                        </ul>
+        <div class="header-section">
+            <div class="header-decoration"></div>
+            <div class="header-content">
+                <div class="logo-section">
+                    {% if logo_url %}
+                        <img src="{{ logo_url }}" alt="Logo établissement">
+                    {% else %}
+                        <div class="logo-placeholder">
+                            LOGO<br>
+                            <small>ÉTABLISSEMENT</small>
+                        </div>
                     {% endif %}
+                </div>
+                
+                <div class="title-section">
+                    <h1 class="main-title">{{ document.type_doc.title() }}</h1>
+                    <div class="subject-info">{{ document.matiere }} • {{ document.niveau }}</div>
+                    <div class="chapter-info">{{ document.chapitre }}</div>
+                </div>
+                
+                <div class="institution-section">
+                    <div class="school-name">{{ school_name or 'Établissement Scolaire' }}</div>
+                    <div class="professor-info">{{ professor_name or 'Enseignant' }}</div>
+                    <div class="academic-year">{{ school_year or 'Année scolaire' }}</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="document-metadata">
+            <div class="metadata-item">
+                <span class="metadata-icon">🎯</span>
+                Difficulté : {{ document.difficulte.title() }}
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-icon">📝</span>
+                {{ document.nb_exercices }} exercices
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-icon">⏱️</span>
+                Durée conseillée : {{ document.nb_exercices * 15 }} min
+            </div>
+        </div>
+        
+        <div class="content-section">
+            {% for exercice in document.exercises %}
+                <div class="exercise-container">
+                    <div class="exercise-header">
+                        <div class="exercise-number">Exercice {{ loop.index }}</div>
+                        <div class="points-indicator">4 points</div>
+                    </div>
+                    <div class="exercise-content">
+                        <div class="exercise-statement">{{ exercice.enonce }}</div>
+                        
+                        {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
+                            <ul class="qcm-options">
+                                {% for option in exercice.donnees.options %}
+                                    <li>{{ option }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <div class="answer-zone">
+                                <div class="answer-lines"></div>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             {% endfor %}
         </div>
         
-        <div class="footer">
-            <div class="footer-left">
-                {% if template_config.footer_text %}
-                    {{ template_config.footer_text }}
-                {% endif %}
+        <div class="footer-section">
+            <div class="footer-content">
+                {{ footer_text or 'Document généré par Le Maître Mot - Plateforme éducative professionnelle' }}<br>
+                <small>Reproduction interdite sans autorisation</small>
             </div>
-            <div class="footer-center">
-                {% if template_config.school_year %}
-                    {{ template_config.school_year }}
-                {% endif %}
-            </div>
-            <div class="footer-right">
-                Le Maître Mot Pro
-            </div>
+        </div>
+        
+        <div class="quality-seal">
+            ⭐<br>
+            QUALITÉ<br>
+            PRO
         </div>
     </div>
 </body>
