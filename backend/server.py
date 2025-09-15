@@ -1369,9 +1369,25 @@ JSON OBLIGATOIRE:
     
     # Create concise prompt for faster generation
     examples = {
+        # Mathématiques
         "Volumes": "Calculer volume pavé 4×3×2 cm",
         "Nombres relatifs": "Calculer -5 + 3 - (-2)",
-        "Fractions": "Calculer 2/3 + 1/4"
+        "Fractions": "Calculer 2/3 + 1/4",
+        "Géométrie - Figures planes": "Calculer périmètre rectangle 5×3 cm",
+        
+        # Français
+        "Récits d'aventures": "Analyser un extrait de roman d'aventures",
+        "Grammaire - La phrase": "Identifier sujet et verbe dans une phrase",
+        "Conjugaison - Présent, passé, futur": "Conjuguer 'aller' au présent",
+        "Le voyage et l'aventure : pourquoi aller vers l'inconnu ?": "Analyser les motivations d'un personnage",
+        "Dire l'amour": "Étudier une strophe de poème lyrique",
+        "Se raconter, se représenter": "Analyser un passage autobiographique",
+        
+        # Physique-Chimie
+        "Matière, mouvement, énergie, information": "Classer des objets selon leur état",
+        "Organisation et transformations de la matière": "Identifier une transformation chimique",
+        "Mouvement et interactions": "Décrire le mouvement d'un objet",
+        "L'énergie et ses conversions": "Identifier des formes d'énergie"
     }
     
     example = examples.get(chapitre, f"Exercice {chapitre}")
