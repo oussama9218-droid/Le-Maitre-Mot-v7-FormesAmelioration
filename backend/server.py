@@ -837,14 +837,14 @@ async def create_personalized_pdf(document, template_config, export_type="sujet"
         doc_canvas.setFont(style['header_font'], style['header_font_size'])
         doc_canvas.setFillColor(HexColor(style['primary_color']))
         title = f"{document.type_doc.title()}"
-        doc_canvas.drawCentredText(width/2, current_y, title)
+        doc_canvas.drawCentredString(width/2, current_y, title)
         current_y -= 40
         
         # Document parameters
         doc_canvas.setFont(style['content_font'], style['content_font_size'] - 1)
         doc_canvas.setFillColor(HexColor(style['secondary_color']))
         params_text = f"Difficulté : {document.difficulte.title()} • {document.nb_exercices} exercices"
-        doc_canvas.drawCentredText(width/2, current_y, params_text)
+        doc_canvas.drawCentredString(width/2, current_y, params_text)
         current_y -= 30
         
         # Content
