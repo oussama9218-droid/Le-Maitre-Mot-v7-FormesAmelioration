@@ -424,6 +424,14 @@ function MainApp() {
   const exportPDF = async (exportType) => {
     if (!currentDocument) return;
 
+    console.log('📄 Export PDF requested:', {
+      exportType,
+      isPro,
+      hasSessionToken: !!sessionToken,
+      userEmail,
+      sessionTokenPreview: sessionToken ? sessionToken.substring(0, 20) + '...' : 'none'
+    });
+
     const setLoading = exportType === 'sujet' ? setExportingSubject : setExportingSolution;
     setLoading(true);
 
@@ -452,7 +460,35 @@ function MainApp() {
         console.log('⚠️ No session token available for export request');
       }
 
+      console.log('📤 Making export request with config:', {
+        url: `${API}/export`,
+        hasHeaders: !!requestConfig.headers,
+        requestData
+      });
+
       const response = await axios.post(`${API}/export`, requestData, requestConfig);
+
+      console.log('✅ Export response received:', {
+        status: response.status,
+        contentType: response.headers['content-type'],
+        size: response.data.size
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `LeMaitremot_${currentDocument.type_doc}_${currentDocument.matiere}_${currentDocument.niveau}_${exportType}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+      // Refresh quota
+      await fetchQuotaStatus();
+      
+    } catch (error) {
+      console.error("Erreur lors de l'export:", error);
 
       // Create download link
       const url = window.URL.createObjectURL(new Blob([response.data]));
