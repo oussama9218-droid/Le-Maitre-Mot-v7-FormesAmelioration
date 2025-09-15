@@ -209,6 +209,48 @@ CURRICULUM_DATA = {
 }
 
 # PDF Templates
+TEMPLATE_STYLES = {
+    "minimaliste": {
+        "name": "Minimaliste",
+        "description": "Design épuré et moderne",
+        "header_font": "Helvetica",
+        "header_font_size": 14,
+        "content_font": "Helvetica",
+        "content_font_size": 11,
+        "primary_color": "#2c3e50",
+        "secondary_color": "#7f8c8d",
+        "accent_color": "#3498db",
+        "separator_style": "line",
+        "logo_max_height": 40
+    },
+    "classique": {
+        "name": "Classique",
+        "description": "Style académique traditionnel",
+        "header_font": "Times-Roman",
+        "header_font_size": 16,
+        "content_font": "Times-Roman", 
+        "content_font_size": 12,
+        "primary_color": "#1a1a1a",
+        "secondary_color": "#4a4a4a",
+        "accent_color": "#8b4513",
+        "separator_style": "double_line",
+        "logo_max_height": 45
+    },
+    "moderne": {
+        "name": "Moderne",
+        "description": "Design contemporain et aéré",
+        "header_font": "Helvetica-Light",
+        "header_font_size": 15,
+        "content_font": "Helvetica",
+        "content_font_size": 11,
+        "primary_color": "#34495e",
+        "secondary_color": "#95a5a6",
+        "accent_color": "#e74c3c",
+        "separator_style": "gradient",
+        "logo_max_height": 50
+    }
+}
+
 SUJET_TEMPLATE = """
 <!DOCTYPE html>
 <html>
