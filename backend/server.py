@@ -1303,30 +1303,60 @@ async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, t
     level_guide = niveau_guidance.get(niveau, "Adapter au niveau demandé")
     chapter_guide = chapter_examples.get(chapitre, {}).get(niveau, "Respecter le programme officiel")
     
+    # Subject-specific instructions
+    subject_instructions = {
+        "Mathématiques": f"""Tu es un générateur d'exercices de mathématiques français pour {niveau} - {chapitre}.
+
+Génère {nb_exercices} exercices RAPIDES ET EFFICACES.
+
+RÈGLES MATHÉMATIQUES:
+1. Niveau {niveau} - Chapitre "{chapitre}"
+2. {level_guide}
+3. Format français correct (virgules décimaux, pas de points)
+4. Solutions en 2-3 étapes maximum
+5. Calculs adaptés au niveau, résultats simples""",
+
+        "Français": f"""Tu es un générateur d'exercices de français pour {niveau} - {chapitre}.
+
+Génère {nb_exercices} exercices RAPIDES ET EFFICACES.
+
+RÈGLES FRANÇAIS:
+1. Niveau {niveau} - Chapitre "{chapitre}"
+2. {level_guide}
+3. Exercices variés : analyse, grammaire, expression écrite
+4. Textes supports courts et adaptés
+5. Questions progressives et structurées""",
+
+        "Physique-Chimie": f"""Tu es un générateur d'exercices de physique-chimie français pour {niveau} - {chapitre}.
+
+Génère {nb_exercices} exercices RAPIDES ET EFFICACES.
+
+RÈGLES PHYSIQUE-CHIMIE:
+1. Niveau {niveau} - Chapitre "{chapitre}"
+2. {level_guide}
+3. Situations concrètes et expérimentales
+4. Calculs simples adaptés au niveau
+5. Schémas et observations privilégiés"""
+    }
+    
+    system_msg = subject_instructions.get(matiere, subject_instructions["Mathématiques"])
+    
     # Create LLM chat instance with faster model
     chat = LlmChat(
         api_key=emergent_key,
         session_id=f"exercise_gen_{uuid.uuid4()}",
-        system_message=f"""Tu es un générateur d'exercices scolaires français pour {niveau} - {chapitre}.
-
-Génère {nb_exercices} exercices RAPIDES ET EFFICACES.
-
-RÈGLES:
-1. Niveau {niveau} - Chapitre "{chapitre}"
-2. {level_guide}
-3. Format français correct (virgules décimaux)
-4. Solutions en 2-3 étapes maximum
+        system_message=f"""{system_msg}
 
 JSON OBLIGATOIRE:
 {{
   "exercises": [
     {{
       "type": "ouvert",
-      "enonce": "Énoncé concis",
+      "enonce": "Énoncé concis et clair",
       "difficulte": "{difficulte}",
       "solution": {{
         "etapes": ["Étape 1", "Étape 2"],
-        "resultat": "Résultat"
+        "resultat": "Résultat final"
       }},
       "bareme": [
         {{"etape": "Méthode", "points": 2.0}},
