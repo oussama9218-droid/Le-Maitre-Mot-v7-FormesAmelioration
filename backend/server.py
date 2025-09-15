@@ -2394,12 +2394,14 @@ async def save_user_template(
             # Create new template
             template = UserTemplate(
                 user_email=user_email,
-                professor_name=professor_name,
-                school_name=school_name,
-                school_year=school_year,
-                footer_text=footer_text,
-                template_style=template_style
+                professor_name=template_data.professor_name,
+                school_name=template_data.school_name,
+                school_year=template_data.school_year,
+                footer_text=template_data.footer_text,
+                template_style=template_data.template_style
             )
+            
+            logger.info(f"🔍 Creating new template: {template.dict()}")
             
             await db.user_templates.insert_one(template.dict())
         
