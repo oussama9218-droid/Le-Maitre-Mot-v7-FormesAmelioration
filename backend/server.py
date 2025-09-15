@@ -1587,6 +1587,163 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
     
     return exercises
 
+def format_exercises_for_export(exercises: List[dict], options: AdvancedPDFOptions) -> str:
+    """Format exercises with advanced options"""
+    formatted_content = []
+    
+    for i, exercise in enumerate(exercises, 1):
+        exercise_parts = []
+        
+        # Exercise number with custom formatting
+        if options.show_exercise_numbers:
+            if options.question_numbering == "roman":
+                number = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][i-1] if i <= 10 else str(i)
+            elif options.question_numbering == "letters":
+                number = chr(64 + i) if i <= 26 else str(i)  # A, B, C...
+            else:  # arabic or none
+                number = str(i) if options.question_numbering == "arabic" else ""
+            
+            if number:
+                exercise_parts.append(f"Exercice {number}")
+        
+        # Exercise content
+        exercise_parts.append(exercise.get("enonce", ""))
+        
+        # Point values
+        if options.show_point_values and exercise.get("bareme"):
+            total_points = sum(item.get("points", 0) for item in exercise.get("bareme", []))
+            if total_points > 0:
+                exercise_parts.append(f"({total_points} points)")
+        
+        formatted_exercise = "\n".join(exercise_parts)
+        
+        # Exercise separator
+        if options.exercise_separator == "line" and i < len(exercises):
+            formatted_exercise += "\n" + "-" * 50 + "\n"
+        elif options.exercise_separator == "space" and i < len(exercises):
+            formatted_exercise += "\n\n"
+        elif options.exercise_separator == "box":
+            formatted_exercise = f"┌{'─' * (len(formatted_exercise.split('\n')[0]) + 4)}┐\n│  {formatted_exercise.replace('\n', '\n│  ')}  │\n└{'─' * (len(formatted_exercise.split('\n')[0]) + 4)}┘"
+        
+        formatted_content.append(formatted_exercise)
+    
+    return "\n\n".join(formatted_content)
+
+def format_solutions_for_export(exercises: List[dict], options: AdvancedPDFOptions) -> str:
+    """Format solutions with advanced options"""
+    formatted_content = []
+    
+    for i, exercise in enumerate(exercises, 1):
+        solution_parts = []
+        
+        # Exercise number
+        if options.show_exercise_numbers:
+            if options.question_numbering == "roman":
+                number = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X"][i-1] if i <= 10 else str(i)
+            elif options.question_numbering == "letters":
+                number = chr(64 + i) if i <= 26 else str(i)
+            else:
+                number = str(i) if options.question_numbering == "arabic" else ""
+            
+            if number:
+                solution_parts.append(f"Solution {number}")
+        
+        # Solution content
+        solution = exercise.get("solution", {})
+        if solution.get("etapes"):
+            solution_parts.extend(solution["etapes"])
+        if solution.get("resultat"):
+            solution_parts.append(f"Résultat: {solution['resultat']}")
+        
+        formatted_solution = "\n".join(solution_parts)
+        formatted_content.append(formatted_solution)
+    
+    return "\n\n".join(formatted_content)
+
+async def generate_advanced_pdf(document: dict, content: str, export_type: str, template_config: dict, options: AdvancedPDFOptions) -> bytes:
+    """Generate PDF with advanced layout options"""
+    # Get layout settings
+    page_format = PDF_LAYOUT_OPTIONS["page_formats"].get(options.page_format, PDF_LAYOUT_OPTIONS["page_formats"]["A4"])
+    margins = options.custom_margins or PDF_LAYOUT_OPTIONS["margin_presets"].get(options.margin_preset, PDF_LAYOUT_OPTIONS["margin_presets"]["standard"])
+    
+    # Build CSS with advanced options
+    advanced_css = f"""
+        @page {{
+            size: {page_format.get('width', '21cm')} {page_format.get('height', '29.7cm')};
+            margin-top: {margins['top']};
+            margin-bottom: {margins['bottom']};
+            margin-left: {margins['left']};
+            margin-right: {margins['right']};
+        }}
+        
+        body {{
+            font-size: {11 * options.font_scaling}pt;
+            line-height: {1.4 * options.font_scaling};
+        }}
+        
+        .header {{
+            font-size: {18 * options.font_scaling}pt;
+        }}
+        
+        .exercise-number {{
+            font-weight: bold;
+            color: #2c3e50;
+            margin-top: 20px;
+        }}
+    """
+    
+    # Use Pro template if available
+    if template_config:
+        template_style = TEMPLATE_STYLES.get(template_config.get('template_style', 'minimaliste'), TEMPLATE_STYLES['minimaliste'])
+        template_colors = get_template_colors_and_fonts(template_config)
+        
+        if export_type == "sujet":
+            template_content = SUJET_PRO_TEMPLATE
+        else:
+            template_content = CORRIGE_PRO_TEMPLATE
+        
+        html_content = Template(template_content).render(
+            document={
+                **document,
+                'exercices': content,
+                'type_doc': export_type.title()
+            },
+            date_creation=datetime.now().strftime("%d/%m/%Y"),
+            **template_config,
+            **template_colors,
+            advanced_css=advanced_css
+        )
+    else:
+        # Fallback to standard template with advanced options
+        html_content = f"""
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                {advanced_css}
+                /* Standard styling with advanced options */
+                .content {{ white-space: pre-line; }}
+                .document-info {{ font-size: {10 * options.font_scaling}pt; }}
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>{export_type.title()}</h1>
+                <h2>{document['matiere']} - {document['niveau']}</h2>
+                <p>{document['chapitre']}</p>
+                {f'<p>Difficulté: {document["difficulte"]}</p>' if options.show_difficulty else ''}
+                {f'<p>Créé le {datetime.now().strftime("%d/%m/%Y")}</p>' if options.show_creation_date else ''}
+            </div>
+            <div class="content">{content}</div>
+        </body>
+        </html>
+        """
+    
+    # Generate PDF
+    pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
+    return pdf_bytes
+
 # API Routes
 @api_router.get("/")
 async def root():
