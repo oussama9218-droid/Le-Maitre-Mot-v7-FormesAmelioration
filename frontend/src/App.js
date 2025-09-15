@@ -442,11 +442,14 @@ function MainApp() {
         responseType: 'blob'
       };
       
-      // ONLY use session token authentication (no email header fallback)
-      if (sessionToken && isPro) {
+      // Send session token if available (let backend determine Pro status)
+      if (sessionToken) {
         requestConfig.headers = {
           'X-Session-Token': sessionToken
         };
+        console.log('🔐 Sending session token with export request:', sessionToken.substring(0, 20) + '...');
+      } else {
+        console.log('⚠️ No session token available for export request');
       }
 
       const response = await axios.post(`${API}/export`, requestData, requestConfig);
