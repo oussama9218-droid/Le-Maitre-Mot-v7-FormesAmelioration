@@ -192,6 +192,13 @@ class AnalyticsRequest(BaseModel):
     date_to: Optional[str] = None
     user_email: Optional[str] = None  # For Pro users to see their own stats
 
+class TemplateSaveRequest(BaseModel):
+    professor_name: Optional[str] = None
+    school_name: Optional[str] = None
+    school_year: Optional[str] = None
+    footer_text: Optional[str] = None
+    template_style: str = "minimaliste"
+
 # French curriculum data
 CURRICULUM_DATA = {
     "Mathématiques": {
