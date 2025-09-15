@@ -1738,12 +1738,13 @@ async def check_quota_status(guest_id: str):
 
 @api_router.post("/export")
 async def export_pdf(request: ExportRequest, http_request: Request):
-    """Export document as PDF"""
+    """Export document as PDF with personalized template if Pro user"""
     try:
         # Check authentication - ONLY session token method (no legacy email fallback)
         session_token = http_request.headers.get("X-Session-Token")
         is_pro_user = False
         user_email = None
+        template_config = {}
         
         # Authenticate using session token only
         if session_token:
@@ -1753,6 +1754,29 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 is_pro_user = is_pro
                 user_email = email
                 logger.info(f"Export request from Pro user via session: {email}, is_pro: {is_pro}")
+                
+                # Load user template configuration if Pro
+                if is_pro:
+                    try:
+                        template_doc = await db.user_templates.find_one({"user_email": email})
+                        if template_doc:
+                            template_config = {
+                                'template_style': template_doc.get('template_style', 'minimaliste'),
+                                'professor_name': template_doc.get('professor_name'),
+                                'school_name': template_doc.get('school_name'),
+                                'school_year': template_doc.get('school_year'),
+                                'footer_text': template_doc.get('footer_text'),
+                                'logo_url': template_doc.get('logo_url'),
+                                'logo_filename': template_doc.get('logo_filename')
+                            }
+                            logger.info(f"Loaded template config for {email}: {template_config.get('template_style')}")
+                        else:
+                            # Default template for Pro users
+                            template_config = {'template_style': 'minimaliste'}
+                            logger.info(f"Using default template for Pro user {email}")
+                    except Exception as e:
+                        logger.error(f"Error loading template config: {e}")
+                        template_config = {'template_style': 'minimaliste'}
             else:
                 logger.info("Invalid session token provided")
         else:
@@ -1783,18 +1807,40 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             doc['created_at'] = datetime.fromisoformat(doc['created_at'])
         document = Document(**doc)
         
-        # Select template
-        template_content = SUJET_TEMPLATE if request.export_type == "sujet" else CORRIGE_TEMPLATE
-        template = Template(template_content)
-        
-        # Render HTML
-        html_content = template.render(
-            document=document,
-            date_creation=document.created_at.strftime("%d/%m/%Y à %H:%M")
-        )
-        
         # Generate PDF
-        pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
+        pdf_path = None
+        
+        # Try personalized PDF for Pro users
+        if is_pro_user and template_config:
+            try:
+                pdf_path = await create_personalized_pdf(document, template_config, request.export_type)
+                logger.info("Created personalized PDF successfully")
+            except Exception as e:
+                logger.error(f"Error creating personalized PDF, falling back to standard: {e}")
+                pdf_path = None
+        
+        # Fallback to WeasyPrint for non-Pro or if personalized fails
+        if not pdf_path:
+            logger.info("Using standard WeasyPrint PDF generation")
+            
+            # Select template
+            template_content = SUJET_TEMPLATE if request.export_type == "sujet" else CORRIGE_TEMPLATE
+            template = Template(template_content)
+            
+            # Render HTML
+            html_content = template.render(
+                document=document,
+                date_creation=document.created_at.strftime("%d/%m/%Y à %H:%M")
+            )
+            
+            # Generate PDF
+            pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
+            
+            # Create temporary file
+            temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+            temp_file.write(pdf_bytes)
+            temp_file.close()
+            pdf_path = temp_file.name
         
         # Track export for guest quota (only for non-Pro users)
         if not is_pro_user and request.guest_id:
@@ -1805,20 +1851,17 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 "guest_id": request.guest_id,
                 "user_email": user_email,
                 "is_pro": is_pro_user,
+                "template_used": template_config.get('template_style') if template_config else 'standard',
                 "created_at": datetime.now(timezone.utc)
             }
             await db.exports.insert_one(export_record)
         
-        # Create temporary file
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
-        temp_file.write(pdf_bytes)
-        temp_file.close()
-        
         # Generate filename
-        filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}.pdf"
+        template_suffix = f"_{template_config.get('template_style', 'standard')}" if is_pro_user else ""
+        filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}{template_suffix}.pdf"
         
         return FileResponse(
-            temp_file.name,
+            pdf_path,
             media_type='application/pdf',
             filename=filename
         )
