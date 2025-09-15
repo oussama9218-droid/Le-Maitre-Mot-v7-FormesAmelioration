@@ -1217,6 +1217,7 @@ async def logout(request: Request):
 async def check_quota_status(guest_id: str):
     """Check current quota status for guest user"""
     return await check_guest_quota(guest_id)
+@api_router.get("/auth/session/validate")
 async def validate_session(request: Request):
     """Validate current session and return user info"""
     try:
