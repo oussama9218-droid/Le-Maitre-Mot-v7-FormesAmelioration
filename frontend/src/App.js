@@ -261,6 +261,10 @@ function MainApp() {
   const [proStatusChecked, setProStatusChecked] = useState(false);
   const [sessionToken, setSessionToken] = useState("");
   
+  // Template states
+  const [userTemplate, setUserTemplate] = useState(null);
+  const [templateUpdated, setTemplateUpdated] = useState(false);
+  
   // Payment modal
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [pricing, setPricing] = useState({});
