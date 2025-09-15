@@ -696,7 +696,7 @@ async def send_magic_link_email(email: str, token: str):
         return False
 
 async def create_login_session(email: str, device_id: str):
-    """Create a new login session and invalidate old ones (atomic operation)"""
+    """Create a new login session and invalidate old ones"""
     try:
         # Generate secure session token
         session_token = str(uuid.uuid4()) + "-" + str(uuid.uuid4())
@@ -715,20 +715,13 @@ async def create_login_session(email: str, device_id: str):
         session_dict['created_at'] = session_dict['created_at'].isoformat()
         session_dict['last_used'] = session_dict['last_used'].isoformat()
         
-        # ATOMIC OPERATION: Remove all existing sessions and insert new one
-        # Use MongoDB transaction for atomic delete+insert to prevent race conditions
-        async with await client.start_session() as session_db:
-            async with session_db.start_transaction():
-                # Delete all existing sessions for this user
-                delete_result = await db.login_sessions.delete_many(
-                    {"user_email": email}, 
-                    session=session_db
-                )
-                logger.info(f"Deleted {delete_result.deleted_count} existing sessions for {email}")
-                
-                # Insert the new session
-                await db.login_sessions.insert_one(session_dict, session=session_db)
-                logger.info(f"Created new session for {email} on device {device_id}")
+        # Remove all existing sessions for this user (single device policy)
+        delete_result = await db.login_sessions.delete_many({"user_email": email})
+        logger.info(f"Deleted {delete_result.deleted_count} existing sessions for {email}")
+        
+        # Insert the new session
+        await db.login_sessions.insert_one(session_dict)
+        logger.info(f"Created new session for {email} on device {device_id}")
         
         # Update user's last_login
         await db.pro_users.update_one(
