@@ -205,6 +205,70 @@ CURRICULUM_DATA = {
             "Statistiques et probabilités",
             "Géométrie dans l'espace"
         ]
+    },
+    "Français": {
+        "6e": [
+            "Récits d'aventures",
+            "Récits de création et création poétique",
+            "Résister au plus fort : ruses, mensonges et masques",
+            "Grammaire - La phrase",
+            "Conjugaison - Présent, passé, futur",
+            "Orthographe - Accords dans le groupe nominal",
+            "Vocabulaire - Formation des mots"
+        ],
+        "5e": [
+            "Le voyage et l'aventure : pourquoi aller vers l'inconnu ?",
+            "Avec autrui : familles, amis, réseaux",
+            "Héros/héroïnes et héroïsmes",
+            "Grammaire - Classes et fonctions",
+            "Conjugaison - Modes et temps",
+            "Orthographe - Accords sujet-verbe",
+            "Vocabulaire - Sens propre et figuré"
+        ],
+        "4e": [
+            "Dire l'amour",
+            "Individu et société : confrontations de valeurs ?",
+            "Fiction pour interroger le réel",
+            "Grammaire - La phrase complexe",
+            "Conjugaison - Temps du récit",
+            "Orthographe - Participe passé",
+            "Vocabulaire - Registres de langue"
+        ],
+        "3e": [
+            "Se raconter, se représenter",
+            "Dénoncer les travers de la société",
+            "Visions poétiques du monde",
+            "Agir sur le monde",
+            "Grammaire - Subordonnées",
+            "Expression écrite - Argumentation",
+            "Vocabulaire - Champs lexicaux"
+        ]
+    },
+    "Physique-Chimie": {
+        "6e": [
+            "Matière, mouvement, énergie, information",
+            "Le vivant, sa diversité et les fonctions qui le caractérisent",
+            "Matériaux et objets techniques",
+            "La planète Terre, les êtres vivants dans leur environnement"
+        ],
+        "5e": [
+            "Organisation et transformations de la matière",
+            "Mouvement et interactions",
+            "L'énergie et ses conversions",
+            "Des signaux pour observer et communiquer"
+        ],
+        "4e": [
+            "Organisation et transformations de la matière",
+            "Mouvement et interactions",
+            "L'énergie et ses conversions",
+            "Des signaux pour observer et communiquer"
+        ],
+        "3e": [
+            "Organisation et transformations de la matière",
+            "Mouvement et interactions",
+            "L'énergie et ses conversions",
+            "Des signaux pour observer et communiquer"
+        ]
     }
 }
 
