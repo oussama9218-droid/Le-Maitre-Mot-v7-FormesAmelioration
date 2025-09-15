@@ -2371,10 +2371,10 @@ async def save_user_template(
         user_email = await require_pro_user(request)
         
         # Debug logging
-        logger.info(f"🔍 Template save request for {user_email}: {template_data.dict()}")
+        logger.info(f"🔍 Template save request for {user_email}: professor_name={professor_name}, school_name={school_name}, school_year={school_year}, footer_text={footer_text}, template_style={template_style}")
         
         # Validate template style
-        if template_data.template_style not in TEMPLATE_STYLES:
+        if template_style not in TEMPLATE_STYLES:
             raise HTTPException(status_code=400, detail="Style de template invalide")
         
         # Get current template or create new one
