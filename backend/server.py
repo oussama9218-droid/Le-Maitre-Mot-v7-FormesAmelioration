@@ -2559,6 +2559,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                     logger.info(f"Loading template config for Pro user: {email}")
                     try:
                         template_doc = await db.user_templates.find_one({"user_email": email})
+                        logger.info(f"🔍 Raw template doc from DB: {template_doc}")
                         if template_doc:
                             template_config = {
                                 'template_style': template_doc.get('template_style', 'minimaliste'),
@@ -2569,7 +2570,16 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                                 'logo_url': template_doc.get('logo_url'),
                                 'logo_filename': template_doc.get('logo_filename')
                             }
-                            logger.info(f"Loaded template config for {email}: {template_config}")
+                            logger.info(f"🔍 Processed template config for {email}: {template_config}")
+                            
+                            # Vérifier si on a des données réelles
+                            has_real_data = any([
+                                template_config.get('professor_name'),
+                                template_config.get('school_name'),
+                                template_config.get('school_year'),
+                                template_config.get('footer_text')
+                            ])
+                            logger.info(f"🔍 Template has real data: {has_real_data}")
                         else:
                             # Default template for Pro users
                             template_config = {'template_style': 'minimaliste'}
