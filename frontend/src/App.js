@@ -437,15 +437,10 @@ function MainApp() {
         responseType: 'blob'
       };
       
-      // Add authentication headers (prioritize session token)
-      if (sessionToken) {
+      // ONLY use session token authentication (no email header fallback)
+      if (sessionToken && isPro) {
         requestConfig.headers = {
           'X-Session-Token': sessionToken
-        };
-      } else if (isPro && userEmail) {
-        // Fallback to email header for backwards compatibility
-        requestConfig.headers = {
-          'X-User-Email': userEmail
         };
       }
 
@@ -467,25 +462,25 @@ function MainApp() {
     } catch (error) {
       console.error("Erreur lors de l'export:", error);
       
-      // Handle session expiry
-      if (error.response?.status === 401 && sessionToken) {
-        console.log('Session expired during export');
-        // Clear session and show login modal
-        localStorage.removeItem('lemaitremot_session_token');
-        localStorage.removeItem('lemaitremot_login_method');
-        setSessionToken("");
-        setIsPro(false);
-        alert('Votre session a expiré. Veuillez vous reconnecter.');
-        setShowLoginModal(true);
-        return;
-      }
-      
-      if (error.response?.status === 402) {
-        const errorData = error.response.data;
-        if (errorData.action === "upgrade_required") {
-          setShowPaymentModal(true);
-        } else {
-          alert("Quota d'exports dépassé");
+      // Handle session expiry/invalidity (someone else logged in)
+      if (error.response?.status === 401 || error.response?.status === 402) {
+        if (sessionToken && isPro) {
+          console.log('Session invalidated - user may have been logged out by another device');
+          // Clear session and show login modal
+          localStorage.removeItem('lemaitremot_session_token');
+          localStorage.removeItem('lemaitremot_login_method');
+          setSessionToken("");
+          setIsPro(false);
+          alert('Votre session a expiré ou a été fermée depuis un autre appareil. Veuillez vous reconnecter.');
+          setShowLoginModal(true);
+          return;
+        } else if (error.response?.status === 402) {
+          const errorData = error.response.data;
+          if (errorData.action === "upgrade_required") {
+            setShowPaymentModal(true);
+          } else {
+            alert("Quota d'exports dépassé");
+          }
         }
       } else {
         alert("Erreur lors de l'export PDF");
