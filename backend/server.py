@@ -407,7 +407,512 @@ CORRIGE_TEMPLATE = """
 </html>
 """
 
-# Helper functions
+# Pro Templates with personalization
+SUJET_PRO_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Template style variables based on selected style */
+        :root {
+            --primary-color: {{ template_colors.primary }};
+            --secondary-color: {{ template_colors.secondary }};
+            --accent-color: {{ template_colors.accent }};
+            --header-font: {{ template_fonts.header }};
+            --content-font: {{ template_fonts.content }};
+        }
+        
+        body {
+            font-family: var(--content-font), Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            color: var(--primary-color);
+        }
+        
+        .page {
+            padding: 2.5cm;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--accent-color);
+            background: linear-gradient(90deg, var(--primary-color)05, transparent);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .logo-section {
+            width: 80px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-placeholder {
+            width: 60px;
+            height: 60px;
+            background: var(--secondary-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+        
+        .title-section {
+            flex: 1;
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        .main-title {
+            font-family: var(--header-font), Arial, sans-serif;
+            font-size: 20pt;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 14pt;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+        
+        .chapter-info {
+            font-size: 12pt;
+            color: var(--accent-color);
+            font-style: italic;
+        }
+        
+        .school-section {
+            width: 200px;
+            text-align: right;
+        }
+        
+        .school-name {
+            font-size: 12pt;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .professor-name {
+            font-size: 10pt;
+            color: var(--secondary-color);
+            margin-bottom: 3px;
+        }
+        
+        .school-year {
+            font-size: 10pt;
+            color: var(--secondary-color);
+        }
+        
+        .document-params {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: var(--accent-color)10;
+            border-radius: 6px;
+            font-size: 11pt;
+            color: var(--secondary-color);
+        }
+        
+        .content {
+            white-space: pre-line;
+            text-align: justify;
+            font-size: 11pt;
+            line-height: 1.6;
+            margin-bottom: 100px;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2.5cm;
+            border-top: 1px solid var(--accent-color);
+            background: white;
+            font-size: 9pt;
+            color: var(--secondary-color);
+        }
+        
+        .footer-left {
+            flex: 1;
+        }
+        
+        .footer-center {
+            flex: 1;
+            text-align: center;
+            color: var(--secondary-color);
+        }
+        
+        .footer-right {
+            flex: 1;
+            text-align: right;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        /* Style-specific adjustments */
+        .style-classique {
+            font-family: 'Times New Roman', serif;
+        }
+        
+        .style-classique .header {
+            border-bottom: 3px double var(--accent-color);
+        }
+        
+        .style-moderne {
+            font-family: 'Helvetica', sans-serif;
+        }
+        
+        .style-moderne .header {
+            background: linear-gradient(135deg, var(--primary-color)08, var(--accent-color)08);
+            border: none;
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        @media print {
+            .page {
+                page-break-after: always;
+            }
+            
+            .page:last-child {
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="style-{{ template_style }}">
+    <div class="page">
+        <div class="header">
+            <div class="logo-section">
+                {% if template_config.logo_url %}
+                    <img src="{{ template_config.logo_url }}" alt="Logo" style="max-width: 60px; max-height: 60px;">
+                {% else %}
+                    <div class="logo-placeholder">LOGO</div>
+                {% endif %}
+            </div>
+            
+            <div class="title-section">
+                <div class="main-title">{{ document.type_doc.title() }}</div>
+                <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
+                <div class="chapter-info">{{ document.chapitre }}</div>
+            </div>
+            
+            <div class="school-section">
+                {% if template_config.school_name %}
+                    <div class="school-name">{{ template_config.school_name }}</div>
+                {% endif %}
+                {% if template_config.professor_name %}
+                    <div class="professor-name">{{ template_config.professor_name }}</div>
+                {% endif %}
+                {% if template_config.school_year %}
+                    <div class="school-year">{{ template_config.school_year }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="document-params">
+            <strong>Difficulté :</strong> {{ document.difficulte.title() }} • 
+            <strong>Nombre d'exercices :</strong> {{ document.nb_exercices }} • 
+            <strong>Créé le :</strong> {{ date_creation }}
+        </div>
+        
+        <div class="content">
+            {{ document.exercices }}
+        </div>
+        
+        <div class="footer">
+            <div class="footer-left">
+                {% if template_config.footer_text %}
+                    {{ template_config.footer_text }}
+                {% endif %}
+            </div>
+            <div class="footer-center">
+                {% if template_config.school_year %}
+                    {{ template_config.school_year }}
+                {% endif %}
+            </div>
+            <div class="footer-right">
+                Le Maître Mot Pro
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+CORRIGE_PRO_TEMPLATE = """
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        /* Template style variables based on selected style */
+        :root {
+            --primary-color: {{ template_colors.primary }};
+            --secondary-color: {{ template_colors.secondary }};
+            --accent-color: {{ template_colors.accent }};
+            --header-font: {{ template_fonts.header }};
+            --content-font: {{ template_fonts.content }};
+        }
+        
+        body {
+            font-family: var(--content-font), Arial, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            margin: 0;
+            padding: 0;
+            color: var(--primary-color);
+        }
+        
+        .page {
+            padding: 2.5cm;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--accent-color);
+            background: linear-gradient(90deg, var(--primary-color)05, transparent);
+            padding: 20px;
+            border-radius: 8px;
+        }
+        
+        .logo-section {
+            width: 80px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo-placeholder {
+            width: 60px;
+            height: 60px;
+            background: var(--secondary-color);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 8pt;
+            font-weight: bold;
+        }
+        
+        .title-section {
+            flex: 1;
+            text-align: center;
+            padding: 0 20px;
+        }
+        
+        .main-title {
+            font-family: var(--header-font), Arial, sans-serif;
+            font-size: 20pt;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        .subtitle {
+            font-size: 14pt;
+            color: var(--secondary-color);
+            margin-bottom: 5px;
+        }
+        
+        .chapter-info {
+            font-size: 12pt;
+            color: var(--accent-color);
+            font-style: italic;
+        }
+        
+        .school-section {
+            width: 200px;
+            text-align: right;
+        }
+        
+        .school-name {
+            font-size: 12pt;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin-bottom: 5px;
+        }
+        
+        .professor-name {
+            font-size: 10pt;
+            color: var(--secondary-color);
+            margin-bottom: 3px;
+        }
+        
+        .school-year {
+            font-size: 10pt;
+            color: var(--secondary-color);
+        }
+        
+        .document-params {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: var(--accent-color)10;
+            border-radius: 6px;
+            font-size: 11pt;
+            color: var(--secondary-color);
+        }
+        
+        .content {
+            white-space: pre-line;
+            text-align: justify;
+            font-size: 11pt;
+            line-height: 1.6;
+            margin-bottom: 100px;
+        }
+        
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 2.5cm;
+            border-top: 1px solid var(--accent-color);
+            background: white;
+            font-size: 9pt;
+            color: var(--secondary-color);
+        }
+        
+        .footer-left {
+            flex: 1;
+        }
+        
+        .footer-center {
+            flex: 1;
+            text-align: center;
+            color: var(--secondary-color);
+        }
+        
+        .footer-right {
+            flex: 1;
+            text-align: right;
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+        
+        /* Style-specific adjustments */
+        .style-classique {
+            font-family: 'Times New Roman', serif;
+        }
+        
+        .style-classique .header {
+            border-bottom: 3px double var(--accent-color);
+        }
+        
+        .style-moderne {
+            font-family: 'Helvetica', sans-serif;
+        }
+        
+        .style-moderne .header {
+            background: linear-gradient(135deg, var(--primary-color)08, var(--accent-color)08);
+            border: none;
+            border-left: 4px solid var(--accent-color);
+        }
+        
+        @media print {
+            .page {
+                page-break-after: always;
+            }
+            
+            .page:last-child {
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body class="style-{{ template_style }}">
+    <div class="page">
+        <div class="header">
+            <div class="logo-section">
+                {% if template_config.logo_url %}
+                    <img src="{{ template_config.logo_url }}" alt="Logo" style="max-width: 60px; max-height: 60px;">
+                {% else %}
+                    <div class="logo-placeholder">LOGO</div>
+                {% endif %}
+            </div>
+            
+            <div class="title-section">
+                <div class="main-title">{{ document.type_doc.title() }} - Corrigé</div>
+                <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
+                <div class="chapter-info">{{ document.chapitre }}</div>
+            </div>
+            
+            <div class="school-section">
+                {% if template_config.school_name %}
+                    <div class="school-name">{{ template_config.school_name }}</div>
+                {% endif %}
+                {% if template_config.professor_name %}
+                    <div class="professor-name">{{ template_config.professor_name }}</div>
+                {% endif %}
+                {% if template_config.school_year %}
+                    <div class="school-year">{{ template_config.school_year }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="document-params">
+            <strong>Difficulté :</strong> {{ document.difficulte.title() }} • 
+            <strong>Nombre d'exercices :</strong> {{ document.nb_exercices }} • 
+            <strong>Créé le :</strong> {{ date_creation }}
+        </div>
+        
+        <div class="content">
+            {{ document.solutions }}
+        </div>
+        
+        <div class="footer">
+            <div class="footer-left">
+                {% if template_config.footer_text %}
+                    {{ template_config.footer_text }}
+                {% endif %}
+            </div>
+            <div class="footer-center">
+                {% if template_config.school_year %}
+                    {{ template_config.school_year }}
+                {% endif %}
+            </div>
+            <div class="footer-right">
+                Le Maître Mot Pro
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+"""
 async def check_guest_quota(guest_id: str):
     """Check if guest user can export (3 exports max)"""
     try:
