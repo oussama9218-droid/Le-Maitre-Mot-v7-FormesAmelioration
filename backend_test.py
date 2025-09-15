@@ -2612,14 +2612,18 @@ class LeMaitreMotAPITester:
         return pdf_passed, pdf_total
 
 def main():
-    print("🎨 TEMPLATE PERSONALIZATION SYSTEM TESTING")
+    """Main function to run personalized PDF generation tests"""
+    print("🎨 LE MAÎTRE MOT - PERSONALIZED PDF GENERATION TESTING")
     print("=" * 80)
-    print("TESTING TEMPLATE PERSONALIZATION FEATURES:")
-    print("1. Template styles endpoint (public access)")
-    print("2. Pro user template management (get/save)")
-    print("3. Feature gating verification (Pro-only access)")
-    print("4. Template data validation")
-    print("5. Database integration testing")
+    print("CONTEXT: Testing personalized PDF generation after ReportLab API fix")
+    print("CRITICAL FIX: drawCentredText() → drawCentredString() in ReportLab canvas methods")
+    print("FEATURES TESTED:")
+    print("1. ReportLab API method fix verification")
+    print("2. Pro user PDF export pipeline")
+    print("3. Personalized PDF content verification")
+    print("4. Template style application (minimaliste, classique, moderne)")
+    print("5. Complete workflow testing")
+    print("6. Personalized vs standard PDF differences")
     print("=" * 80)
     
     tester = LeMaitreMotAPITester()
@@ -2640,8 +2644,8 @@ def main():
         except Exception as e:
             print(f"❌ {test_name} failed with exception: {e}")
     
-    # Run template personalization tests (main focus)
-    template_passed, template_total = tester.run_template_personalization_tests()
+    # Run personalized PDF generation tests (main focus)
+    pdf_passed, pdf_total = tester.run_personalized_pdf_tests()
     
     # Run some authentication tests for context
     print("\n" + "="*60)
@@ -2666,38 +2670,40 @@ def main():
     # Print final results
     print("\n" + "=" * 80)
     print(f"📊 Final Results: {tester.tests_passed}/{tester.tests_run} tests passed")
-    print(f"🎨 Template Personalization: {template_passed}/{template_total} tests passed")
+    print(f"🎨 Personalized PDF Generation: {pdf_passed}/{pdf_total} tests passed")
     print(f"🔐 Context Tests: {context_passed}/{len(context_tests)} context tests passed")
     
     # Determine overall success
-    template_success_rate = template_passed / template_total if template_total > 0 else 0
+    pdf_success_rate = pdf_passed / pdf_total if pdf_total > 0 else 0
     
     print("\n" + "=" * 80)
-    print("🔍 TEMPLATE PERSONALIZATION ANALYSIS:")
+    print("🔍 PERSONALIZED PDF GENERATION ANALYSIS:")
     print("=" * 80)
     
-    if template_success_rate >= 1.0:
-        print("✅ TEMPLATE PERSONALIZATION VERIFICATION: PASSED!")
-        print("✅ Template styles endpoint accessible to all users")
-        print("✅ Template management properly restricted to Pro users")
-        print("✅ Feature gating working correctly (401/403 for unauthorized)")
-        print("✅ Template data validation functioning")
-        print("✅ Database integration endpoints properly structured")
+    if pdf_success_rate >= 1.0:
+        print("✅ PERSONALIZED PDF GENERATION VERIFICATION: PASSED!")
+        print("✅ ReportLab API fix working (drawCentredString method)")
+        print("✅ Pro user PDF export pipeline functional")
+        print("✅ Template personalization system working")
+        print("✅ All 3 template styles (minimaliste, classique, moderne) available")
+        print("✅ Complete workflow from document generation to PDF export")
+        print("✅ Personalized PDFs differentiated from standard PDFs")
         return 0
-    elif template_success_rate >= 0.8:
-        print("⚠️  MOSTLY SUCCESSFUL TEMPLATE PERSONALIZATION")
-        print("⚠️  Most template tests passed, minor issues may exist")
+    elif pdf_success_rate >= 0.8:
+        print("⚠️  MOSTLY SUCCESSFUL PERSONALIZED PDF GENERATION")
+        print("⚠️  Most PDF tests passed, minor issues may exist")
         print("⚠️  Review failed tests above for potential improvements")
         return 1
-    elif template_success_rate >= 0.6:
-        print("⚠️  PARTIAL TEMPLATE PERSONALIZATION SUCCESS")
-        print("⚠️  Some template tests passed, significant issues may exist")
+    elif pdf_success_rate >= 0.6:
+        print("⚠️  PARTIAL PERSONALIZED PDF SUCCESS")
+        print("⚠️  Some PDF tests passed, significant issues may exist")
         print("⚠️  Review failed tests above for required improvements")
         return 2
     else:
-        print("❌ TEMPLATE PERSONALIZATION VERIFICATION: FAILED!")
-        print("❌ Most template tests failed")
-        print("❌ Significant issues detected - review implementation")
+        print("❌ PERSONALIZED PDF GENERATION VERIFICATION: FAILED!")
+        print("❌ Most PDF tests failed")
+        print("❌ Critical issues detected - ReportLab fix may not be working")
+        print("❌ Personalized PDF system may not be functional")
         return 3
 
 if __name__ == "__main__":
