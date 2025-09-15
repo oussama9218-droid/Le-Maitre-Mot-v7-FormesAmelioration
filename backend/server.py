@@ -2359,8 +2359,12 @@ class TemplateSaveRequest(BaseModel):
 
 @api_router.post("/template/save")
 async def save_user_template(
-    template_data: TemplateSaveRequest,
-    request: Request
+    request: Request,
+    professor_name: Optional[str] = Form(None),
+    school_name: Optional[str] = Form(None),
+    school_year: Optional[str] = Form(None),
+    footer_text: Optional[str] = Form(None),
+    template_style: str = Form("minimaliste")
 ):
     """Save user's template configuration (Pro only)"""
     try:
