@@ -187,6 +187,11 @@ class CatalogItem(BaseModel):
     levels: Optional[List[str]] = None
     chapters: Optional[List[str]] = None
 
+class AnalyticsRequest(BaseModel):
+    date_from: Optional[str] = None  # ISO date string
+    date_to: Optional[str] = None
+    user_email: Optional[str] = None  # For Pro users to see their own stats
+
 # French curriculum data
 CURRICULUM_DATA = {
     "Mathématiques": {
