@@ -4,6 +4,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ document.type_doc|title }} - Corrigé - {{ document.matiere }}</title>
+
+    <!-- MathJax Configuration for Math Rendering -->
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [["\\(", "\\)"], ["$", "$"]],
+                displayMath: [["\\[", "\\]"],["$$", "$$"]],
+                processEscapes: true,
+                processEnvironments: true
+            },
+            options: {
+                skipHtmlTags: ["script", "noscript", "style", "textarea", "pre"],
+                ignoreHtmlClass: "tex2jax_ignore",
+                processHtmlClass: "tex2jax_process"
+            },
+            svg: {
+                fontCache: "global"
+            }
+        };
+    </script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Crimson+Text:wght@400;600&display=swap');
         
@@ -181,6 +203,16 @@
             color: #777;
         }
         
+        /* Math styling for better integration */
+        .MathJax {
+            font-size: inherit !important;
+        }
+        
+        mjx-container[jax="SVG"] {
+            display: inline-block;
+            vertical-align: middle;
+        }
+
         @media print {
             body { padding: 20px; }
             .exercise { page-break-inside: avoid; }
