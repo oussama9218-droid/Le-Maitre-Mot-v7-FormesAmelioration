@@ -10,7 +10,7 @@ import os
 from dotenv import load_dotenv
 
 class FinalSecurityVerificationTester:
-    def __init__(self, base_url="https://lemaitremot-app.preview.emergentagent.com"):
+    def __init__(self, base_url="https://lemaitremot-edu.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.tests_run = 0

@@ -1,26 +1,39 @@
 <analysis>
-The previous AI engineer successfully brought Le Maître Mot V1 from conception to a functional MVP. The work focused on implementing core features like AI-powered exercise generation (initially GPT-5, then GPT-4o), PDF export (initially WeasyPrint, later attempting ReportLab, then unifying back to WeasyPrint with HTML templates), and a freemium model with Stripe monetization. Significant effort was dedicated to robust magic link authentication via Brevo, addressing critical security flaws such as multi-device session management and token invalidation. Key issues involved resolving timezone errors, fixing frontend/backend desynchronization regarding Pro status, and a prolonged debugging process for PDF template customization, culminating in a refactor to standardize on WeasyPrint using new HTML templates. The current state reflects a stable authentication system and an ongoing transition to a unified PDF generation pipeline.
+The AI engineer successfully established Le Maître Mot V1 as a functional MVP. Initial work included AI-powered exercise generation (GPT-4o), PDF export (unified to WeasyPrint), freemium model (Stripe), and magic link authentication (Brevo) with robust session management. Key challenges involved timezone errors, Pro status desynchronization, and persistent PDF template customization issues.
+
+The trajectory chronicles a journey through two main phases:
+1.  **Stability Verification:** Confirmed system stability, backend operation, and unified WeasyPrint PDF generation after ReportLab removal.
+2.  **Functionality Expansion:** Extended exercise generation to French and Physics-Chemistry, implemented advanced PDF layout options (margins, page format, visual styles), and integrated basic analytics.
+
+Critical bug fixes included:
+*   Resolving the white page PDF issue by correctly implementing Jinja2 loops for rendering exercises within HTML templates.
+*   Fixing the  endpoint to correctly parse  sent by the frontend, ensuring Pro user customization data was saved to MongoDB.
+*   Addressing template design degradation for non-Pro users by restoring a richer, student-friendly layout, and refining Pro templates for an ultra-professional look.
+*   Refactoring template management by extracting HTML content from  into a dedicated  directory for improved maintainability.
+*   Implementing logo upload support, including file saving and serving static files.
+*   Investigating persistent logo display issues, leading to the discovery that WeasyPrint requires absolute  paths for local images.
+
+The immediate work is diagnosing why the Pro user's logo and personalized data still don't appear in the PDF, despite fixes for upload and pathing. The investigation is currently focusing on session authentication and Pro status detection during the PDF export process.
 </analysis>
 
 <product_requirements>
-The objective is to create Le Maître Mot, an application enabling French teachers to generate high-quality educational materials efficiently. Key features include generating exercise sheets aligned by subject/level/chapter, offering modular templates, easily differentiating versions (A/B, difficulty), and exporting as PDF/DOCX. The UI must be intuitive for non-tech-savvy users.
+The goal is to develop Le Maître Mot, an application for French teachers to efficiently create high-quality educational content. It should generate diverse exercise sheets (by subject, level, chapter), offer customizable templates, support differentiated versions (A/B, difficulty), and export to PDF/DOCX. The UI must be user-friendly.
 
-Current implementation provides AI-powered generation (Maths, 6e-3e, French curriculum) with solutions, using GPT-4o. PDF export of subject and solution is available. A freemium model offers 3 free exports; Pro mode (paid via Stripe) grants unlimited exports. Authentication is via magic link (Brevo), recognizing and persisting Pro status. The application was rebranded from LessonSmith to Le Maître Mot. Recent work includes implementing multi-device login, single-session enforcement, subscription duplicate checks, and personalized PDF templates.
+Current features: AI-powered generation (Maths, French, Physics-Chemistry for 6e-3e levels using GPT-4o), solution generation, and PDF export for both exercise and solution sheets. A freemium model allows 3 free exports, with unlimited access via a paid Pro subscription (Stripe). Magic link authentication (Brevo) manages secure login, multi-device sessions, and Pro status persistence. Recent work focused on single-session enforcement, subscription duplicate checks, personalized Pro PDF templates (including logo, school, professor details, year, footer, and style selection), and basic usage analytics. The application provides two distinct PDF designs: a student-friendly version for non-Pro users and an ultra-professional, customizable version for Pro users.
 </product_requirements>
 
 <key_technical_concepts>
-- **FastAPI:** Python framework for backend APIs.
+- **FastAPI:** Python web framework for backend APIs.
 - **React:** JavaScript library for frontend UI.
-- **MongoDB:** NoSQL database.
-- **LLM Integration:** GPT-4o for content generation.
-- **Shadcn UI & Tailwind CSS:** Frontend styling and components.
-- **WeasyPrint:** Python library for HTML to PDF conversion (primary for PDF).
-- **ReportLab:** Python library for PDF generation (introduced then removed for unification).
+- **MongoDB:** NoSQL database for data storage.
+- **LLM Integration:** GPT-4o for AI content generation.
+- **WeasyPrint:** Python library for HTML to PDF conversion.
+- **Jinja2:** Templating engine for dynamic HTML rendering.
 - **Brevo:** Email service for magic link authentication.
-- **Stripe:** Payment gateway for subscriptions.
-- **Pydantic:** Data validation and settings.
-- **UUIDs:** Unique identifiers for database entries.
-- **JWT:** JSON Web Tokens for session management.
+- **Stripe:** Payment gateway for managing subscriptions.
+- **Pydantic:** Data validation and settings management.
+- **JWT:** JSON Web Tokens for secure session management.
+- **Tailwind CSS & Shadcn UI:** Frontend styling and components.
 </key_technical_concepts>
 
 <code_architecture>
@@ -29,69 +42,48 @@ The application uses a standard full-stack architecture with a React frontend, F
 
 
 -   **/app/backend/server.py**:
-    -   **Importance**: Core FastAPI backend, handles API logic, DB, LLM, PDF generation, auth, Stripe.
+    -   **Importance**: Core FastAPI backend. Handles API logic, MongoDB interactions, LLM calls, PDF generation, authentication, and Stripe payments.
     -   **Changes Made**:
-        -   Added new authentication endpoints (, , ).
-        -   Implemented session management using JWT (24h expiry, unique per device).
-        -   Fixed MongoDB transaction issues (removed transactions for standalone compatibility).
-        -   Removed legacy email header authentication fallback for strict single-session enforcement.
-        -   Added new endpoint .
-        -   Added  usage for magic links.
-        -   Implemented anti-duplicate subscription checks and enhanced expiration date calculation.
-        -   Added new endpoint .
-        -   Added  model,  middleware, , ,  endpoints.
-        -   Refactored PDF generation to *exclusively use WeasyPrint* with new HTML templates, removing all ReportLab code.
-        -   Numerous logging and error handling improvements.
+        -   Refactored PDF generation to exclusively use WeasyPrint with Jinja2 loops for content.
+        -   Expanded  to include Français and Physique-Chimie subjects, updating AI generation prompts.
+        -   Added Pydantic models (, , ) and corresponding API routes (, ).
+        -   Modified  to accept  for customization data and  for logo.
+        -   Implemented logic to save uploaded logos to  and store their paths.
+        -   Added  to serve static files from .
+        -   Modified PDF rendering context to pass logo and other personalization data directly to templates.
+        -   Implemented conversion of relative logo URLs to absolute  paths for WeasyPrint.
+        -   Created  helper function for reading templates from files.
+-   **/app/backend/templates/**:
+    -   **Importance**: New directory for all HTML templates used by WeasyPrint for PDF generation. Separates design from backend logic.
+    -   **Changes Made**: Contains , , , . All templates were extensively modified: standard ones reverted to an élève-friendly design, and Pro ones updated to an ultra-professional and customizable design.
 -   **/app/frontend/src/App.js**:
     -   **Importance**: Main React component, manages UI, state, and API calls.
-    -   **Changes Made**:
-        -   Integrated authentication states (, , ).
-        -   Added authentication functions (, , , ).
-        -   Modified  to send  and to handle session invalidation.
-        -   Implemented login modal, logout button, and Pro status UI updates.
-        -   Integrated  component and associated state management.
-        -   Corrected API URLs to include  prefix.
-        -   Fixed JavaScript syntax errors.
--   **/app/frontend/src/AuthVerify.js**:
-    -   **Importance**: Processes magic link verification tokens.
-    -   **Changes Made**: Already existing for signup, implicitly extended for login verification.
--   **/app/backend/.env** and **/app/frontend/.env**:
-    -   **Importance**: Stores environment variables.
-    -   **Changes Made**: Added  to .
--   **/app/backend/init_db_indexes.py**:
-    -   **Importance**: Script to initialize MongoDB indexes.
-    -   **Changes Made**: Created to add a unique index on  and TTL index for session expiry, ensuring single active session per user.
+    -   **Changes Made**: Integrated authentication states (, , ). Contains  to handle session tokens.
 -   **/app/frontend/src/components/TemplateSettings.js**:
-    -   **Importance**: New React component for Pro user template customization.
-    -   **Changes Made**: Created with UI for logo upload, text inputs (professor, school, year, footer), style selector, and feature gating for Pro users.
--   **/app/frontend/src/components/ui/textarea.js**:
-    -   **Importance**: Shadcn UI component.
-    -   **Changes Made**: Created for text input fields in the template settings.
--   **/app/backend/SUJET_PRO_TEMPLATE.html** and **/app/backend/CORRIGE_PRO_TEMPLATE.html**:
-    -   **Importance**: New HTML templates for personalized Pro PDF exports.
-    -   **Changes Made**: Created to include placeholders for logo, school name, professor name, year, and footer text, used by WeasyPrint.
+    -   **Importance**: Frontend component for Pro user template customization.
+    -   **Changes Made**: Handles inputs for professor, school, year, footer, logo upload, and style selection. Sends data as  to the backend.
 </code_architecture>
 
 <pending_tasks>
-- Add templates for personalized documents (logo, header, footer) - *Partially completed, but the overall system needs to be fully verified.*
-- Extend exercise generation to other subjects: French and Physics-Chemistry (collège, 6e→3e).
-- Implement advanced PDF layout options.
-- Integrate comprehensive analytics.
+- Investigate why the Pro user's logo and personalized data are not displaying in generated PDFs, specifically focusing on the user's Pro status detection and session token usage during the export process.
+- Implement automated tests for new features as requested by the user.
+- Implement advanced PDF layout options (beyond basic settings now added).
+- Integrate comprehensive analytics (beyond the basic tracking endpoint implemented).
 </pending_tasks>
 
 <current_work>
-Immediately prior to this summary, the AI engineer was working on a critical issue where personalized PDF templates were not being applied, despite several attempts to implement a ReportLab-based solution. The core problem was identified as a reliance on two PDF generation libraries (WeasyPrint and ReportLab), with the ReportLab implementation being complex and fragile, leading to unintended fallbacks to the old generic design.
+Immediately prior to this summary, the AI engineer was deep-diving into a bug where a Pro user's logo and personalized information (school name, professor name, etc.) were not appearing in the generated PDF, despite the user having uploaded a logo and saved their preferences, and despite the database containing the logo URL.
 
-The user explicitly requested to **unify PDF generation by using only WeasyPrint**, creating new HTML templates (, ) with placeholders for Pro user customization.
+The engineer performed a multi-step diagnostic:
+1.  **DB Check for **: Confirmed  had a template entry, and the  and  were correctly stored in the database.
+2.  **File System Check**: Verified the logo file physically existed in .
+3.  **URL Accessibility Check**: Confirmed the logo was accessible via its served URL, indicating the static file server was operational.
+4.  **WeasyPrint Path Conversion**: Implemented a critical fix to convert relative logo URLs (e.g., ) to absolute  paths (e.g., ) because WeasyPrint requires absolute paths for local image rendering.
+5.  **Pro Status Discrepancy**: The most recent finding indicates that while the  collection shows the user has a logo, and the  collection shows  as an active Pro subscriber, the  collection might not reflect this  status (). More critically, recent PDF exports were tagged , and the  function appears to treat the user as a guest, implying an issue with session authentication or Pro status retrieval during the export request itself.
 
-The AI engineer has:
-1.  **Created new HTML templates**:  and  with necessary placeholders.
-2.  **Refactored **: The  function has been significantly modified to exclusively use WeasyPrint. It now dynamically selects the appropriate HTML template (Pro or standard) and populates it with user-specific data before generating the PDF.
-3.  **Removed ReportLab code**: All redundant ReportLab-specific imports, functions, and logic have been removed from  to streamline the PDF generation process.
-
-The last action recorded was the AI engineer initiating a backend restart after cleaning up the remaining ReportLab code, confirming the unification to WeasyPrint.
+The  function correctly queries , but the problem likely lies in how the  endpoint receives and processes the user's session token to determine their Pro status for rendering.
 </current_work>
 
 <optional_next_step>
-Verify the backend starts correctly after ReportLab removal, then perform comprehensive tests of the unified WeasyPrint PDF generation.
+Investigate the  function's session token validation to ensure the user's Pro status is correctly identified.
 </optional_next_step>
