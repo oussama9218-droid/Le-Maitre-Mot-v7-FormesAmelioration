@@ -35,6 +35,29 @@ def load_template(template_name: str) -> str:
     with open(template_path, 'r', encoding='utf-8') as f:
         return f.read()
 
+# Professional content processing function
+def process_exercise_content(content: str) -> str:
+    """
+    Processes the exercise content to render both LaTeX and geometric schemas.
+    This centralizes all content processing logic for consistency.
+    """
+    if not content:
+        return content
+    
+    # 1. Process geometric schemas first
+    try:
+        content = geometry_renderer.process_geometric_schemas_for_web(content)
+    except Exception as e:
+        logger.error(f"Error processing geometric schemas: {e}")
+    
+    # 2. Process LaTeX formulas
+    try:
+        content = latex_renderer.convert_latex_to_svg(content)
+    except Exception as e:
+        logger.error(f"Error processing LaTeX: {e}")
+    
+    return content
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
