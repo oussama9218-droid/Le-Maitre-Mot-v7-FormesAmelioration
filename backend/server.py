@@ -2393,6 +2393,8 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             for exercise in document_dict.get('exercises', []):
                 # Process exercise statement
                 if 'enonce' in exercise and exercise['enonce']:
+                    # First process geometric schemas, then LaTeX
+                    exercise['enonce'] = geometry_renderer.process_geometric_schemas(exercise['enonce'])
                     exercise['enonce'] = latex_renderer.convert_latex_to_svg(exercise['enonce'])
                 
                 # Process QCM options if they exist
