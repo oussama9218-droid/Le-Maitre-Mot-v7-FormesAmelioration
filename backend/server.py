@@ -1234,6 +1234,16 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
             "Une boîte cubique a une arête de {a} cm. Quel est son volume ?",
             "Convertir {a} L en cm³"
         ],
+        "Théorème de Pythagore": [
+            "Dans un triangle rectangle ABC rectangle en B, AB = {a} cm et BC = {b} cm. Calculer AC.",
+            "Un triangle rectangle a des côtés de {a} cm et {b} cm. Calculer l'hypoténuse.",
+            "Utiliser le théorème de Pythagore pour calculer le côté manquant : a = {a} cm, c = {b} cm."
+        ],
+        "Théorème de Thalès": [
+            "Dans un triangle ABC, on trace une droite parallèle à BC. Si AB = {a} cm et la portion coupée = {b} cm, calculer les proportions.",
+            "Deux droites parallèles coupent deux sécantes. Si les segments sont {a} cm et {b} cm d'un côté, et {c} cm de l'autre, calculer le quatrième segment.",
+            "Utiliser le théorème de Thalès pour calculer une longueur manquante dans une configuration de triangles semblables."
+        ],
         "Fractions": [
             "Calculer : 1/{a} + 1/{b}",
             "Simplifier : {a}/{b}",
