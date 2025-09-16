@@ -170,6 +170,7 @@ class ExportRequest(BaseModel):
     document_id: str
     export_type: str  # "sujet" or "corrige"
     guest_id: Optional[str] = None
+    template_style: Optional[str] = "classique"  # Style d'export choisi
 
 class AdvancedPDFOptions(BaseModel):
     page_format: str = "A4"  # A4, A4_compact, US_Letter
