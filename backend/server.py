@@ -1174,18 +1174,32 @@ JSON uniquement:
         json_content = response[json_start:json_end]
         data = json.loads(json_content)
         
-        # Convert to Exercise objects
+        # Convert to Exercise objects with professional content processing
         exercises = []
         for ex_data in data.get("exercises", []):
-            # Clean the enonce to remove any unwanted formatting
+            # Clean and process the enonce with professional content processing
             enonce = ex_data.get("enonce", "").strip()
+            enonce = process_exercise_content(enonce)  # Apply centralized processing
+            
+            # Process solution steps and result
+            solution = ex_data.get("solution", {"etapes": ["Étape 1", "Étape 2"], "resultat": "Résultat"})
+            
+            # Process each solution step
+            if "etapes" in solution and isinstance(solution["etapes"], list):
+                solution["etapes"] = [
+                    process_exercise_content(step) for step in solution["etapes"]
+                ]
+            
+            # Process solution result
+            if "resultat" in solution:
+                solution["resultat"] = process_exercise_content(solution["resultat"])
             
             exercise = Exercise(
                 type=ex_data.get("type", "ouvert"),
                 enonce=enonce,
                 donnees=None,  # Don't show technical data to users
                 difficulte=ex_data.get("difficulte", difficulte),
-                solution=ex_data.get("solution", {"etapes": ["Étape 1", "Étape 2"], "resultat": "Résultat"}),
+                solution=solution,
                 bareme=ex_data.get("bareme", [{"etape": "Méthode", "points": 2.0}, {"etape": "Résultat", "points": 2.0}]),
                 seed=hash(enonce) % 1000000
             )
