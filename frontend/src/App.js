@@ -1246,7 +1246,7 @@ function MainApp() {
                               ))}
                               <div className="mt-3 p-2 bg-green-50 rounded">
                                 <strong className="text-green-800">Résultat :</strong> 
-                                <span className="ml-2 text-green-900">{exercise.solution.resultat}</span>
+                                <span className="ml-2 text-green-900" dangerouslySetInnerHTML={{ __html: exercise.solution.resultat }}></span>
                               </div>
                               {exercise.bareme.length > 0 && (
                                 <div className="mt-3 p-2 bg-blue-50 rounded">
