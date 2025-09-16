@@ -2244,6 +2244,20 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 **template_styles
             }
             
+            # Convert logo URL to absolute file path for WeasyPrint
+            logo_url = template_config.get('logo_url')
+            if logo_url and logo_url.startswith('/uploads/'):
+                # Convert relative URL to absolute file path
+                logo_file_path = ROOT_DIR / logo_url[1:]  # Remove leading slash
+                if logo_file_path.exists():
+                    render_context['logo_url'] = f"file://{logo_file_path}"
+                    logger.info(f"✅ Logo converted for WeasyPrint: {logo_file_path}")
+                else:
+                    logger.warning(f"⚠️ Logo file not found: {logo_file_path}")
+                    render_context['logo_url'] = None
+            else:
+                render_context['logo_url'] = logo_url
+            
             logger.info(f"🔍 FINAL RENDER CONTEXT FOR LOGO DEBUG:")
             logger.info(f"   school_name: {render_context.get('school_name')}")
             logger.info(f"   professor_name: {render_context.get('professor_name')}")
