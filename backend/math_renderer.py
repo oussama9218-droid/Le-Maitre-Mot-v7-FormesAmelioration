@@ -94,6 +94,7 @@ class MathRenderer:
         """Process mathematical content with pattern replacements"""
         result = text
         
+        # Process patterns in the right order (most complex first)
         for pattern, replacement in self.patterns:
             if callable(replacement):
                 # For complex patterns with functions
