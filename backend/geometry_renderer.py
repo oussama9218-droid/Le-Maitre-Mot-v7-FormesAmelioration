@@ -396,8 +396,70 @@ class GeometryRenderer:
             logger.warning(f"Unknown figure type for Base64: {figure_type}")
             return ""
     
+    def extract_geometry_schema_from_text(self, text: str) -> Optional[Dict[str, Any]]:
+        """Extract the first geometric schema from text"""
+        if not text:
+            return None
+        
+        # Pattern to find geometric schema JSON
+        pattern = r'\{\s*"type"\s*:\s*"schema_geometrique"[^}]*\}'
+        match = re.search(pattern, text)
+        
+        if match:
+            try:
+                schema_json = match.group(0)
+                schema_data = json.loads(schema_json)
+                
+                if schema_data.get('type') == 'schema_geometrique':
+                    return schema_data
+                    
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON in geometric schema: {e}")
+                return None
+            except Exception as e:
+                logger.error(f"Error extracting geometric schema: {e}")
+                return None
+        
+        return None
+    
+    def process_geometric_schemas_for_web(self, text: str) -> str:
+        """Process text to replace geometric schemas with Base64 images for web display"""
+        if not text:
+            return text
+        
+        # Pattern to find geometric schema JSON
+        pattern = r'\{\s*"type"\s*:\s*"schema_geometrique"[^}]*\}'
+        
+        def replace_schema_with_base64(match):
+            try:
+                schema_json = match.group(0)
+                schema_data = json.loads(schema_json)
+                
+                if schema_data.get('type') == 'schema_geometrique':
+                    base64_image = self.render_geometry_to_base64(schema_data)
+                    
+                    if base64_image:
+                        return f'<div class="geometric-figure" style="text-align: center; margin: 15px 0;"><img src="data:image/png;base64,{base64_image}" alt="Schéma géométrique" style="max-width: 400px; height: auto;"/></div>'
+                    else:
+                        # Fallback to text description if Base64 generation fails
+                        figure_name = schema_data.get('figure', 'figure')
+                        points = ', '.join(schema_data.get('points', []))
+                        return f'<div style="text-align: center; margin: 15px 0; padding: 10px; border: 1px dashed #ccc; font-style: italic;">[Schéma: {figure_name} avec points {points}]</div>'
+                
+            except json.JSONDecodeError as e:
+                logger.error(f"Invalid JSON in geometric schema: {e}")
+                return f'<span style="color: red; font-style: italic;">[Schéma géométrique invalide]</span>'
+            except Exception as e:
+                logger.error(f"Error processing geometric schema for web: {e}")
+                return f'<span style="color: red; font-style: italic;">[Erreur schéma géométrique]</span>'
+            
+            return match.group(0)  # Return original if no processing needed
+        
+        result = re.sub(pattern, replace_schema_with_base64, text)
+        return result
+    
     def process_geometric_schemas(self, text: str) -> str:
-        """Process text to find and render geometric schemas"""
+        """Process text to find and render geometric schemas as SVG (for PDF)"""
         if not text:
             return text
         
