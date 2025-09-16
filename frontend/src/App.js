@@ -624,6 +624,7 @@ function MainApp() {
     initializeAuth();
     fetchCatalog();
     fetchPricing();
+    fetchExportStyles();
     
     // Set up periodic session validation for Pro users
     const sessionCheckInterval = setInterval(() => {
