@@ -315,6 +315,14 @@ backend:
     stuck_count: 0
     priority: "high"
     needs_retesting: false
+
+  - task: "Geometric Schema Web Display Fix"
+    implemented: true
+    working: "testing"
+    file: "geometry_renderer.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
     status_history:
         - working: false
         - agent: "main"
