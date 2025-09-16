@@ -35,6 +35,73 @@ def load_template(template_name: str) -> str:
     with open(template_path, 'r', encoding='utf-8') as f:
         return f.read()
 
+# Icon mapping for exercises based on type and chapter
+EXERCISE_ICON_MAPPING = {
+    # Mathematics icons by chapter
+    "Théorème de Pythagore": "triangle-ruler",
+    "Théorème de Thalès": "triangle-ruler", 
+    "Trigonométrie": "triangle-ruler",
+    "Géométrie": "triangle-ruler",
+    "Fractions": "calculator",
+    "Équations": "calculator",
+    "Fonctions": "function-square",
+    "Statistiques": "bar-chart",
+    "Probabilités": "dice-6",
+    "Volumes": "cube",
+    
+    # By exercise type
+    "geometry": "triangle-ruler",
+    "algebra": "calculator", 
+    "statistics": "bar-chart",
+    "probability": "dice-6",
+    "text": "file-text",
+    
+    # Physics-Chemistry icons
+    "Matière": "atom",
+    "Énergie": "zap",
+    "Forces": "magnet",
+    
+    # Default fallback
+    "default": "book-open"
+}
+
+def enrich_exercise_with_icon(exercise_data: dict, chapitre: str) -> dict:
+    """Enrich exercise data with appropriate icon based on type and chapter"""
+    
+    # Priority 1: Use icon from AI if provided
+    if "icone" in exercise_data and exercise_data["icone"]:
+        return exercise_data
+    
+    # Priority 2: Use type from AI if provided
+    if "type" in exercise_data and exercise_data["type"]:
+        exercise_type = exercise_data["type"]
+        if exercise_type in EXERCISE_ICON_MAPPING:
+            exercise_data["icone"] = EXERCISE_ICON_MAPPING[exercise_type]
+            return exercise_data
+    
+    # Priority 3: Use chapter-based mapping
+    if chapitre in EXERCISE_ICON_MAPPING:
+        exercise_data["icone"] = EXERCISE_ICON_MAPPING[chapitre]
+        exercise_data["type"] = "geometry" if "géométrie" in chapitre.lower() or "pythagore" in chapitre.lower() or "thalès" in chapitre.lower() or "trigonométrie" in chapitre.lower() else "algebra"
+        return exercise_data
+    
+    # Priority 4: Detect from content
+    enonce = exercise_data.get("enonce", "").lower()
+    if any(word in enonce for word in ["triangle", "cercle", "carré", "rectangle", "géométrique", "angle", "côté"]):
+        exercise_data["type"] = "geometry"
+        exercise_data["icone"] = "triangle-ruler"
+    elif any(word in enonce for word in ["équation", "fonction", "fraction", "calcul", "nombre"]):
+        exercise_data["type"] = "algebra" 
+        exercise_data["icone"] = "calculator"
+    elif any(word in enonce for word in ["statistique", "moyenne", "graphique", "données"]):
+        exercise_data["type"] = "statistics"
+        exercise_data["icone"] = "bar-chart"
+    else:
+        exercise_data["type"] = "text"
+        exercise_data["icone"] = EXERCISE_ICON_MAPPING["default"]
+    
+    return exercise_data
+
 # Professional content processing function
 def process_exercise_content(content: str) -> str:
     """
