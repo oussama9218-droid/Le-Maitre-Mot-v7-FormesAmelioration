@@ -18,6 +18,7 @@ import tempfile
 import weasyprint
 from jinja2 import Template
 from latex_to_svg import latex_renderer
+from geometry_renderer import geometry_renderer
 import requests
 
 ROOT_DIR = Path(__file__).parent
