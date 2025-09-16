@@ -132,9 +132,8 @@ class GeometryRenderer:
                    bbox=dict(boxstyle="round,pad=0.2", facecolor='white', 
                             edgecolor='none', alpha=0.8))
     
-    def _render_right_triangle(self, data: Dict[str, Any]) -> str:
-        """Render a right triangle with labeled vertices"""
-        fig, ax = self._create_figure(6, 5)
+    def _render_right_triangle_to_figure(self, fig: plt.Figure, ax: plt.Axes, data: Dict[str, Any]):
+        """Render a right triangle with labeled vertices to existing figure"""
         
         # Default coordinates for right triangle
         points = data.get('points', ['A', 'B', 'C'])
