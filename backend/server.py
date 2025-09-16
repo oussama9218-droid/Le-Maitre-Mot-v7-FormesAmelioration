@@ -2405,11 +2405,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         
         logger.info("✅ Mathematical expressions processed and CSS injected")
         
-        # Debug: Save HTML content to temporary file for inspection
-        import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
-            f.write(html_content)
-            logger.info(f"🔍 HTML content saved to: {f.name}")
+        # Debug removed for production
         
         # Generate PDF with WeasyPrint
         pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
