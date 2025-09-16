@@ -1,25 +1,13 @@
 <analysis>
-The AI engineer successfully established Le Maître Mot V1 as a functional MVP. Initial work included AI-powered exercise generation (GPT-4o), PDF export (unified to WeasyPrint), freemium model (Stripe), and magic link authentication (Brevo) with robust session management. Key challenges involved timezone errors, Pro status desynchronization, and persistent PDF template customization issues.
+The AI engineer's work on Le Maître Mot V1 commenced with an MVP, providing AI-powered exercise generation, PDF export, freemium access, and magic link authentication. The trajectory highlights two phases: stability verification and functionality expansion. Initial bugs included logo rendering in PDFs and Pro status synchronization, which were addressed by refining session management and WeasyPrint path handling.
 
-The trajectory chronicles a journey through two main phases:
-1.  **Stability Verification:** Confirmed system stability, backend operation, and unified WeasyPrint PDF generation after ReportLab removal.
-2.  **Functionality Expansion:** Extended exercise generation to French and Physics-Chemistry, implemented advanced PDF layout options (margins, page format, visual styles), and integrated basic analytics.
-
-Critical bug fixes included:
-*   Resolving the white page PDF issue by correctly implementing Jinja2 loops for rendering exercises within HTML templates.
-*   Fixing the  endpoint to correctly parse  sent by the frontend, ensuring Pro user customization data was saved to MongoDB.
-*   Addressing template design degradation for non-Pro users by restoring a richer, student-friendly layout, and refining Pro templates for an ultra-professional look.
-*   Refactoring template management by extracting HTML content from  into a dedicated  directory for improved maintainability.
-*   Implementing logo upload support, including file saving and serving static files.
-*   Investigating persistent logo display issues, leading to the discovery that WeasyPrint requires absolute  paths for local images.
-
-The immediate work is diagnosing why the Pro user's logo and personalized data still don't appear in the PDF, despite fixes for upload and pathing. The investigation is currently focusing on session authentication and Pro status detection during the PDF export process.
+Subsequent development focused on adding multiple PDF export styles (Classique, Moderne, Élève, Minimal, Corrigé détaillé, Académique) with dynamic access control. A significant effort was dedicated to LaTeX formula rendering, evolving from a problematic client-side MathJax approach to a robust server-side SVG conversion using  and . Most recently, the engineer integrated geometric schema generation (triangles, squares, circles) into the AI generation and backend rendering, converting JSON schema definitions into SVG images. The immediate challenge is ensuring these geometric schemas are correctly parsed and rendered as Base64 for web display and integrated into the PDF export pipeline to prevent raw JSON from appearing in the final document. The engineer is currently debugging the  function to properly integrate this schema rendering logic.
 </analysis>
 
 <product_requirements>
-The goal is to develop Le Maître Mot, an application for French teachers to efficiently create high-quality educational content. It should generate diverse exercise sheets (by subject, level, chapter), offer customizable templates, support differentiated versions (A/B, difficulty), and export to PDF/DOCX. The UI must be user-friendly.
+Le Maître Mot aims to be a comprehensive application for French teachers, enabling efficient creation of high-quality educational content. It should generate diverse exercise sheets by subject (Maths, French, Physics-Chemistry), level (6e-3e), and chapter, and provide customizable templates. Key features include AI-powered generation of exercises and solutions, differentiated versions (A/B, difficulty), and export to PDF/DOCX. The UI must be user-friendly.
 
-Current features: AI-powered generation (Maths, French, Physics-Chemistry for 6e-3e levels using GPT-4o), solution generation, and PDF export for both exercise and solution sheets. A freemium model allows 3 free exports, with unlimited access via a paid Pro subscription (Stripe). Magic link authentication (Brevo) manages secure login, multi-device sessions, and Pro status persistence. Recent work focused on single-session enforcement, subscription duplicate checks, personalized Pro PDF templates (including logo, school, professor details, year, footer, and style selection), and basic usage analytics. The application provides two distinct PDF designs: a student-friendly version for non-Pro users and an ultra-professional, customizable version for Pro users.
+Currently, the application supports AI-powered content generation using GPT-4o, solution generation, and PDF export for both exercise and solution sheets. A freemium model allows 3 free exports, with unlimited access via a paid Pro subscription managed by Stripe. Magic link authentication via Brevo ensures secure login, multi-device sessions, and Pro status persistence. Recent enhancements include single-session enforcement, subscription duplicate checks, and personalized Pro PDF templates (with logo, school, professor details, year, footer, and style selection). The application provides distinct PDF designs: a student-friendly version for non-Pro users and an ultra-professional, customizable version for Pro users. Latest updates include multiple export styles (Classique, Moderne, Élève, Corrigé détaillé, Minimal, Académique), high-quality server-side LaTeX rendering to SVG, and AI-generated geometric schemas (triangles, squares, circles) rendered as SVGs within documents for both web display and PDF export.
 </product_requirements>
 
 <key_technical_concepts>
@@ -34,6 +22,8 @@ Current features: AI-powered generation (Maths, French, Physics-Chemistry for 6e
 - **Pydantic:** Data validation and settings management.
 - **JWT:** JSON Web Tokens for secure session management.
 - **Tailwind CSS & Shadcn UI:** Frontend styling and components.
+- **pylatexenc & Matplotlib:** LaTeX to SVG conversion and geometric schema rendering.
+- **svgwrite:** Python library for generating SVG.
 </key_technical_concepts>
 
 <code_architecture>
@@ -44,46 +34,55 @@ The application uses a standard full-stack architecture with a React frontend, F
 -   **/app/backend/server.py**:
     -   **Importance**: Core FastAPI backend. Handles API logic, MongoDB interactions, LLM calls, PDF generation, authentication, and Stripe payments.
     -   **Changes Made**:
-        -   Refactored PDF generation to exclusively use WeasyPrint with Jinja2 loops for content.
-        -   Expanded  to include Français and Physique-Chimie subjects, updating AI generation prompts.
-        -   Added Pydantic models (, , ) and corresponding API routes (, ).
-        -   Modified  to accept  for customization data and  for logo.
-        -   Implemented logic to save uploaded logos to  and store their paths.
-        -   Added  to serve static files from .
-        -   Modified PDF rendering context to pass logo and other personalization data directly to templates.
-        -   Implemented conversion of relative logo URLs to absolute  paths for WeasyPrint.
-        -   Created  helper function for reading templates from files.
+        -   Refactored PDF generation to use WeasyPrint with Jinja2.
+        -   Expanded  for subjects and updated AI prompts.
+        -   Added Pydantic models (, , ,  with ).
+        -   Modified  for  and  (logo).
+        -   Implemented logo upload, storage in , and static file serving.
+        -   Fixed logo URL conversion to absolute  paths for WeasyPrint in .
+        -   Integrated dynamic template selection based on user's  status and  choice.
+        -   Added  dictionary to define available templates and their properties.
+        -   Implemented server-side LaTeX to SVG conversion () into the PDF rendering pipeline.
+        -   Integrated geometric schema detection and SVG/Base64 rendering () for both web display (in  endpoint) and PDF export (in  endpoint).
+        -   Updated  prompts for AI to generate geometric schema JSON.
+        -   Fixed Pydantic object  error to .
+        -   Fixed template truncation caused by MathJax removal by restoring full HTML.
 -   **/app/backend/templates/**:
-    -   **Importance**: New directory for all HTML templates used by WeasyPrint for PDF generation. Separates design from backend logic.
-    -   **Changes Made**: Contains , , , . All templates were extensively modified: standard ones reverted to an élève-friendly design, and Pro ones updated to an ultra-professional and customizable design.
+    -   **Importance**: Stores all HTML templates for PDF generation, separating design from backend logic.
+    -   **Changes Made**: Extensively modified. Includes , , , , , , , , , , , , , , . Standard templates were restored to a student-friendly design, while Pro templates offer an ultra-professional customizable look. All templates were initially modified to include MathJax, then MathJax was removed and replaced with server-side SVG rendering of LaTeX. Several templates (, , , , , , , , ) required extensive repair due to truncation issues from a previous MathJax removal script.
+-   **/app/backend/latex_to_svg.py**:
+    -   **Importance**: New module for converting LaTeX mathematical expressions into SVG images. This enables high-quality, printable math rendering without relying on client-side JavaScript.
+    -   **Changes Made**: Implemented  method using  and  to render LaTeX to SVG. Includes regex patterns to detect various LaTeX constructs (fractions, exponents, roots, parentheses) and replaces them with inline SVG.
+-   **/app/backend/geometry_renderer.py**:
+    -   **Importance**: New module for generating geometric figures (triangles, squares, circles, etc.) from structured JSON data into SVG images.
+    -   **Changes Made**: Implemented functions to draw different geometric figures using  and . Includes  for web display and  for direct SVG embedding in PDF, detecting JSON schema data within text and replacing it with the corresponding SVG.
 -   **/app/frontend/src/App.js**:
     -   **Importance**: Main React component, manages UI, state, and API calls.
-    -   **Changes Made**: Integrated authentication states (, , ). Contains  to handle session tokens.
+    -   **Changes Made**: Integrated authentication states (, , ). Contains  to handle session tokens and . Added states (, ) for template selection. Added logic to fetch available export styles () and display a dropdown menu for Pro users. Modified  to send the selected  to the backend.
 -   **/app/frontend/src/components/TemplateSettings.js**:
     -   **Importance**: Frontend component for Pro user template customization.
     -   **Changes Made**: Handles inputs for professor, school, year, footer, logo upload, and style selection. Sends data as  to the backend.
 </code_architecture>
 
 <pending_tasks>
-- Investigate why the Pro user's logo and personalized data are not displaying in generated PDFs, specifically focusing on the user's Pro status detection and session token usage during the export process.
+- Investigate and repair the remaining problematic templates (,  (mapping issue),  (mapping issue), , , , ).
 - Implement automated tests for new features as requested by the user.
 - Implement advanced PDF layout options (beyond basic settings now added).
 - Integrate comprehensive analytics (beyond the basic tracking endpoint implemented).
+- Thoroughly test the integration of geometric schema rendering for all content types and ensure consistency between web display and PDF export.
 </pending_tasks>
 
 <current_work>
-Immediately prior to this summary, the AI engineer was deep-diving into a bug where a Pro user's logo and personalized information (school name, professor name, etc.) were not appearing in the generated PDF, despite the user having uploaded a logo and saved their preferences, and despite the database containing the logo URL.
+Immediately prior to this summary, the AI engineer was addressing a critical issue where geometric schemas generated by the AI were not appearing correctly on the web interface *before* PDF export, but were working for PDF export. The user clarified that the logic for detecting and replacing the JSON schema with its rendered SVG/Base64 representation was missing or incorrect within the  (or  in the AI's current context) function.
 
-The engineer performed a multi-step diagnostic:
-1.  **DB Check for **: Confirmed  had a template entry, and the  and  were correctly stored in the database.
-2.  **File System Check**: Verified the logo file physically existed in .
-3.  **URL Accessibility Check**: Confirmed the logo was accessible via its served URL, indicating the static file server was operational.
-4.  **WeasyPrint Path Conversion**: Implemented a critical fix to convert relative logo URLs (e.g., ) to absolute  paths (e.g., ) because WeasyPrint requires absolute paths for local image rendering.
-5.  **Pro Status Discrepancy**: The most recent finding indicates that while the  collection shows the user has a logo, and the  collection shows  as an active Pro subscriber, the  collection might not reflect this  status (). More critically, recent PDF exports were tagged , and the  function appears to treat the user as a guest, implying an issue with session authentication or Pro status retrieval during the export request itself.
+The engineer had previously implemented:
+1.  A  module to convert geometric JSON schemas into SVG.
+2.  An update to the  endpoint in  to convert these schemas into Base64 encoded PNGs for web display.
+3.  An update to the AI prompt to generate geometric schemas as JSON within exercise text.
 
-The  function correctly queries , but the problem likely lies in how the  endpoint receives and processes the user's session token to determine their Pro status for rendering.
+The current work focuses on integrating the detection and replacement of geometric schema JSON within the  function in . The AI has confirmed that its  function correctly generates SVG for PDF. The immediate task is to ensure this function is properly invoked to parse the document's content (énoncé, solution, étapes) for geometric schema JSON, convert it, and embed the resulting SVG or Base64 image into the HTML template *before* WeasyPrint generates the PDF, thus ensuring consistency across web and PDF rendering.
 </current_work>
 
 <optional_next_step>
-Investigate the  function's session token validation to ensure the user's Pro status is correctly identified.
+Integrate the geometric schema detection and SVG/Base64 replacement logic into the  function's processing loop for all document content (énoncé, solution, étapes).
 </optional_next_step>

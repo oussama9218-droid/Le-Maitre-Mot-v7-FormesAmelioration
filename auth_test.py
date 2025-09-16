@@ -4,7 +4,7 @@ import json
 from datetime import datetime
 
 class AuthenticationTester:
-    def __init__(self, base_url="https://lemaitremot-edu.preview.emergentagent.com"):
+    def __init__(self, base_url="https://teacherai.preview.emergentagent.com"):
         self.base_url = base_url
         self.api_url = f"{base_url}/api"
         self.magic_token = "df43f9ee-649d-495b-9c9c-6bac1ce27097"
