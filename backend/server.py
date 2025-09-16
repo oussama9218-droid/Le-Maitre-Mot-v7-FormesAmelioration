@@ -228,6 +228,9 @@ class Exercise(BaseModel):
     bareme: List[dict] = []  # [{"etape": "...", "points": 1.0}]
     version: str = "A"
     seed: Optional[int] = None
+    # New fields for UI enhancement
+    exercise_type: Optional[str] = "text"  # "geometry", "algebra", "statistics", "text"
+    icone: Optional[str] = "book-open"  # Icon identifier for frontend
 
 class Document(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
