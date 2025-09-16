@@ -307,6 +307,14 @@ backend:
     stuck_count: 0
     priority: "critical"
     needs_retesting: false
+    
+  - task: "Export Style Selection Feature"
+    implemented: true
+    working: true
+    file: "server.py, App.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
     status_history:
         - working: false
         - agent: "main"
