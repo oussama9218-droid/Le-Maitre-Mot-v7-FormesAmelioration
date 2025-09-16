@@ -774,6 +774,7 @@ function MainApp() {
     if (guestId && proStatusChecked) {
       fetchQuotaStatus();
       fetchDocuments();
+      fetchExportStyles(); // Refresh styles when Pro status changes
     }
   }, [guestId, proStatusChecked, isPro]);
 
