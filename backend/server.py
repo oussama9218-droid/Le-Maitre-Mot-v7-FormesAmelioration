@@ -1333,6 +1333,17 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
             "Déterminer le signe de : {a} × {b}",
             "Résoudre : x + {a} = {b}"
         ],
+        "Géométrie - Triangles et quadrilatères": [
+            "Dans un triangle ABC, calculer l'aire sachant que AB = {a} cm, AC = {b} cm et l'angle A = 60°.",
+            "Un parallélogramme ABCD a une base de {a} cm et une hauteur de {b} cm. Calculer son aire.",
+            "Calculer le périmètre d'un rectangle de longueur {a} cm et largeur {b} cm."
+        ],
+        "Géométrie dans l'espace": [
+            "Calculer le volume d'un cube d'arête {a} cm.",
+            "Un parallélépipède rectangle a pour dimensions {a} cm × {b} cm × {c} cm. Calculer son volume.",
+            "Calculer l'aire totale d'un cube d'arête {a} cm.",
+            "Un cylindre a un rayon de {a} cm et une hauteur de {b} cm. Calculer son volume."
+        ],
         "Volumes": [
             "Calculer le volume d'un pavé de dimensions {a} cm × {b} cm × {c} cm",
             "Une boîte cubique a une arête de {a} cm. Quel est son volume ?",
