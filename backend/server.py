@@ -1368,6 +1368,16 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
             "Deux droites parallèles coupent deux sécantes. Si les segments sont {a} cm et {b} cm d'un côté, et {c} cm de l'autre, calculer le quatrième segment.",
             "Utiliser le théorème de Thalès pour calculer une longueur manquante dans une configuration de triangles semblables."
         ],
+        "Théorème de Thalès": [
+            "Dans un triangle ABC, on trace une droite parallèle à BC. Si AB = {a} cm et la portion coupée = {b} cm, calculer les proportions.",
+            "Deux droites parallèles coupent deux sécantes. Si les segments sont {a} cm et {b} cm d'un côté, et {c} cm de l'autre, calculer le quatrième segment.",
+            "Utiliser le théorème de Thalès pour calculer une longueur manquante dans une configuration de triangles semblables."
+        ],
+        "Trigonométrie": [
+            "Dans un triangle rectangle ABC rectangle en C, AB = {a} cm et AC = {b} cm. Calculer sin(A), cos(A) et tan(A).",
+            "Un triangle rectangle a un angle de {a}° et une hypoténuse de {b} cm. Calculer les côtés adjacents et opposés.",
+            "Utiliser les relations trigonométriques pour calculer la hauteur d'un bâtiment sachant que l'angle d'élévation est {a}° à {b} m de distance."
+        ],
         "Fractions": [
             "Calculer : 1/{a} + 1/{b}",
             "Simplifier : {a}/{b}",
