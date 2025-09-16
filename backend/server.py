@@ -2307,41 +2307,54 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             doc['created_at'] = datetime.fromisoformat(doc['created_at'])
         document = Document(**doc)
         
-        # UNIFIED WEASYPRINT APPROACH - Choose template based on Pro status
-        logger.info(f"🎨 UNIFIED PDF GENERATION - Pro user: {is_pro_user}")
+        # NEW TEMPLATE STYLE SYSTEM - Choose template based on requested style
+        requested_style = request.template_style or "classique"
+        logger.info(f"🎨 TEMPLATE STYLE EXPORT - Requested style: {requested_style}, Pro user: {is_pro_user}")
         
+        # Validate style permission
+        if requested_style not in EXPORT_TEMPLATE_STYLES:
+            logger.warning(f"Invalid template style: {requested_style}, falling back to classique")
+            requested_style = "classique"
+        
+        style_config = EXPORT_TEMPLATE_STYLES[requested_style]
+        
+        # Check if user has permission for this style
+        if "free" not in style_config["available_for"] and not is_pro_user:
+            logger.info(f"Style {requested_style} is Pro-only, user is not Pro. Using classique instead.")
+            requested_style = "classique"
+            style_config = EXPORT_TEMPLATE_STYLES["classique"]
+        
+        # Choose the correct template file
+        if request.export_type == "sujet":
+            template_name = style_config["sujet_template"]
+        else:
+            template_name = style_config["corrige_template"]
+        
+        logger.info(f"📄 Using template: {template_name} for style: {requested_style}")
+        template_content = load_template(template_name)
+        
+        # Prepare render context
+        render_context = {
+            'document': document,
+            'date_creation': datetime.now(timezone.utc).strftime("%d/%m/%Y"),
+        }
+        
+        # Add Pro personalization if available
         if is_pro_user and template_config:
-            # Use Pro templates with personalization
-            logger.info("📄 Using Pro templates with personalization")
-            template_content = load_template("sujet_pro") if request.export_type == "sujet" else load_template("corrige_pro")
-            
-            # Get colors and fonts for template
-            template_styles = get_template_colors_and_fonts(template_config)
-            
-            # Render context for Pro templates
-            render_context = {
-                'document': document,
-                'date_creation': datetime.now(timezone.utc).strftime("%d/%m/%Y"),
-                'template_config': template_config,
-                'template_style': template_config.get('template_style', 'minimaliste'),
-                # Add template variables directly for Pro templates
-                'school_name': template_config.get('school_name'),
-                'professor_name': template_config.get('professor_name'),
-                'school_year': template_config.get('school_year'),
-                'footer_text': template_config.get('footer_text'),
-                'logo_filename': template_config.get('logo_filename'),
-                **template_styles
-            }
+            render_context['template_config'] = template_config
+            render_context['school_name'] = template_config.get('school_name')
+            render_context['professor_name'] = template_config.get('professor_name')
+            render_context['school_year'] = template_config.get('school_year')
+            render_context['footer_text'] = template_config.get('footer_text')
+            render_context['logo_filename'] = template_config.get('logo_filename')
             
             # Convert logo URL to absolute file path for WeasyPrint
             logo_url = template_config.get('logo_url')
             if logo_url and logo_url.startswith('/uploads/'):
-                # Convert relative URL to absolute file path
                 logo_file_path = ROOT_DIR / logo_url[1:]  # Remove leading slash
                 if logo_file_path.exists():
                     absolute_logo_url = f"file://{logo_file_path}"
                     render_context['logo_url'] = absolute_logo_url
-                    # CRITICAL FIX: Update template_config too since template uses template_config.logo_url
                     template_config['logo_url'] = absolute_logo_url
                     logger.info(f"✅ Logo converted for WeasyPrint: {logo_file_path}")
                 else:
@@ -2351,20 +2364,13 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             else:
                 render_context['logo_url'] = logo_url
             
-            logger.info(f"🔍 FINAL RENDER CONTEXT FOR LOGO DEBUG:")
+            logger.info(f"🔍 FINAL RENDER CONTEXT FOR PRO USER:")
             logger.info(f"   school_name: {render_context.get('school_name')}")
             logger.info(f"   professor_name: {render_context.get('professor_name')}")
             logger.info(f"   logo_url: {render_context.get('logo_url')}")
-            logger.info(f"   logo_filename: {render_context.get('logo_filename')}")
-            
-            # Generate filename with template suffix
-            template_suffix = f"_{template_config.get('template_style', 'pro')}"
-            filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}{template_suffix}.pdf"
-            
-        else:
-            # Use standard templates for Free users
-            logger.info("📄 Using standard templates for Free users")
-            template_content = load_template("sujet_standard") if request.export_type == "sujet" else load_template("corrige_standard")
+        
+        # Generate filename with style suffix
+        filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}_{requested_style}.pdf"
             
             # Render context for standard templates
             render_context = {
