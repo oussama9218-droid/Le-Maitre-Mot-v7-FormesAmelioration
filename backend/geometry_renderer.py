@@ -177,7 +177,11 @@ class GeometryRenderer:
                     p1, p2 = sides_part[0], sides_part[1]
                     if p1 in coords and p2 in coords:
                         self._add_distance_mark(ax, coords[p1], coords[p2], label)
-        
+    
+    def _render_right_triangle(self, data: Dict[str, Any]) -> str:
+        """Render a right triangle with labeled vertices"""
+        fig, ax = self._create_figure(6, 5)
+        self._render_right_triangle_to_figure(fig, ax, data)
         return self._figure_to_svg(fig)
     
     def _render_triangle(self, data: Dict[str, Any]) -> str:
