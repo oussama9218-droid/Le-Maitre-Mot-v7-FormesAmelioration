@@ -73,6 +73,50 @@ PRICING_PACKAGES = {
     }
 }
 
+# Define template styles available for export
+EXPORT_TEMPLATE_STYLES = {
+    "classique": {
+        "name": "Classique",
+        "description": "Style traditionnel élégant avec typographie serif",
+        "preview_image": "/api/template-previews/classique.png",
+        "available_for": ["free", "pro"],
+        "sujet_template": "sujet_classique",
+        "corrige_template": "corrige_classique"
+    },
+    "moderne": {
+        "name": "Moderne",
+        "description": "Style contemporain avec couleurs vives et design épuré",
+        "preview_image": "/api/template-previews/moderne.png",
+        "available_for": ["pro"],
+        "sujet_template": "sujet_moderne",
+        "corrige_template": "corrige_moderne"
+    },
+    "eleve": {
+        "name": "Élève",
+        "description": "Style coloré et ludique avec couleurs pastel",
+        "preview_image": "/api/template-previews/eleve.png",
+        "available_for": ["pro"],
+        "sujet_template": "sujet_eleve",
+        "corrige_template": "corrige_eleve"
+    },
+    "corrige_detaille": {
+        "name": "Corrigé détaillé",
+        "description": "Template spécialisé pour corrections avec barème et critères",
+        "preview_image": "/api/template-previews/corrige_detaille.png",
+        "available_for": ["pro"],
+        "sujet_template": "sujet_classique",  # Utilise classique pour les sujets
+        "corrige_template": "corrige_detaille"
+    },
+    "minimal": {
+        "name": "Minimal",
+        "description": "Style ultra-épuré, focus sur le contenu",
+        "preview_image": "/api/template-previews/minimal.png",
+        "available_for": ["pro"],
+        "sujet_template": "sujet_minimal",
+        "corrige_template": "corrige_minimal"
+    }
+}
+
 # Define Models
 class Exercise(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
