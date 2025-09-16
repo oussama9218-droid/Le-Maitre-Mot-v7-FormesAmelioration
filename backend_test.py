@@ -4822,6 +4822,9 @@ class LeMaitreMotAPITester:
         export_style_tests = [
             ("Export Styles Endpoint - Free User", self.test_export_styles_endpoint_free_user),
             ("Export Styles Endpoint - Pro User", self.test_export_styles_endpoint_pro_user),
+            ("All 6 Export Styles Verification", self.test_all_six_export_styles_verification),
+            ("Academic Template with Math Content", self.test_academic_template_with_math_content),
+            ("MathJax Integration Verification", self.test_mathjax_integration_verification),
             ("Export with Classique - Free User", self.test_export_with_classique_style_free_user),
             ("Export with Pro Styles - Free User Fallback", self.test_export_with_pro_style_free_user),
             ("Export with Pro Styles - Pro User", self.test_export_with_pro_style_pro_user),
