@@ -1726,28 +1726,8 @@ async def generate_document(request: GenerateRequest):
         doc_dict['created_at'] = doc_dict['created_at'].isoformat()
         await db.documents.insert_one(doc_dict)
         
-        # Process geometric schemas for immediate web display (same logic as /api/documents)
-        document_dict = document.dict()
-        if 'exercises' in document_dict:
-            for exercise in document_dict['exercises']:
-                if 'enonce' in exercise and exercise['enonce']:
-                    exercise['enonce'] = geometry_renderer.process_geometric_schemas_for_web(exercise['enonce'])
-                
-                # Process solution if it exists
-                if exercise.get('solution'):
-                    if exercise['solution'].get('resultat'):
-                        exercise['solution']['resultat'] = geometry_renderer.process_geometric_schemas_for_web(
-                            exercise['solution']['resultat']
-                        )
-                    if exercise['solution'].get('etapes') and isinstance(exercise['solution']['etapes'], list):
-                        exercise['solution']['etapes'] = [
-                            geometry_renderer.process_geometric_schemas_for_web(step)
-                            for step in exercise['solution']['etapes']
-                        ]
-        
-        # Return the processed document for immediate display
-        processed_document = Document(**document_dict)
-        return {"document": processed_document}
+        # Return the document (already processed during generation)
+        return {"document": document}
         
     except HTTPException:
         raise
