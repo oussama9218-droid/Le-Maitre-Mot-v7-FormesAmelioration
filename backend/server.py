@@ -1292,262 +1292,538 @@ CORRIGE_PRO_TEMPLATE = """
 <head>
     <meta charset="UTF-8">
     <style>
-        /* Template style variables based on selected style */
+        @page {
+            size: A4;
+            margin: 0;
+            @top-center {
+                content: "{{ school_name or 'Établissement Scolaire' }} - Corrigé";
+                font-size: 8pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: counter(page) "/" counter(pages);
+                font-size: 8pt;
+                color: #666;
+            }
+        }
+        
+        /* Template style variables */
         :root {
-            --primary-color: {{ template_colors.primary }};
-            --secondary-color: {{ template_colors.secondary }};
-            --accent-color: {{ template_colors.accent }};
-            --header-font: {{ template_fonts.header }};
-            --content-font: {{ template_fonts.content }};
+            --primary-color: {{ template_colors.primary or '#1a365d' }};
+            --secondary-color: {{ template_colors.secondary or '#4a5568' }};
+            --accent-color: {{ template_colors.accent or '#3182ce' }};
+            --header-font: {{ template_fonts.header or 'Times New Roman' }};
+            --content-font: {{ template_fonts.content or 'Arial' }};
+            --success-color: #38a169;
+            --solution-bg: #f0fff4;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
         
         body {
-            font-family: var(--content-font), Arial, sans-serif;
+            font-family: var(--content-font), "Segoe UI", sans-serif;
             font-size: 11pt;
             line-height: 1.5;
-            margin: 0;
-            padding: 0;
-            color: var(--primary-color);
+            color: #2d3748;
+            background: linear-gradient(135deg, #f0fff4 0%, #e6fffa 100%);
         }
         
-        .page {
-            padding: 2.5cm;
+        .document-container {
+            background: white;
             min-height: 100vh;
             position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
         }
         
-        .header {
+        .watermark {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-45deg);
+            font-size: 100pt;
+            color: rgba(56, 161, 105, 0.05);
+            z-index: 1;
+            pointer-events: none;
+            font-weight: bold;
+        }
+        
+        .header-section {
+            background: linear-gradient(135deg, var(--success-color) 0%, #2f855a 100%);
+            color: white;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header-decoration {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+        
+        .header-decoration::before {
+            content: '✓';
+            position: absolute;
+            top: 50px;
+            left: 50px;
+            font-size: 80pt;
+            color: rgba(255,255,255,0.2);
+            font-weight: bold;
+        }
+        
+        .header-content {
+            position: relative;
+            z-index: 2;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            margin-bottom: 40px;
-            padding-bottom: 20px;
-            border-bottom: 2px solid var(--accent-color);
-            background: linear-gradient(90deg, var(--primary-color)05, transparent);
-            padding: 20px;
-            border-radius: 8px;
         }
         
         .logo-section {
-            width: 80px;
-            height: 60px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            margin-right: 40px;
+        }
+        
+        .logo-section img {
+            max-width: 100px;
+            max-height: 100px;
+            border-radius: 10px;
         }
         
         .logo-placeholder {
-            width: 60px;
-            height: 60px;
-            background: var(--secondary-color);
-            border-radius: 8px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 8pt;
+            color: var(--success-color);
+            font-size: 14pt;
             font-weight: bold;
+            text-align: center;
         }
         
         .title-section {
             flex: 1;
             text-align: center;
-            padding: 0 20px;
         }
         
         .main-title {
-            font-family: var(--header-font), Arial, sans-serif;
-            font-size: 20pt;
-            font-weight: bold;
-            color: var(--primary-color);
-            margin-bottom: 8px;
+            font-family: var(--header-font), "Times New Roman", serif;
+            font-size: 28pt;
+            font-weight: 300;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
         
-        .subtitle {
+        .title-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 8px 20px;
+            border-radius: 25px;
             font-size: 14pt;
-            color: var(--secondary-color);
-            margin-bottom: 5px;
+            font-weight: bold;
+            margin-left: 15px;
+        }
+        
+        .subject-info {
+            font-size: 16pt;
+            font-weight: 500;
+            margin-bottom: 8px;
+            opacity: 0.95;
         }
         
         .chapter-info {
-            font-size: 12pt;
-            color: var(--accent-color);
+            font-size: 14pt;
             font-style: italic;
+            opacity: 0.9;
         }
         
-        .school-section {
-            width: 200px;
+        .institution-section {
             text-align: right;
+            min-width: 200px;
         }
         
         .school-name {
-            font-size: 12pt;
+            font-size: 16pt;
             font-weight: bold;
-            color: var(--primary-color);
+            margin-bottom: 8px;
+            line-height: 1.2;
+        }
+        
+        .professor-info {
+            font-size: 12pt;
             margin-bottom: 5px;
+            opacity: 0.9;
         }
         
-        .professor-name {
-            font-size: 10pt;
-            color: var(--secondary-color);
-            margin-bottom: 3px;
-        }
-        
-        .school-year {
-            font-size: 10pt;
-            color: var(--secondary-color);
-        }
-        
-        .document-params {
-            text-align: center;
-            margin-bottom: 30px;
-            padding: 15px;
-            background: var(--accent-color)10;
-            border-radius: 6px;
+        .academic-year {
             font-size: 11pt;
-            color: var(--secondary-color);
+            font-style: italic;
+            opacity: 0.8;
         }
         
-        .content {
-            white-space: pre-line;
-            text-align: justify;
+        .document-metadata {
+            background: var(--solution-bg);
+            border-left: 5px solid var(--success-color);
+            padding: 20px 30px;
+            margin: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             font-size: 11pt;
-            line-height: 1.6;
-            margin-bottom: 100px;
+            color: #2d3748;
         }
         
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 60px;
+        .metadata-item {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            padding: 0 2.5cm;
-            border-top: 1px solid var(--accent-color);
-            background: white;
-            font-size: 9pt;
-            color: var(--secondary-color);
+            margin: 0 15px;
         }
         
-        .footer-left {
-            flex: 1;
-        }
-        
-        .footer-center {
-            flex: 1;
-            text-align: center;
-            color: var(--secondary-color);
-        }
-        
-        .footer-right {
-            flex: 1;
-            text-align: right;
-            color: var(--primary-color);
+        .metadata-icon {
+            margin-right: 8px;
+            color: var(--success-color);
             font-weight: bold;
         }
         
-        /* Style-specific adjustments */
-        .style-classique {
-            font-family: 'Times New Roman', serif;
+        .content-section {
+            padding: 40px;
+            position: relative;
+            z-index: 2;
         }
         
-        .style-classique .header {
-            border-bottom: 3px double var(--accent-color);
+        .solution-container {
+            background: white;
+            border-radius: 12px;
+            margin: 30px 0;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(56, 161, 105, 0.1);
+            border: 1px solid #c6f6d5;
+            page-break-inside: avoid;
         }
         
-        .style-moderne {
-            font-family: 'Helvetica', sans-serif;
+        .solution-header {
+            background: linear-gradient(90deg, var(--success-color), #48bb78);
+            color: white;
+            padding: 15px 25px;
+            font-size: 16pt;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
         
-        .style-moderne .header {
-            background: linear-gradient(135deg, var(--primary-color)08, var(--accent-color)08);
-            border: none;
-            border-left: 4px solid var(--accent-color);
+        .solution-number {
+            display: flex;
+            align-items: center;
         }
         
-        @media print {
-            .page {
-                page-break-after: always;
-            }
-            
-            .page:last-child {
-                page-break-after: avoid;
-            }
+        .solution-number::before {
+            content: "✅";
+            margin-right: 10px;
+            font-size: 18pt;
+        }
+        
+        .difficulty-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 10pt;
+            font-weight: bold;
+        }
+        
+        .solution-content {
+            padding: 25px;
+        }
+        
+        .method-section {
+            background: #f0fff4;
+            border-left: 4px solid var(--success-color);
+            border-radius: 0 8px 8px 0;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .method-title {
+            color: var(--success-color);
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .method-title::before {
+            content: "🔍";
+            margin-right: 10px;
+        }
+        
+        .solution-steps {
+            counter-reset: step-counter;
+            list-style: none;
+            padding: 0;
+        }
+        
+        .solution-steps li {
+            counter-increment: step-counter;
+            margin: 15px 0;
+            position: relative;
+            padding-left: 50px;
+            font-size: 12pt;
+            line-height: 1.6;
+        }
+        
+        .solution-steps li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: var(--success-color);
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 11pt;
+        }
+        
+        .final-answer {
+            background: linear-gradient(135deg, #68d391 0%, #38a169 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 25px 0;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(56, 161, 105, 0.3);
+        }
+        
+        .final-answer-title {
+            font-size: 14pt;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .final-answer-title::before {
+            content: "🎯 ";
+            font-size: 16pt;
+        }
+        
+        .final-answer-content {
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .pro-tip {
+            background: linear-gradient(135deg, #bee3f8 0%, #90cdf4 100%);
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+            border-left: 4px solid #3182ce;
+        }
+        
+        .pro-tip-title {
+            color: #2b6cb0;
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 12pt;
+        }
+        
+        .pro-tip-title::before {
+            content: "💡 ";
+        }
+        
+        .pro-tip-content {
+            color: #2d3748;
+            font-size: 11pt;
+            line-height: 1.5;
+        }
+        
+        .footer-section {
+            background: #2d3748;
+            color: white;
+            text-align: center;
+            padding: 25px;
+            margin-top: 50px;
+        }
+        
+        .footer-content {
+            font-size: 11pt;
+            line-height: 1.4;
+        }
+        
+        .creation-info {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            font-size: 9pt;
+            color: #718096;
+            background: rgba(255,255,255,0.9);
+            padding: 8px 12px;
+            border-radius: 5px;
+            z-index: 3;
+        }
+        
+        .excellence-seal {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 90px;
+            height: 90px;
+            background: var(--success-color);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 8pt;
+            text-align: center;
+            font-weight: bold;
+            z-index: 3;
+            opacity: 0.9;
+            box-shadow: 0 5px 15px rgba(56, 161, 105, 0.4);
+        }
+        
+        .success-indicators {
+            text-align: center;
+            margin: 30px 0;
+        }
+        
+        .success-badge {
+            display: inline-block;
+            background: var(--success-color);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 25px;
+            font-size: 12pt;
+            margin: 5px 10px;
+            font-weight: bold;
         }
     </style>
 </head>
-<body class="style-{{ template_style }}">
-    <div class="page">
-        <div class="header">
-            <div class="logo-section">
-                {% if template_config.logo_url %}
-                    <img src="{{ template_config.logo_url }}" alt="Logo" style="max-width: 60px; max-height: 60px;">
-                {% else %}
-                    <div class="logo-placeholder">LOGO</div>
-                {% endif %}
-            </div>
-            
-            <div class="title-section">
-                <div class="main-title">{{ document.type_doc.title() }} - Corrigé</div>
-                <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
-                <div class="chapter-info">{{ document.chapitre }}</div>
-            </div>
-            
-            <div class="school-section">
-                {% if template_config.school_name %}
-                    <div class="school-name">{{ template_config.school_name }}</div>
-                {% endif %}
-                {% if template_config.professor_name %}
-                    <div class="professor-name">{{ template_config.professor_name }}</div>
-                {% endif %}
-                {% if template_config.school_year %}
-                    <div class="school-year">{{ template_config.school_year }}</div>
-                {% endif %}
+<body>
+    <div class="document-container">
+        <div class="watermark">SOLUTIONS</div>
+        
+        <div class="creation-info">
+            📅 {{ date_creation }}
+        </div>
+        
+        <div class="header-section">
+            <div class="header-decoration"></div>
+            <div class="header-content">
+                <div class="logo-section">
+                    {% if logo_url %}
+                        <img src="{{ logo_url }}" alt="Logo établissement">
+                    {% else %}
+                        <div class="logo-placeholder">
+                            LOGO<br>
+                            <small>ÉTABLISSEMENT</small>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="title-section">
+                    <h1 class="main-title">
+                        {{ document.type_doc.title() }}
+                        <span class="title-badge">CORRIGÉ</span>
+                    </h1>
+                    <div class="subject-info">{{ document.matiere }} • {{ document.niveau }}</div>
+                    <div class="chapter-info">{{ document.chapitre }}</div>
+                </div>
+                
+                <div class="institution-section">
+                    <div class="school-name">{{ school_name or 'Établissement Scolaire' }}</div>
+                    <div class="professor-info">{{ professor_name or 'Enseignant' }}</div>
+                    <div class="academic-year">{{ school_year or 'Année scolaire' }}</div>
+                </div>
             </div>
         </div>
         
-        <div class="document-params">
-            <strong>Difficulté :</strong> {{ document.difficulte.title() }} • 
-            <strong>Nombre d'exercices :</strong> {{ document.nb_exercices }} • 
-            <strong>Créé le :</strong> {{ date_creation }}
+        <div class="document-metadata">
+            <div class="metadata-item">
+                <span class="metadata-icon">🎯</span>
+                Difficulté : {{ document.difficulte.title() }}
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-icon">✅</span>
+                {{ document.nb_exercices }} solutions détaillées
+            </div>
+            <div class="metadata-item">
+                <span class="metadata-icon">🔍</span>
+                Méthodes explicatives
+            </div>
         </div>
         
-        <div class="content">
+        <div class="success-indicators">
+            <div class="success-badge">✨ Solutions Expertes</div>
+            <div class="success-badge">🔍 Méthodes Détaillées</div>
+            <div class="success-badge">🎓 Pédagogie Pro</div>
+        </div>
+        
+        <div class="content-section">
             {% for exercice in document.exercises %}
-                <div class="solution">
-                    <h3>Exercice {{ loop.index }} - Corrigé</h3>
-                    {% if exercice.solution.etapes %}
-                        <p><strong>Solution détaillée:</strong></p>
-                        <ol>
-                            {% for etape in exercice.solution.etapes %}
-                                <li>{{ etape }}</li>
-                            {% endfor %}
-                        </ol>
-                    {% endif %}
-                    {% if exercice.solution.resultat %}
-                        <p><strong>Résultat final:</strong> {{ exercice.solution.resultat }}</p>
-                    {% endif %}
+                <div class="solution-container">
+                    <div class="solution-header">
+                        <div class="solution-number">Exercice {{ loop.index }} - Solution</div>
+                        <div class="difficulty-badge">Expert ✓</div>
+                    </div>
+                    <div class="solution-content">
+                        {% if exercice.solution.etapes %}
+                            <div class="method-section">
+                                <div class="method-title">Méthode de résolution</div>
+                                <ol class="solution-steps">
+                                    {% for etape in exercice.solution.etapes %}
+                                        <li>{{ etape }}</li>
+                                    {% endfor %}
+                                </ol>
+                            </div>
+                            
+                            <div class="pro-tip">
+                                <div class="pro-tip-title">Conseil pédagogique</div>
+                                <div class="pro-tip-content">
+                                    Assure-toi de bien comprendre chaque étape avant de passer à la suivante. 
+                                    N'hésite pas à refaire l'exercice en suivant cette méthode !
+                                </div>
+                            </div>
+                        {% endif %}
+                        
+                        {% if exercice.solution.resultat %}
+                            <div class="final-answer">
+                                <div class="final-answer-title">Réponse finale</div>
+                                <div class="final-answer-content">{{ exercice.solution.resultat }}</div>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             {% endfor %}
         </div>
         
-        <div class="footer">
-            <div class="footer-left">
-                {% if template_config.footer_text %}
-                    {{ template_config.footer_text }}
-                {% endif %}
+        <div class="footer-section">
+            <div class="footer-content">
+                {{ footer_text or 'Solutions rédigées par Le Maître Mot - Excellence pédagogique professionnelle' }}<br>
+                <small>© Toute reproduction interdite sans autorisation • Document pédagogique professionnel</small>
             </div>
-            <div class="footer-center">
-                {% if template_config.school_year %}
-                    {{ template_config.school_year }}
-                {% endif %}
-            </div>
-            <div class="footer-right">
-                Le Maître Mot Pro
-            </div>
+        </div>
+        
+        <div class="excellence-seal">
+            ⭐<br>
+            SOLUTIONS<br>
+            EXPERTES
         </div>
     </div>
 </body>
