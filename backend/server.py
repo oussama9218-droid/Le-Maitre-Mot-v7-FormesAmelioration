@@ -321,6 +321,7 @@ CURRICULUM_DATA = {
             "Calcul littéral",
             "Équations et inéquations",
             "Théorème de Pythagore",
+            "Théorème de Thalès",
             "Géométrie - Cosinus",
             "Statistiques et probabilités"
         ],
