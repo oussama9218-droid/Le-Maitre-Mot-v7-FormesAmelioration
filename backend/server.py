@@ -1966,6 +1966,11 @@ async def save_user_template(
                 "updated_at": datetime.now(timezone.utc)
             }
             
+            # Add logo data if uploaded
+            if logo_url:
+                update_data["logo_url"] = logo_url
+                update_data["logo_filename"] = logo_filename
+            
             logger.info(f"🔍 Updating existing template with data: {update_data}")
             
             await db.user_templates.update_one(
