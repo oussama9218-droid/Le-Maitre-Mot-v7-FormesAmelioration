@@ -2514,9 +2514,9 @@ async def generate_advanced_pdf(document: dict, content: str, export_type: str, 
         template_colors = get_template_colors_and_fonts(template_config)
         
         if export_type == "sujet":
-            template_content = SUJET_PRO_TEMPLATE
+            template_content = load_template("sujet_pro")
         else:
-            template_content = CORRIGE_PRO_TEMPLATE
+            template_content = load_template("corrige_pro")
         
         html_content = Template(template_content).render(
             document={
