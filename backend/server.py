@@ -2371,15 +2371,6 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         
         # Generate filename with style suffix
         filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}_{requested_style}.pdf"
-            
-            # Render context for standard templates
-            render_context = {
-                'document': document,
-                'date_creation': document.created_at.strftime("%d/%m/%Y à %H:%M")
-            }
-            
-            # Generate standard filename
-            filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}.pdf"
         
         # Render HTML with Jinja2
         template = Template(template_content)
