@@ -2971,7 +2971,8 @@ async def vary_exercise(document_id: str, exercise_index: int):
         
         if exercises:
             # Update the specific exercise
-            doc["exercises"][exercise_index] = exercises[0].dict()
+            # CORRECTION: exercises[0] is already a dict after processing, no need for .dict()
+            doc["exercises"][exercise_index] = exercises[0]
             await db.documents.update_one(
                 {"id": document_id},
                 {"$set": {"exercises": doc["exercises"]}}
