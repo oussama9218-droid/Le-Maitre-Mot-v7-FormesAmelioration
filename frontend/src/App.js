@@ -1108,6 +1108,58 @@ function MainApp() {
                     </Button>
                   </div>
 
+                  {/* Export Style Selection */}
+                  {currentDocument && (
+                    <div className="border-t pt-4 mt-4">
+                      <div className="mb-3">
+                        <Label htmlFor="export-style" className="text-sm font-medium text-gray-700 flex items-center">
+                          🎨 Style d'export
+                          {!isPro && (
+                            <Badge variant="outline" className="ml-2 text-xs">
+                              Pro requis pour plus de styles
+                            </Badge>
+                          )}
+                        </Label>
+                      </div>
+                      <Select value={selectedExportStyle} onValueChange={setSelectedExportStyle}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choisir un style" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(exportStyles).map(([styleId, style]) => (
+                            <SelectItem 
+                              key={styleId} 
+                              value={styleId}
+                              disabled={style.pro_only && !isPro}
+                            >
+                              <div className="flex items-center justify-between w-full">
+                                <div>
+                                  <div className="font-medium">{style.name}</div>
+                                  <div className="text-xs text-gray-500">{style.description}</div>
+                                </div>
+                                {style.pro_only && (
+                                  <Crown className="h-3 w-3 text-yellow-500 ml-2" />
+                                )}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      
+                      {/* Style Preview */}
+                      {exportStyles[selectedExportStyle] && (
+                        <div className="mt-2 text-xs text-gray-600">
+                          <p>📋 {exportStyles[selectedExportStyle].description}</p>
+                          {exportStyles[selectedExportStyle].pro_only && !isPro && (
+                            <p className="text-orange-600 mt-1">
+                              ⚠️ Ce style nécessite un compte Pro
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Export Status Info */}
                   {quotaLoaded && (
                     <div className="text-center text-sm text-gray-600">
