@@ -391,6 +391,38 @@ function MainApp() {
     }
   };
 
+  const fetchExportStyles = async () => {
+    try {
+      const config = {};
+      
+      // Include session token if available
+      if (sessionToken) {
+        config.headers = {
+          'X-Session-Token': sessionToken
+        };
+      }
+      
+      const response = await axios.get(`${API}/export/styles`, config);
+      setExportStyles(response.data.styles || {});
+      console.log('📊 Export styles loaded:', response.data);
+      
+      // If user is not Pro and current selection is Pro-only, reset to classique
+      if (!response.data.user_is_pro && response.data.styles[selectedExportStyle]?.pro_only) {
+        setSelectedExportStyle("classique");
+      }
+    } catch (error) {
+      console.error("Erreur lors du chargement des styles d'export:", error);
+      // Set safe default
+      setExportStyles({
+        "classique": {
+          "name": "Classique",
+          "description": "Style traditionnel élégant",
+          "pro_only": false
+        }
+      });
+    }
+  };
+
   const generateDocument = async () => {
     if (!selectedMatiere || !selectedNiveau || !selectedChapitre) {
       alert("Veuillez sélectionner une matière, un niveau et un chapitre");
