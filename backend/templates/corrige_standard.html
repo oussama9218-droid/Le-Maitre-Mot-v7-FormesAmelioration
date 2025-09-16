@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12pt;
+            line-height: 1.6;
+            color: #2c3e50;
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+            margin: 0;
+            padding: 0;
+        }
+        
+        .page-container {
+            background: white;
+            padding: 30px;
+            margin: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            min-height: calc(100vh - 40px);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 25px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.3);
+        }
+        
+        .title {
+            font-size: 24pt;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 16pt;
+            margin-bottom: 8px;
+            opacity: 0.9;
+        }
+        
+        .document-info {
+            font-size: 12pt;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+        }
+        
+        .decoration {
+            text-align: center;
+            font-size: 20pt;
+            color: #27ae60;
+            margin: 20px 0;
+        }
+        
+        .solution {
+            margin: 25px 0;
+            page-break-inside: avoid;
+            border-left: 4px solid #27ae60;
+            background: #f8f9fa;
+            border-radius: 0 10px 10px 0;
+            padding: 20px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        }
+        
+        .solution-header {
+            background: linear-gradient(90deg, #27ae60, #229954);
+            color: white;
+            padding: 12px 20px;
+            margin: -20px -20px 20px -20px;
+            border-radius: 10px 10px 0 0;
+            font-size: 16pt;
+            font-weight: bold;
+        }
+        
+        .solution-steps {
+            background: #e8f5e8;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #27ae60;
+        }
+        
+        .solution-steps h4 {
+            color: #27ae60;
+            margin: 0 0 10px 0;
+            font-size: 14pt;
+        }
+        
+        .solution-steps ol {
+            margin: 0;
+            padding-left: 20px;
+        }
+        
+        .solution-steps li {
+            margin: 8px 0;
+            font-size: 13pt;
+            line-height: 1.5;
+        }
+        
+        .final-result {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 15px 0;
+            font-weight: bold;
+            text-align: center;
+            font-size: 14pt;
+            box-shadow: 0 5px 15px rgba(240, 147, 251, 0.3);
+        }
+        
+        .final-result::before {
+            content: "🎯 ";
+            font-size: 16pt;
+        }
+        
+        .method-tip {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 12px;
+            margin: 15px 0;
+            font-style: italic;
+            color: #856404;
+        }
+        
+        .method-tip::before {
+            content: "💡 Astuce : ";
+            font-weight: bold;
+            color: #f39c12;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            padding: 20px;
+            border-top: 2px solid #ecf0f1;
+            color: #7f8c8d;
+            font-size: 11pt;
+        }
+        
+        .success-badge {
+            display: inline-block;
+            background: #27ae60;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12pt;
+            margin: 10px 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-container">
+        <div class="header">
+            <div class="title">{{ document.type_doc.title() }} - Corrigé ✅</div>
+            <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
+            <div class="subtitle">📚 {{ document.chapitre }}</div>
+            <div class="document-info">
+                🎯 Difficulté: {{ document.difficulte.title() }} | 
+                📝 {{ document.nb_exercices }} exercices | 
+                📅 {{ date_creation }}
+            </div>
+        </div>
+        
+        <div class="decoration">🌟 Solutions détaillées 🌟</div>
+        
+        <div class="content">
+            {% for exercice in document.exercises %}
+                <div class="solution">
+                    <div class="solution-header">
+                        ✅ Exercice {{ loop.index }} - Corrigé
+                    </div>
+                    
+                    {% if exercice.solution.etapes %}
+                        <div class="solution-steps">
+                            <h4>📋 Méthode étape par étape :</h4>
+                            <ol>
+                                {% for etape in exercice.solution.etapes %}
+                                    <li>{{ etape }}</li>
+                                {% endfor %}
+                            </ol>
+                        </div>
+                        
+                        <div class="method-tip">
+                            Prends ton temps pour comprendre chaque étape avant de passer à la suivante !
+                        </div>
+                    {% endif %}
+                    
+                    {% if exercice.solution.resultat %}
+                        <div class="final-result">
+                            Résultat final : {{ exercice.solution.resultat }}
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+        
+        <div class="success-badge">✨ Bravo !</div>
+        <div class="success-badge">🎓 Bien joué !</div>
+        <div class="success-badge">💪 Continue !</div>
+        
+        <div class="footer">
+            🌟 Le Maître Mot - Générateur de documents pédagogiques 🌟<br>
+            <small>Utilise ces corrections pour progresser !</small>
+        </div>
+    </div>
+</body>
+</html>
