@@ -109,6 +109,10 @@ class LaTeXToSVGRenderer:
         
         return svg_content
     
+    def convert_latex_to_svg(self, text: str) -> str:
+        """Alias for convert_text_with_latex for compatibility"""
+        return self.convert_text_with_latex(text)
+    
     def convert_text_with_latex(self, text: str) -> str:
         """
         Convert text containing LaTeX expressions to HTML with embedded SVG
