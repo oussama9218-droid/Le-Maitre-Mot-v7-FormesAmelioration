@@ -17,7 +17,7 @@ import json
 import tempfile
 import weasyprint
 from jinja2 import Template
-from math_renderer import math_renderer
+from latex_to_svg import latex_renderer
 import requests
 
 ROOT_DIR = Path(__file__).parent
