@@ -2402,7 +2402,9 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                     exercise.get('donnees') and 
                     exercise['donnees'].get('options')):
                     exercise['donnees']['options'] = [
-                        latex_renderer.convert_latex_to_svg(option) 
+                        latex_renderer.convert_latex_to_svg(
+                            geometry_renderer.process_geometric_schemas(option)
+                        )
                         for option in exercise['donnees']['options']
                     ]
                 
