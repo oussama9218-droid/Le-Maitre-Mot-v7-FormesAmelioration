@@ -377,16 +377,119 @@ class GeometryRenderer:
         
         if figure_type in self.figure_renderers:
             try:
-                # Use the existing renderer but capture before SVG conversion
+                # Create figure and render based on type
                 if figure_type == 'triangle_rectangle':
                     fig, ax = self._create_figure(6, 5)
                     self._render_right_triangle_to_figure(fig, ax, schema_data)
                     return self._figure_to_base64(fig)
+                
+                elif figure_type == 'triangle':
+                    fig, ax = self._create_figure(6, 5)
+                    points = schema_data.get('points', ['A', 'B', 'C'])
+                    # Default equilateral triangle coordinates
+                    coords = {
+                        points[0]: (1.5, 1),
+                        points[1]: (4.5, 1), 
+                        points[2]: (3, 3.5)
+                    }
+                    # Draw triangle
+                    triangle_coords = [coords[p] for p in points] + [coords[points[0]]]
+                    xs, ys = zip(*triangle_coords)
+                    ax.plot(xs, ys, color=self.colors['line'], linewidth=2, zorder=1)
+                    # Add points and labels
+                    for point, coord in coords.items():
+                        self._add_point(ax, coord[0], coord[1], point)
+                    return self._figure_to_base64(fig)
+                
+                elif figure_type == 'carre':
+                    fig, ax = self._create_figure(5, 5)
+                    points = schema_data.get('points', ['A', 'B', 'C', 'D'])
+                    # Square coordinates
+                    coords = {
+                        points[0]: (1, 1),
+                        points[1]: (3.5, 1),
+                        points[2]: (3.5, 3.5),
+                        points[3]: (1, 3.5)
+                    }
+                    # Draw square
+                    square_coords = [coords[p] for p in points] + [coords[points[0]]]
+                    xs, ys = zip(*square_coords)
+                    ax.plot(xs, ys, color=self.colors['line'], linewidth=2, zorder=1)
+                    # Add points and labels
+                    for point, coord in coords.items():
+                        self._add_point(ax, coord[0], coord[1], point)
+                    return self._figure_to_base64(fig)
+                
+                elif figure_type == 'rectangle':
+                    fig, ax = self._create_figure(6, 4)
+                    points = schema_data.get('points', ['A', 'B', 'C', 'D'])
+                    # Rectangle coordinates
+                    coords = {
+                        points[0]: (1, 1),
+                        points[1]: (4.5, 1),
+                        points[2]: (4.5, 2.5),
+                        points[3]: (1, 2.5)
+                    }
+                    # Draw rectangle
+                    rect_coords = [coords[p] for p in points] + [coords[points[0]]]
+                    xs, ys = zip(*rect_coords)
+                    ax.plot(xs, ys, color=self.colors['line'], linewidth=2, zorder=1)
+                    # Add points and labels
+                    for point, coord in coords.items():
+                        self._add_point(ax, coord[0], coord[1], point)
+                    return self._figure_to_base64(fig)
+                
+                elif figure_type == 'cercle':
+                    fig, ax = self._create_figure(5, 5)
+                    center_label = schema_data.get('centre', 'O')
+                    rayon = schema_data.get('rayon', 1.5)
+                    # Circle center
+                    center_coord = (2.5, 2.5)
+                    # Draw circle
+                    circle = plt.Circle(center_coord, rayon, fill=False, 
+                                      color=self.colors['line'], linewidth=2)
+                    ax.add_patch(circle)
+                    # Add center point
+                    self._add_point(ax, center_coord[0], center_coord[1], center_label)
+                    # Add radius line if specified
+                    if schema_data.get('montrer_rayon', True):
+                        radius_end = (center_coord[0] + rayon, center_coord[1])
+                        ax.plot([center_coord[0], radius_end[0]], 
+                               [center_coord[1], radius_end[1]], 
+                               color=self.colors['construction'], 
+                               linewidth=1.5, linestyle='--')
+                        # Add radius label
+                        mid_radius = ((center_coord[0] + radius_end[0])/2, 
+                                     (center_coord[1] + radius_end[1])/2)
+                        radius_label = schema_data.get('label_rayon', 'r')
+                        ax.text(mid_radius[0], mid_radius[1] + 0.2, radius_label, 
+                               fontsize=10, ha='center', va='center',
+                               bbox=dict(boxstyle="round,pad=0.2", facecolor='white', 
+                                        edgecolor='none', alpha=0.8))
+                    return self._figure_to_base64(fig)
+                
+                elif figure_type == 'parallelogramme':
+                    fig, ax = self._create_figure(6, 4)
+                    points = schema_data.get('points', ['A', 'B', 'C', 'D'])
+                    # Parallelogram coordinates
+                    coords = {
+                        points[0]: (1, 1),
+                        points[1]: (4, 1),
+                        points[2]: (4.5, 2.5),
+                        points[3]: (1.5, 2.5)
+                    }
+                    # Draw parallelogram
+                    para_coords = [coords[p] for p in points] + [coords[points[0]]]
+                    xs, ys = zip(*para_coords)
+                    ax.plot(xs, ys, color=self.colors['line'], linewidth=2, zorder=1)
+                    # Add points and labels
+                    for point, coord in coords.items():
+                        self._add_point(ax, coord[0], coord[1], point)
+                    return self._figure_to_base64(fig)
+                
                 else:
-                    # For other figures, use a simpler approach: render normally then convert
-                    svg_content = self.figure_renderers[figure_type](schema_data)
-                    # For now, return empty Base64 for non-implemented figures
-                    # They will still work in PDF via SVG
+                    # Fallback for any unsupported types
+                    logger.warning(f"Figure type {figure_type} not yet implemented for Base64 rendering")
                     return ""
                 
             except Exception as e:
