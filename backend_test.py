@@ -4201,35 +4201,43 @@ class LeMaitreMotAPITester:
         
         if success and isinstance(response, dict):
             styles = response.get('styles', {})
-            print(f"   Found {len(styles)} export styles for free users")
+            user_is_pro = response.get('user_is_pro', False)
             
-            # Check that only 'classique' is available for free users
-            if 'classique' in styles:
+            print(f"   Found {len(styles)} export styles for free users")
+            print(f"   User is pro: {user_is_pro}")
+            
+            # For free users, only classique should be available
+            if len(styles) == 1 and 'classique' in styles:
                 classique = styles['classique']
-                print(f"   ✅ Classique style available: {classique.get('name')} - {classique.get('description')}")
+                print(f"   ✅ Only Classique style available: {classique.get('name')} - {classique.get('description')}")
                 
-                # Verify it's marked as available for free users
-                available_for = classique.get('available_for', [])
-                if 'free' in available_for:
+                # Verify it's marked as not pro-only (available for free users)
+                pro_only = classique.get('pro_only', True)
+                if not pro_only:
                     print("   ✅ Classique correctly marked as available for free users")
                 else:
                     print("   ❌ Classique should be available for free users")
                     return False, {}
+                
+                # Verify user_is_pro is False
+                if not user_is_pro:
+                    print("   ✅ User correctly identified as free user")
+                else:
+                    print("   ❌ User should be identified as free user")
+                    return False, {}
+                    
             else:
-                print("   ❌ Classique style should be available for free users")
+                print(f"   ❌ Expected only 1 style (classique) for free users, got {len(styles)}")
                 return False, {}
             
-            # Check that Pro-only styles are not included or marked as Pro-only
+            # Pro-only styles should NOT be included for free users
             pro_styles = ['moderne', 'eleve', 'minimal', 'corrige_detaille']
             for style_name in pro_styles:
                 if style_name in styles:
-                    style = styles[style_name]
-                    available_for = style.get('available_for', [])
-                    if 'pro' in available_for and 'free' not in available_for:
-                        print(f"   ✅ {style_name} correctly marked as Pro-only")
-                    else:
-                        print(f"   ❌ {style_name} should be Pro-only")
-                        return False, {}
+                    print(f"   ❌ {style_name} should not be available for free users")
+                    return False, {}
+            
+            print("   ✅ Pro-only styles correctly excluded for free users")
         
         return success, response
     
