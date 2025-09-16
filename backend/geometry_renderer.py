@@ -8,7 +8,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from matplotlib.patches import FancyBboxPatch
 import numpy as np
-from io import StringIO
+from io import StringIO, BytesIO
+import base64
 import logging
 from typing import Dict, Any, List, Tuple, Optional
 

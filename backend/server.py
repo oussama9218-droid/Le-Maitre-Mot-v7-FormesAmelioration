@@ -1022,7 +1022,7 @@ async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, t
     subject_instructions = {
         "Mathématiques": f"""Tu es un générateur d'exercices de mathématiques français pour {niveau} - {chapitre}.
 
-Génère {nb_exercices} exercices RAPIDES ET EFFICACES.
+Génère {nb_exercices} exercices RAPIDES ET EFFICACES dont un premier avec une Figures disponibles géométrique.
 
 RÈGLES MATHÉMATIQUES:
 1. Niveau {niveau} - Chapitre "{chapitre}"
