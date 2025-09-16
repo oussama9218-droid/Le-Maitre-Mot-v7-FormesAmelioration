@@ -474,7 +474,8 @@ function MainApp() {
     try {
       const requestData = {
         document_id: currentDocument.id,
-        export_type: exportType
+        export_type: exportType,
+        template_style: selectedExportStyle
       };
       
       // Pro users don't need guest_id, regular users do
