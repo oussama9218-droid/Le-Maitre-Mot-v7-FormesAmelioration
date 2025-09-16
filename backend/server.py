@@ -1903,7 +1903,8 @@ async def save_user_template(
     school_name: Optional[str] = Form(None),
     school_year: Optional[str] = Form(None),
     footer_text: Optional[str] = Form(None),
-    template_style: str = Form("minimaliste")
+    template_style: str = Form("minimaliste"),
+    logo: Optional[UploadFile] = File(None)
 ):
     """Save user's template configuration (Pro only)"""
     try:
