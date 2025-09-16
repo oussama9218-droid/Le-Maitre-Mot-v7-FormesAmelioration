@@ -114,6 +114,14 @@ EXPORT_TEMPLATE_STYLES = {
         "available_for": ["pro"],
         "sujet_template": "sujet_minimal",
         "corrige_template": "corrige_minimal"
+    },
+    "academique": {
+        "name": "Académique",
+        "description": "Style officiel scolaire avec espaces de réponse et barème",
+        "preview_image": "/api/template-previews/academique.png",
+        "available_for": ["pro"],
+        "sujet_template": "sujet_academique",
+        "corrige_template": "corrige_academique"
     }
 }
 
