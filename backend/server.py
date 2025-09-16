@@ -1272,6 +1272,9 @@ Exemple: {example}
         # Convert to Exercise objects with professional content processing
         exercises = []
         for ex_data in data.get("exercises", []):
+            # Enrich with icon before processing
+            ex_data = enrich_exercise_with_icon(ex_data, chapitre)
+            
             # Clean and process the enonce with professional content processing
             enonce = ex_data.get("enonce", "").strip()
             enonce = process_exercise_content(enonce)  # Apply centralized processing
@@ -1296,7 +1299,10 @@ Exemple: {example}
                 difficulte=ex_data.get("difficulte", difficulte),
                 solution=solution,
                 bareme=ex_data.get("bareme", [{"etape": "Méthode", "points": 2.0}, {"etape": "Résultat", "points": 2.0}]),
-                seed=hash(enonce) % 1000000
+                seed=hash(enonce) % 1000000,
+                # Add icon and exercise type information
+                exercise_type=ex_data.get("type", "text"),
+                icone=ex_data.get("icone", EXERCISE_ICON_MAPPING["default"])
             )
             exercises.append(exercise)
         
