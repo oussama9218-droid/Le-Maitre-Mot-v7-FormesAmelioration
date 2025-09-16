@@ -2245,6 +2245,12 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 **template_styles
             }
             
+            logger.info(f"🔍 FINAL RENDER CONTEXT FOR LOGO DEBUG:")
+            logger.info(f"   school_name: {render_context.get('school_name')}")
+            logger.info(f"   professor_name: {render_context.get('professor_name')}")
+            logger.info(f"   logo_url: {render_context.get('logo_url')}")
+            logger.info(f"   logo_filename: {render_context.get('logo_filename')}")
+            
             # Generate filename with template suffix
             template_suffix = f"_{template_config.get('template_style', 'pro')}"
             filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}{template_suffix}.pdf"
