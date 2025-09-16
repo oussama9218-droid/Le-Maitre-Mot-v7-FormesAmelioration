@@ -2232,7 +2232,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             # Render context for Pro templates
             render_context = {
                 'document': document,
-                'date_creation': document.created_at.strftime("%d/%m/%Y à %H:%M"),
+                'date_creation': document.get('created_at', datetime.now(timezone.utc)).strftime("%d/%m/%Y") if hasattr(document.get('created_at', datetime.now(timezone.utc)), 'strftime') else datetime.now(timezone.utc).strftime("%d/%m/%Y"),
                 'template_config': template_config,
                 'template_style': template_config.get('template_style', 'minimaliste'),
                 # Add template variables directly for Pro templates
