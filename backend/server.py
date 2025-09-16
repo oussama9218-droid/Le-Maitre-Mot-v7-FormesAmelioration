@@ -1029,7 +1029,23 @@ RÈGLES MATHÉMATIQUES:
 2. {level_guide}
 3. Format français correct (virgules décimaux, pas de points)
 4. Solutions en 2-3 étapes maximum
-5. Calculs adaptés au niveau, résultats simples""",
+5. Calculs adaptés au niveau, résultats simples
+
+SCHÉMAS GÉOMÉTRIQUES:
+Si l'exercice nécessite une figure géométrique, inclus un code de schéma JSON dans l'énoncé:
+
+Pour un triangle rectangle ABC avec angle droit en B:
+{{"type": "schema_geometrique", "figure": "triangle_rectangle", "points": ["A", "B", "C"], "angle_droit": "B", "marques_distance": ["AB=5cm"]}}
+
+Figures disponibles:
+- "triangle_rectangle": triangle avec angle droit
+- "triangle": triangle quelconque  
+- "carre": carré avec 4 points
+- "rectangle": rectangle avec 4 points
+- "cercle": cercle avec centre et rayon
+- "parallelogramme": parallélogramme
+
+Le code JSON doit être sur une seule ligne dans l'énoncé.""",
 
         "Français": f"""Tu es un générateur d'exercices de français pour {niveau} - {chapitre}.
 
