@@ -11,7 +11,7 @@ def debug_geometric_schemas():
     print("🔍 Debugging geometric schema processing...")
     
     # Get the documents to see the actual schema format
-    response = requests.get('https://teacherai.preview.emergentagent.com/api/documents?guest_id=test-styles-183236_geom')
+    response = requests.get('https://lemaitremot.preview.emergentagent.com/api/documents?guest_id=test-styles-183236_geom')
     if response.status_code != 200:
         print(f"❌ Request failed: {response.status_code}")
         return

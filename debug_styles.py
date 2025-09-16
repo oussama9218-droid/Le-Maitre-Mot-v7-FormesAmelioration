@@ -10,7 +10,7 @@ def test_export_styles():
     
     # Test 1: Free user (no session token)
     print("\n1. Testing as free user (no session token):")
-    response = requests.get('https://teacherai.preview.emergentagent.com/api/export/styles')
+    response = requests.get('https://lemaitremot.preview.emergentagent.com/api/export/styles')
     print(f"Status: {response.status_code}")
     data = response.json()
     print(f"Styles count: {len(data.get('styles', {}))}")
@@ -21,7 +21,7 @@ def test_export_styles():
     # Test 2: With fake Pro session token
     print("\n2. Testing with fake Pro session token:")
     headers = {'X-Session-Token': 'fake-pro-token-12345'}
-    response = requests.get('https://teacherai.preview.emergentagent.com/api/export/styles', headers=headers)
+    response = requests.get('https://lemaitremot.preview.emergentagent.com/api/export/styles', headers=headers)
     print(f"Status: {response.status_code}")
     data = response.json()
     print(f"Styles count: {len(data.get('styles', {}))}")
@@ -44,7 +44,7 @@ def test_export_styles():
         "guest_id": "test-styles-debug"
     }
     
-    doc_response = requests.post('https://teacherai.preview.emergentagent.com/api/generate', json=doc_data)
+    doc_response = requests.post('https://lemaitremot.preview.emergentagent.com/api/generate', json=doc_data)
     if doc_response.status_code == 200:
         doc_id = doc_response.json()['document']['id']
         print(f"Document generated: {doc_id}")
@@ -57,12 +57,12 @@ def test_export_styles():
             "template_style": "classique"
         }
         
-        export_response = requests.post('https://teacherai.preview.emergentagent.com/api/export', json=export_data)
+        export_response = requests.post('https://lemaitremot.preview.emergentagent.com/api/export', json=export_data)
         print(f"Export with classique: {export_response.status_code}")
         
         # Test export with moderne style (should fallback to classique for free user)
         export_data["template_style"] = "moderne"
-        export_response = requests.post('https://teacherai.preview.emergentagent.com/api/export', json=export_data)
+        export_response = requests.post('https://lemaitremot.preview.emergentagent.com/api/export', json=export_data)
         print(f"Export with moderne: {export_response.status_code}")
         
     else:
