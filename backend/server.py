@@ -2383,10 +2383,47 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         
         # Process LaTeX expressions in document before rendering
         logger.info("🔬 Converting LaTeX expressions to SVG...")
-        document = latex_renderer.process_document_exercises(document)
+        
+        # Convert document to dict for processing (to avoid Pydantic read-only issues)
+        document_dict = document.dict()
+        
+        # Process each exercise and convert LaTeX to SVG
+        try:
+            for exercise in document_dict.get('exercises', []):
+                # Process exercise statement
+                if 'enonce' in exercise and exercise['enonce']:
+                    exercise['enonce'] = latex_renderer.convert_latex_to_svg(exercise['enonce'])
+                
+                # Process QCM options if they exist
+                if (exercise.get('type') == 'qcm' and 
+                    exercise.get('donnees') and 
+                    exercise['donnees'].get('options')):
+                    exercise['donnees']['options'] = [
+                        latex_renderer.convert_latex_to_svg(option) 
+                        for option in exercise['donnees']['options']
+                    ]
+                
+                # Process solution if it exists
+                if exercise.get('solution'):
+                    # Process result
+                    if exercise['solution'].get('resultat'):
+                        exercise['solution']['resultat'] = latex_renderer.convert_latex_to_svg(
+                            exercise['solution']['resultat']
+                        )
+                    # Process steps
+                    if exercise['solution'].get('etapes') and isinstance(exercise['solution']['etapes'], list):
+                        exercise['solution']['etapes'] = [
+                            latex_renderer.convert_latex_to_svg(step)
+                            for step in exercise['solution']['etapes']
+                        ]
+        
+        except Exception as e:
+            logger.error(f"Error during LaTeX to SVG conversion: {e}")
+            # Continue with original document if conversion fails
+            document_dict = document.dict()
         
         # Update render context with processed document
-        render_context['document'] = document
+        render_context['document'] = document_dict
         
         # Render HTML using Jinja2
         logger.info("🔧 Generating PDF with WeasyPrint...")
