@@ -1913,6 +1913,50 @@ async def get_template_styles():
         }
     }
 
+@api_router.get("/export/styles")
+async def get_export_styles(request: Request):
+    """Get available export template styles based on user status"""
+    try:
+        # Check if user is Pro
+        session_token = request.headers.get("X-Session-Token")
+        is_pro = False
+        
+        if session_token:
+            email = await validate_session_token(session_token)
+            if email:
+                is_pro, _ = await check_user_pro_status(email)
+        
+        # Filter styles based on user status
+        available_styles = {}
+        for style_id, style in EXPORT_TEMPLATE_STYLES.items():
+            if "free" in style["available_for"] or (is_pro and "pro" in style["available_for"]):
+                available_styles[style_id] = {
+                    "name": style["name"],
+                    "description": style["description"],
+                    "preview_image": style["preview_image"],
+                    "pro_only": "free" not in style["available_for"]
+                }
+        
+        return {
+            "styles": available_styles,
+            "user_is_pro": is_pro
+        }
+        
+    except Exception as e:
+        logger.error(f"Error getting export styles: {e}")
+        # Return at least the free style on error
+        return {
+            "styles": {
+                "classique": {
+                    "name": "Classique",
+                    "description": "Style traditionnel élégant",
+                    "preview_image": "/api/template-previews/classique.png",
+                    "pro_only": False
+                }
+            },
+            "user_is_pro": False
+        }
+
 @api_router.get("/template/get")
 async def get_user_template(request: Request):
     """Get user's template configuration (Pro only)"""
