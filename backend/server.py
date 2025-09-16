@@ -1298,14 +1298,20 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
         
         enonce = template.format(a=a, b=b, c=c)
         
+        # CRITICAL: Apply content processing to fallback exercises too
+        processed_enonce = process_exercise_content(enonce)
+        
         exercise = Exercise(
             type="ouvert",
-            enonce=enonce,
+            enonce=processed_enonce,
             donnees=None,
             difficulte=difficulte,
             solution={
-                "etapes": ["Appliquer la méthode du cours", "Effectuer les calculs"],
-                "resultat": "Résultat à calculer"
+                "etapes": [
+                    process_exercise_content("Appliquer la méthode du cours"), 
+                    process_exercise_content("Effectuer les calculs")
+                ],
+                "resultat": process_exercise_content("Résultat à calculer")
             },
             bareme=[
                 {"etape": "Méthode", "points": 2.0},
