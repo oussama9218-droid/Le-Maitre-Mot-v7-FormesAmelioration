@@ -1,259 +1,145 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ document.type_doc|title }} - {{ document.matiere }}</title>
+    <meta charset="utf-8">
+    <title>{{ document.type_doc|title }} - {{ document.matiere }} {{ document.niveau }}</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-        
-        :root {
-            --primary: #6366f1;
-            --secondary: #8b5cf6;
-            --accent: #06b6d4;
-            --success: #10b981;
-            --dark: #1f2937;
-            --light: #f8fafc;
-            --border: #e2e8f0;
+        @page {
+            size: A4;
+            margin: 2cm 1.5cm 2cm 1.5cm;
+            @top-center {
+                content: "{{ document.matiere }} - {{ document.niveau }} - {{ document.chapitre }}";
+                font-family: 'Arial', sans-serif;
+                font-size: 10pt;
+                color: #666;
+            }
+            @bottom-center {
+                content: "Page " counter(page) " / " counter(pages);
+                font-family: 'Arial', sans-serif;
+                font-size: 10pt;
+                color: #666;
+            }
         }
         
         body {
-            font-family: 'Inter', system-ui, sans-serif;
-            line-height: 1.6;
-            margin: 0;
-            padding: 30px;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            color: var(--dark);
+            font-family: 'Arial', sans-serif;
+            font-size: 11pt;
+            line-height: 1.4;
+            color: #333;
         }
         
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            color: white;
-            padding: 25px 30px;
-            border-radius: 16px;
-            margin-bottom: 30px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 10px 25px rgba(99, 102, 241, 0.2);
-        }
-        
-        .logo {
-            flex: 0 0 auto;
-        }
-        
-        .logo img {
-            max-height: 70px;
-            max-width: 140px;
-            border-radius: 8px;
-            filter: brightness(1.1) contrast(1.1);
-        }
-        
-        .school-info {
             text-align: center;
-            flex: 1;
-            margin: 0 25px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 1cm;
+            margin-bottom: 1.5cm;
         }
         
-        .school-name {
-            font-size: 22px;
-            font-weight: 700;
-            margin-bottom: 5px;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        .title {
+            font-size: 18pt;
+            font-weight: bold;
+            margin-bottom: 0.5cm;
         }
         
-        .professor-name {
-            font-size: 15px;
-            opacity: 0.9;
-            font-weight: 500;
-            margin-bottom: 3px;
+        .subtitle {
+            font-size: 14pt;
+            color: #666;
+            margin-bottom: 0.3cm;
         }
         
-        .school-year {
-            font-size: 13px;
-            opacity: 0.8;
-            font-weight: 400;
-        }
-        
-        .date {
-            font-size: 14px;
-            opacity: 0.9;
-            font-weight: 500;
-        }
-        
-        .content-wrapper {
-            background: white;
-            border-radius: 16px;
-            padding: 35px;
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-            border: 1px solid var(--border);
-        }
-        
-        .document-title {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary);
-            text-align: center;
-            margin-bottom: 10px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-        
-        .document-subtitle {
-            font-size: 16px;
-            color: #64748b;
-            text-align: center;
-            margin-bottom: 35px;
-            font-weight: 500;
+        .info-line {
+            font-size: 10pt;
+            color: #888;
         }
         
         .exercise {
-            margin-bottom: 35px;
-            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
-            border-radius: 12px;
-            padding: 25px;
-            border-left: 5px solid var(--accent);
-            position: relative;
+            margin-bottom: 2cm;
             page-break-inside: avoid;
         }
         
-        .exercise::before {
-            content: "";
-            position: absolute;
-            top: -2px;
-            left: -2px;
-            right: -2px;
-            bottom: -2px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 14px;
-            z-index: -1;
-            opacity: 0.05;
-        }
-        
         .exercise-header {
-            font-size: 18px;
-            font-weight: 600;
-            color: var(--primary);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .exercise-header::before {
-            content: "📝";
-            font-size: 16px;
+            font-weight: bold;
+            font-size: 12pt;
+            margin-bottom: 0.5cm;
+            padding: 0.3cm;
+            background-color: #f5f5f5;
+            border-left: 4px solid #333;
         }
         
         .exercise-content {
-            font-size: 15px;
-            line-height: 1.7;
-            color: #374151;
+            margin-left: 0.5cm;
+            margin-bottom: 1cm;
         }
         
-        .qcm-options {
-            margin: 20px 0;
-            display: grid;
-            gap: 10px;
+        .exercise-text {
+            text-align: justify;
+            margin-bottom: 1cm;
         }
         
-        .qcm-option {
-            background: white;
-            padding: 12px 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border);
-            position: relative;
-            font-size: 14px;
-            transition: all 0.2s ease;
+        .answer-space {
+            border: 1px solid #ddd;
+            min-height: 3cm;
+            margin-top: 0.5cm;
+            background-color: #fafafa;
         }
         
-        .qcm-option::before {
-            content: "◯";
-            color: var(--accent);
-            font-weight: bold;
-            margin-right: 10px;
-            font-size: 16px;
+        .answer-lines {
+            height: 2.5cm;
+            background-image: repeating-linear-gradient(
+                transparent,
+                transparent 0.6cm,
+                #ddd 0.6cm,
+                #ddd 0.62cm
+            );
         }
         
-        .footer {
-            margin-top: 40px;
-            padding: 20px;
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
-            border-radius: 12px;
-            text-align: center;
-            font-size: 13px;
-            color: #64748b;
-            font-weight: 500;
+        .difficulty-badge {
+            display: inline-block;
+            padding: 0.1cm 0.3cm;
+            font-size: 9pt;
+            background-color: #e8f4f8;
+            border: 1px solid #bee5eb;
+            border-radius: 0.2cm;
+            margin-left: 0.5cm;
         }
         
-        @media print {
-            body { 
-                padding: 15px; 
-                background: white;
-            }
-            .header { 
-                box-shadow: none;
-                border: 1px solid #e2e8f0;
-            }
-            .content-wrapper { 
-                box-shadow: none;
-                border: 1px solid #e2e8f0;
-            }
-            .exercise { page-break-inside: avoid; }
+        .points {
+            float: right;
+            font-size: 10pt;
+            color: #666;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
     <div class="header">
-        <div class="logo">
-            {% if template_config and template_config.logo_url %}
-                <img src="{{ template_config.logo_url }}" alt="Logo" />
-            {% endif %}
+        <div class="title">{{ document.type_doc|title }}</div>
+        <div class="subtitle">{{ document.matiere }} - {{ document.niveau }}</div>
+        <div class="subtitle">{{ document.chapitre }}</div>
+        <div class="info-line">
+            Difficulté: {{ document.difficulte|title }} | 
+            {{ document.nb_exercices }} exercices | 
+            Généré le {{ date_creation }}
         </div>
-        <div class="school-info">
-            {% if template_config and template_config.school_name %}
-                <div class="school-name">{{ template_config.school_name }}</div>
-            {% endif %}
-            {% if template_config and template_config.professor_name %}
-                <div class="professor-name">{{ template_config.professor_name }}</div>
-            {% endif %}
-            {% if template_config and template_config.school_year %}
-                <div class="school-year">{{ template_config.school_year }}</div>
-            {% endif %}
-        </div>
-        <div class="date">{{ date_creation }}</div>
     </div>
-
-    <div class="content-wrapper">
-        <div class="document-title">{{ document.type_doc|title }}</div>
-        <div class="document-subtitle">{{ document.matiere }} • {{ document.niveau }} • {{ document.chapitre }}</div>
-
-        {% for exercice in document.exercises %}
-        <div class="exercise">
-            <div class="exercise-header">Exercice {{ loop.index }}</div>
-            <div class="exercise-content">
-                {{ exercice.enonce }}
-                
-                {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
-                <div class="qcm-options">
-                    {% for option in exercice.donnees.options %}
-                    <div class="qcm-option">{{ option }}</div>
-                    {% endfor %}
-                </div>
-                {% endif %}
+    
+    {% for exercise in document.exercises %}
+    <div class="exercise">
+        <div class="exercise-header">
+            Exercice {{ loop.index }}
+            <span class="difficulty-badge">{{ exercise.difficulte }}</span>
+            <span class="points">
+                {% set total_points = exercise.bareme|sum(attribute='points') %}
+                ({{ "%.1f"|format(total_points) }} pts)
+            </span>
+        </div>
+        <div class="exercise-content">
+            <div class="exercise-text">{{ exercise.enonce }}</div>
+            <div class="answer-space">
+                <div class="answer-lines"></div>
             </div>
         </div>
-        {% endfor %}
-
-        <div class="footer">
-            {% if template_config and template_config.footer_text %}
-                {{ template_config.footer_text }}
-            {% else %}
-                Document généré par Le Maître Mot ✨
-            {% endif %}
-        </div>
     </div>
+    {% endfor %}
 </body>
 </html>
