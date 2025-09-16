@@ -1921,21 +1921,14 @@ async def get_export_styles(request: Request):
         session_token = request.headers.get("X-Session-Token")
         is_pro = False
         
-        logger.info(f"Export styles request - session_token: {session_token is not None}")
-        
         if session_token:
             email = await validate_session_token(session_token)
             if email:
                 is_pro, _ = await check_user_pro_status(email)
-                logger.info(f"User {email} is_pro: {is_pro}")
-        
-        logger.info(f"Available template styles count: {len(EXPORT_TEMPLATE_STYLES)}")
-        logger.info(f"Template styles: {list(EXPORT_TEMPLATE_STYLES.keys())}")
         
         # Filter styles based on user status
         available_styles = {}
         for style_id, style in EXPORT_TEMPLATE_STYLES.items():
-            logger.info(f"Processing style {style_id}: available_for={style['available_for']}")
             if "free" in style["available_for"] or (is_pro and "pro" in style["available_for"]):
                 available_styles[style_id] = {
                     "name": style["name"],
@@ -1943,9 +1936,6 @@ async def get_export_styles(request: Request):
                     "preview_image": style["preview_image"],
                     "pro_only": "free" not in style["available_for"]
                 }
-                logger.info(f"Added style {style_id} to available styles")
-        
-        logger.info(f"Final available styles count: {len(available_styles)}")
         
         return {
             "styles": available_styles,
@@ -1954,8 +1944,6 @@ async def get_export_styles(request: Request):
         
     except Exception as e:
         logger.error(f"Error getting export styles: {e}")
-        import traceback
-        logger.error(f"Traceback: {traceback.format_exc()}")
         # Return at least the free style on error
         return {
             "styles": {
