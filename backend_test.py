@@ -4230,14 +4230,14 @@ class LeMaitreMotAPITester:
                 print(f"   ❌ Expected only 1 style (classique) for free users, got {len(styles)}")
                 return False, {}
             
-            # Pro-only styles should NOT be included for free users
-            pro_styles = ['moderne', 'eleve', 'minimal', 'corrige_detaille']
+            # Pro-only styles should NOT be included for free users (now includes academique)
+            pro_styles = ['moderne', 'eleve', 'minimal', 'corrige_detaille', 'academique']
             for style_name in pro_styles:
                 if style_name in styles:
                     print(f"   ❌ {style_name} should not be available for free users")
                     return False, {}
             
-            print("   ✅ Pro-only styles correctly excluded for free users")
+            print("   ✅ Pro-only styles correctly excluded for free users (including new Académique)")
         
         return success, response
     
