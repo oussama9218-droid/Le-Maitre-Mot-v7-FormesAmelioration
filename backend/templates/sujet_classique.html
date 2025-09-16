@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ document.type_doc|title }} - {{ document.matiere }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Crimson+Text:wght@400;600&display=swap');
+        
+        body {
+            font-family: 'Crimson Text', Georgia, serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 40px;
+            background: #fefefe;
+            color: #2c2c2c;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 3px solid #1a1a1a;
+            padding-bottom: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            flex: 0 0 auto;
+        }
+        
+        .logo img {
+            max-height: 80px;
+            max-width: 150px;
+            filter: grayscale(100%);
+        }
+        
+        .school-info {
+            text-align: center;
+            flex: 1;
+            margin: 0 30px;
+        }
+        
+        .school-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        
+        .professor-name {
+            font-size: 16px;
+            color: #555;
+            font-style: italic;
+            margin-bottom: 3px;
+        }
+        
+        .school-year {
+            font-size: 14px;
+            color: #777;
+            font-weight: 600;
+        }
+        
+        .document-info {
+            text-align: right;
+            flex: 0 0 auto;
+        }
+        
+        .document-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .document-subtitle {
+            font-size: 18px;
+            color: #555;
+            text-align: center;
+            margin-bottom: 30px;
+            font-style: italic;
+        }
+        
+        .exercise {
+            margin-bottom: 35px;
+            border-left: 4px solid #1a1a1a;
+            padding-left: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .exercise-header {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .exercise-content {
+            font-size: 16px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        
+        .qcm-options {
+            margin: 15px 0;
+            padding-left: 20px;
+        }
+        
+        .qcm-option {
+            margin: 8px 0;
+            font-size: 15px;
+            position: relative;
+        }
+        
+        .qcm-option::before {
+            content: "○ ";
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-right: 8px;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 2px solid #1a1a1a;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+        
+        .date {
+            text-align: right;
+            font-size: 14px;
+            color: #666;
+            font-style: italic;
+            margin-bottom: 30px;
+        }
+        
+        @media print {
+            body { padding: 20px; }
+            .exercise { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            {% if template_config and template_config.logo_url %}
+                <img src="{{ template_config.logo_url }}" alt="Logo" />
+            {% endif %}
+        </div>
+        <div class="school-info">
+            {% if template_config and template_config.school_name %}
+                <div class="school-name">{{ template_config.school_name }}</div>
+            {% endif %}
+            {% if template_config and template_config.professor_name %}
+                <div class="professor-name">{{ template_config.professor_name }}</div>
+            {% endif %}
+            {% if template_config and template_config.school_year %}
+                <div class="school-year">Année scolaire {{ template_config.school_year }}</div>
+            {% endif %}
+        </div>
+        <div class="document-info">
+            <div class="date">{{ date_creation }}</div>
+        </div>
+    </div>
+
+    <div class="document-title">{{ document.type_doc|title }}</div>
+    <div class="document-subtitle">{{ document.matiere }} • {{ document.niveau }} • {{ document.chapitre }}</div>
+
+    {% for exercice in document.exercises %}
+    <div class="exercise">
+        <div class="exercise-header">Exercice {{ loop.index }}</div>
+        <div class="exercise-content">
+            {{ exercice.enonce }}
+            
+            {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
+            <div class="qcm-options">
+                {% for option in exercice.donnees.options %}
+                <div class="qcm-option">{{ option }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="footer">
+        {% if template_config and template_config.footer_text %}
+            {{ template_config.footer_text }}
+        {% else %}
+            Document généré par Le Maître Mot
+        {% endif %}
+    </div>
+</body>
+</html>
