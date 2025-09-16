@@ -332,6 +332,28 @@ class GeometryRenderer:
         
         return svg_content.strip()
     
+    def _figure_to_base64(self, fig: plt.Figure) -> str:
+        """Convert matplotlib figure to Base64 encoded PNG for web display"""
+        try:
+            # Save figure to BytesIO buffer as PNG
+            buf = BytesIO()
+            fig.savefig(buf, format='png', bbox_inches='tight', 
+                       pad_inches=0.1, transparent=True, dpi=150,
+                       facecolor='white', edgecolor='none')
+            plt.close(fig)
+            
+            # Get PNG data and encode to Base64
+            buf.seek(0)
+            png_data = buf.getvalue()
+            base64_string = base64.b64encode(png_data).decode('utf-8')
+            
+            return base64_string
+            
+        except Exception as e:
+            logger.error(f"Error converting figure to Base64: {e}")
+            plt.close(fig)
+            return ""
+    
     def render_geometric_figure(self, schema_data: Dict[str, Any]) -> str:
         """Render a geometric figure from structured data"""
         figure_type = schema_data.get('figure', 'triangle')
