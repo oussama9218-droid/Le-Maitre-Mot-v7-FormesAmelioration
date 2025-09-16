@@ -3384,7 +3384,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         else:
             # Use standard templates for Free users
             logger.info("📄 Using standard templates for Free users")
-            template_content = SUJET_TEMPLATE if request.export_type == "sujet" else CORRIGE_TEMPLATE
+            template_content = load_template("sujet_standard") if request.export_type == "sujet" else load_template("corrige_standard")
             
             # Render context for standard templates
             render_context = {
