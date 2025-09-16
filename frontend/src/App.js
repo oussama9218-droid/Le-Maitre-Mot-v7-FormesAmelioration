@@ -281,6 +281,10 @@ function MainApp() {
   // Export states
   const [exportingSubject, setExportingSubject] = useState(false);
   const [exportingSolution, setExportingSolution] = useState(false);
+  
+  // Export style selection
+  const [exportStyles, setExportStyles] = useState({});
+  const [selectedExportStyle, setSelectedExportStyle] = useState("classique");
 
   // Initialize guest ID and check Pro status
   useEffect(() => {
