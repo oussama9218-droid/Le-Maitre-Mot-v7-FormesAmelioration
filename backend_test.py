@@ -4809,8 +4809,9 @@ class LeMaitreMotAPITester:
         print("🎨 EXPORT STYLE SELECTION FEATURE TESTS")
         print("="*80)
         print("CONTEXT: Testing new export style selection system")
-        print("FEATURES: 5 export styles (Classique, Moderne, Élève, Minimal, Corrigé détaillé)")
+        print("FEATURES: 6 export styles (Classique, Moderne, Élève, Minimal, Corrigé détaillé, Académique)")
         print("ACCESS: Classique (free+pro), Others (pro only)")
+        print("MATHJAX: All templates include MathJax for LaTeX math rendering")
         print("FALLBACK: Free users requesting Pro styles get Classique automatically")
         print("="*80)
         
