@@ -2412,13 +2412,18 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 if exercise.get('solution'):
                     # Process result
                     if exercise['solution'].get('resultat'):
-                        exercise['solution']['resultat'] = latex_renderer.convert_latex_to_svg(
+                        processed_result = geometry_renderer.process_geometric_schemas(
                             exercise['solution']['resultat']
+                        )
+                        exercise['solution']['resultat'] = latex_renderer.convert_latex_to_svg(
+                            processed_result
                         )
                     # Process steps
                     if exercise['solution'].get('etapes') and isinstance(exercise['solution']['etapes'], list):
                         exercise['solution']['etapes'] = [
-                            latex_renderer.convert_latex_to_svg(step)
+                            latex_renderer.convert_latex_to_svg(
+                                geometry_renderer.process_geometric_schemas(step)
+                            )
                             for step in exercise['solution']['etapes']
                         ]
         
