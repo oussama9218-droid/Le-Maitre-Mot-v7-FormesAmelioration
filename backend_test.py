@@ -92,11 +92,11 @@ class LeMaitreMotAPITester:
         """Test document generation with French mathematics curriculum"""
         test_data = {
             "matiere": "Mathématiques",
-            "niveau": "4e",
-            "chapitre": "Nombres relatifs",
+            "niveau": "6e",
+            "chapitre": "Nombres entiers et décimaux",
             "type_doc": "exercices",
             "difficulte": "moyen",
-            "nb_exercices": 4,
+            "nb_exercices": 3,
             "versions": ["A"],
             "guest_id": self.guest_id
         }
