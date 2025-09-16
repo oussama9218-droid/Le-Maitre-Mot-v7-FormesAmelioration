@@ -1241,7 +1241,7 @@ function MainApp() {
                               {exercise.solution.etapes.map((etape, etapeIndex) => (
                                 <div key={etapeIndex} className="text-sm">
                                   <span className="font-medium text-gray-700">Étape {etapeIndex + 1}:</span>
-                                  <span className="ml-2 text-gray-900">{etape}</span>
+                                  <span className="ml-2 text-gray-900" dangerouslySetInnerHTML={{ __html: etape }}></span>
                                 </div>
                               ))}
                               <div className="mt-3 p-2 bg-green-50 rounded">
