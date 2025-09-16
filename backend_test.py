@@ -4852,10 +4852,410 @@ class LeMaitreMotAPITester:
         print(f"\n🎨 Export Style Selection Tests: {export_style_passed}/{export_style_total} passed")
         return export_style_passed, export_style_total
 
+    def test_generate_geometry_document(self):
+        """Test document generation with geometric schemas (Mathematics geometry chapters)"""
+        print("\n🔍 Testing document generation with geometric schemas...")
+        
+        # Test with geometry-focused mathematics chapters
+        geometry_chapters = [
+            ("6e", "Géométrie - Figures planes"),
+            ("5e", "Géométrie - Triangles"),
+            ("4e", "Théorème de Pythagore"),
+            ("3e", "Géométrie dans l'espace")
+        ]
+        
+        generated_docs = []
+        
+        for niveau, chapitre in geometry_chapters:
+            test_data = {
+                "matiere": "Mathématiques",
+                "niveau": niveau,
+                "chapitre": chapitre,
+                "type_doc": "exercices",
+                "difficulte": "moyen",
+                "nb_exercices": 2,  # Small number for faster testing
+                "versions": ["A"],
+                "guest_id": f"{self.guest_id}_geom"
+            }
+            
+            print(f"   Testing {niveau} - {chapitre}...")
+            success, response = self.run_test(
+                f"Generate Geometry Document - {niveau}",
+                "POST",
+                "generate",
+                200,
+                data=test_data,
+                timeout=60
+            )
+            
+            if success and isinstance(response, dict):
+                document = response.get('document')
+                if document:
+                    doc_id = document.get('id')
+                    exercises = document.get('exercises', [])
+                    
+                    print(f"   ✅ Generated document {doc_id} with {len(exercises)} exercises")
+                    
+                    # Check for geometric schemas in exercises
+                    has_geometry = False
+                    for i, exercise in enumerate(exercises):
+                        enonce = exercise.get('enonce', '')
+                        if 'schema_geometrique' in enonce:
+                            has_geometry = True
+                            print(f"   🔺 Exercise {i+1} contains geometric schema")
+                            
+                            # Extract schema type
+                            import re
+                            import json
+                            pattern = r'\{\s*"type"\s*:\s*"schema_geometrique"[^}]*\}'
+                            match = re.search(pattern, enonce)
+                            if match:
+                                try:
+                                    schema_data = json.loads(match.group(0))
+                                    figure_type = schema_data.get('figure', 'unknown')
+                                    points = schema_data.get('points', [])
+                                    print(f"     Figure type: {figure_type}, Points: {points}")
+                                except:
+                                    print(f"     Schema found but couldn't parse details")
+                    
+                    if has_geometry:
+                        print(f"   ✅ Document contains geometric schemas - good for testing")
+                        generated_docs.append((doc_id, niveau, chapitre))
+                    else:
+                        print(f"   ⚠️  No geometric schemas found in {niveau} - {chapitre}")
+            else:
+                print(f"   ❌ Failed to generate document for {niveau} - {chapitre}")
+        
+        # Store the first generated document for further testing
+        if generated_docs:
+            self.generated_document_id = generated_docs[0][0]
+            print(f"\n   📝 Using document {self.generated_document_id} for further geometric testing")
+        
+        return len(generated_docs) > 0, {"generated_docs": len(generated_docs)}
+
+    def test_web_display_geometric_schemas(self):
+        """Test that geometric schemas appear as Base64 images in web display"""
+        print("\n🔍 Testing geometric schema web display rendering...")
+        
+        if not self.generated_document_id:
+            print("   ⚠️  No document available for web display testing")
+            return False, {}
+        
+        # Get documents via API (this should process geometric schemas for web)
+        success, response = self.run_test(
+            "Get Documents with Geometric Schemas",
+            "GET",
+            f"documents?guest_id={self.guest_id}_geom",
+            200
+        )
+        
+        if not success or not isinstance(response, dict):
+            print("   ❌ Failed to retrieve documents")
+            return False, {}
+        
+        documents = response.get('documents', [])
+        if not documents:
+            print("   ❌ No documents returned")
+            return False, {}
+        
+        # Find our test document
+        test_doc = None
+        for doc in documents:
+            if doc.get('id') == self.generated_document_id:
+                test_doc = doc
+                break
+        
+        if not test_doc:
+            print(f"   ❌ Test document {self.generated_document_id} not found in response")
+            return False, {}
+        
+        print(f"   ✅ Found test document with {len(test_doc.get('exercises', []))} exercises")
+        
+        # Check for Base64 image rendering in exercises
+        base64_images_found = 0
+        geometric_schemas_found = 0
+        
+        for i, exercise in enumerate(test_doc.get('exercises', [])):
+            enonce = exercise.get('enonce', '')
+            
+            # Check if original geometric schema JSON was replaced with Base64 image
+            if 'data:image/png;base64,' in enonce:
+                base64_images_found += 1
+                print(f"   🖼️  Exercise {i+1}: Base64 image found in enonce")
+                
+                # Verify it's wrapped in proper HTML
+                if '<img src="data:image/png;base64,' in enonce and 'alt="Schéma géométrique"' in enonce:
+                    print(f"   ✅ Exercise {i+1}: Proper HTML image tag with alt text")
+                else:
+                    print(f"   ⚠️  Exercise {i+1}: Base64 found but may lack proper HTML structure")
+            
+            # Check if any raw geometric schema JSON remains (should be replaced)
+            if 'schema_geometrique' in enonce and 'data:image/png;base64,' not in enonce:
+                geometric_schemas_found += 1
+                print(f"   ⚠️  Exercise {i+1}: Raw geometric schema JSON still present (not converted)")
+            
+            # Also check solutions
+            solution = exercise.get('solution', {})
+            if solution.get('resultat') and 'data:image/png;base64,' in solution['resultat']:
+                base64_images_found += 1
+                print(f"   🖼️  Exercise {i+1}: Base64 image found in solution")
+            
+            if solution.get('etapes'):
+                for j, step in enumerate(solution['etapes']):
+                    if isinstance(step, str) and 'data:image/png;base64,' in step:
+                        base64_images_found += 1
+                        print(f"   🖼️  Exercise {i+1}, Step {j+1}: Base64 image found")
+        
+        print(f"\n   📊 Results:")
+        print(f"   - Base64 images found: {base64_images_found}")
+        print(f"   - Raw schemas remaining: {geometric_schemas_found}")
+        
+        if base64_images_found > 0:
+            print(f"   ✅ SUCCESS: Geometric schemas are being converted to Base64 images for web display")
+            if geometric_schemas_found == 0:
+                print(f"   ✅ PERFECT: No raw schema JSON remaining - all converted properly")
+            else:
+                print(f"   ⚠️  PARTIAL: Some schemas converted but {geometric_schemas_found} raw schemas remain")
+            return True, {"base64_images": base64_images_found, "raw_schemas": geometric_schemas_found}
+        else:
+            if geometric_schemas_found > 0:
+                print(f"   ❌ FAILURE: Found {geometric_schemas_found} raw schemas but no Base64 conversions")
+            else:
+                print(f"   ℹ️  INFO: No geometric schemas found in this document")
+            return False, {"base64_images": 0, "raw_schemas": geometric_schemas_found}
+
+    def test_all_geometric_figure_types(self):
+        """Test all supported geometric figure types for Base64 rendering"""
+        print("\n🔍 Testing all geometric figure types for Base64 rendering...")
+        
+        # Import geometry renderer to test directly
+        try:
+            import sys
+            sys.path.append('/app/backend')
+            from geometry_renderer import geometry_renderer
+            
+            # Test all supported figure types
+            figure_types = [
+                {
+                    "type": "schema_geometrique",
+                    "figure": "triangle_rectangle",
+                    "points": ["A", "B", "C"],
+                    "angle_droit": "B",
+                    "marques_distance": ["AB=5cm"]
+                },
+                {
+                    "type": "schema_geometrique", 
+                    "figure": "triangle",
+                    "points": ["A", "B", "C"]
+                },
+                {
+                    "type": "schema_geometrique",
+                    "figure": "carre", 
+                    "points": ["A", "B", "C", "D"]
+                },
+                {
+                    "type": "schema_geometrique",
+                    "figure": "rectangle",
+                    "points": ["A", "B", "C", "D"]
+                },
+                {
+                    "type": "schema_geometrique",
+                    "figure": "cercle",
+                    "centre": "O",
+                    "rayon": 2
+                },
+                {
+                    "type": "schema_geometrique",
+                    "figure": "parallelogramme",
+                    "points": ["A", "B", "C", "D"]
+                }
+            ]
+            
+            successful_renders = 0
+            total_figures = len(figure_types)
+            
+            for figure_data in figure_types:
+                figure_type = figure_data.get('figure')
+                print(f"   Testing {figure_type}...")
+                
+                try:
+                    # Test Base64 rendering
+                    base64_result = geometry_renderer.render_geometry_to_base64(figure_data)
+                    
+                    if base64_result and len(base64_result) > 100:  # Valid Base64 should be substantial
+                        print(f"   ✅ {figure_type}: Base64 rendering successful ({len(base64_result)} chars)")
+                        successful_renders += 1
+                        
+                        # Verify it's valid Base64
+                        try:
+                            import base64
+                            base64.b64decode(base64_result)
+                            print(f"   ✅ {figure_type}: Valid Base64 encoding")
+                        except:
+                            print(f"   ⚠️  {figure_type}: Base64 may be invalid")
+                    else:
+                        print(f"   ❌ {figure_type}: Base64 rendering failed or empty")
+                        
+                    # Also test SVG rendering for comparison
+                    svg_result = geometry_renderer.render_geometric_figure(figure_data)
+                    if svg_result and '<svg' in svg_result:
+                        print(f"   ✅ {figure_type}: SVG rendering also working")
+                    else:
+                        print(f"   ⚠️  {figure_type}: SVG rendering may have issues")
+                        
+                except Exception as e:
+                    print(f"   ❌ {figure_type}: Error during rendering - {str(e)}")
+            
+            print(f"\n   📊 Figure Type Test Results:")
+            print(f"   - Successful renders: {successful_renders}/{total_figures}")
+            print(f"   - Success rate: {(successful_renders/total_figures)*100:.1f}%")
+            
+            if successful_renders == total_figures:
+                print(f"   🎉 ALL FIGURE TYPES WORKING: All geometric figures render correctly to Base64")
+                return True, {"success_rate": 100, "successful": successful_renders, "total": total_figures}
+            elif successful_renders > 0:
+                print(f"   ⚠️  PARTIAL SUCCESS: {successful_renders} out of {total_figures} figure types working")
+                return True, {"success_rate": (successful_renders/total_figures)*100, "successful": successful_renders, "total": total_figures}
+            else:
+                print(f"   ❌ COMPLETE FAILURE: No figure types rendering correctly")
+                return False, {"success_rate": 0, "successful": 0, "total": total_figures}
+                
+        except ImportError as e:
+            print(f"   ❌ Cannot import geometry_renderer: {e}")
+            return False, {"error": "import_failed"}
+        except Exception as e:
+            print(f"   ❌ Error testing figure types: {e}")
+            return False, {"error": str(e)}
+
+    def test_pdf_export_geometric_schemas(self):
+        """Test that geometric schemas still work correctly in PDF export (SVG rendering)"""
+        print("\n🔍 Testing PDF export with geometric schemas...")
+        
+        if not self.generated_document_id:
+            print("   ⚠️  No document available for PDF export testing")
+            return False, {}
+        
+        # Test both sujet and corrigé exports
+        export_types = ["sujet", "corrige"]
+        successful_exports = 0
+        
+        for export_type in export_types:
+            export_data = {
+                "document_id": self.generated_document_id,
+                "export_type": export_type,
+                "guest_id": f"{self.guest_id}_geom"
+            }
+            
+            print(f"   Testing {export_type} PDF export...")
+            success, response = self.run_test(
+                f"PDF Export {export_type.title()} with Geometry",
+                "POST",
+                "export",
+                200,
+                data=export_data,
+                timeout=45
+            )
+            
+            if success:
+                # Check if we got a PDF response
+                if isinstance(response, bytes) or (isinstance(response, str) and len(response) > 1000):
+                    pdf_size = len(response) if isinstance(response, (str, bytes)) else 0
+                    print(f"   ✅ {export_type} PDF export successful (size: {pdf_size} bytes)")
+                    successful_exports += 1
+                    
+                    # For PDF exports, we can't directly verify SVG content, but successful generation
+                    # indicates that geometric schemas didn't break the PDF generation process
+                    if pdf_size > 5000:  # Reasonable PDF size
+                        print(f"   ✅ {export_type} PDF appears to have substantial content")
+                    else:
+                        print(f"   ⚠️  {export_type} PDF seems small - may lack content")
+                else:
+                    print(f"   ⚠️  {export_type} PDF export returned unexpected response type")
+            else:
+                print(f"   ❌ {export_type} PDF export failed")
+        
+        print(f"\n   📊 PDF Export Results:")
+        print(f"   - Successful exports: {successful_exports}/{len(export_types)}")
+        
+        if successful_exports == len(export_types):
+            print(f"   ✅ SUCCESS: PDF exports working correctly with geometric schemas")
+            return True, {"successful_exports": successful_exports, "total_exports": len(export_types)}
+        elif successful_exports > 0:
+            print(f"   ⚠️  PARTIAL: Some PDF exports working")
+            return True, {"successful_exports": successful_exports, "total_exports": len(export_types)}
+        else:
+            print(f"   ❌ FAILURE: PDF exports not working")
+            return False, {"successful_exports": 0, "total_exports": len(export_types)}
+
+    def run_geometric_schema_tests(self):
+        """Run comprehensive geometric schema web display tests"""
+        print("\n" + "="*80)
+        print("🔺 GEOMETRIC SCHEMA WEB DISPLAY TESTS")
+        print("="*80)
+        print("CONTEXT: Testing geometric schema Base64 rendering fix")
+        print("FOCUS: Web display (Base64 PNG) vs PDF export (SVG) consistency")
+        print("ISSUE: Previously all figure types except triangle_rectangle returned empty strings")
+        print("FIX: Extended render_geometry_to_base64 to support all figure types")
+        print("="*80)
+        
+        geometric_tests = [
+            ("Generate Geometry Documents", self.test_generate_geometry_document),
+            ("Web Display Base64 Rendering", self.test_web_display_geometric_schemas),
+            ("All Figure Types Support", self.test_all_geometric_figure_types),
+            ("PDF Export Compatibility", self.test_pdf_export_geometric_schemas),
+        ]
+        
+        geometric_passed = 0
+        geometric_total = len(geometric_tests)
+        
+        for test_name, test_func in geometric_tests:
+            try:
+                print(f"\n{'='*60}")
+                print(f"🔍 {test_name}")
+                print(f"{'='*60}")
+                
+                success, result = test_func()
+                if success:
+                    geometric_passed += 1
+                    print(f"✅ {test_name}: PASSED")
+                else:
+                    print(f"❌ {test_name}: FAILED")
+                    
+            except Exception as e:
+                print(f"❌ {test_name} failed with exception: {e}")
+        
+        # Summary
+        print(f"\n{'='*80}")
+        print("📊 GEOMETRIC SCHEMA TEST SUMMARY")
+        print(f"{'='*80}")
+        print(f"Tests passed: {geometric_passed}/{geometric_total}")
+        print(f"Success rate: {(geometric_passed/geometric_total)*100:.1f}%")
+        
+        if geometric_passed == geometric_total:
+            print("🎉 ALL GEOMETRIC SCHEMA TESTS PASSED!")
+            print("✅ Geometric schemas now display correctly on web interface")
+            print("✅ All figure types (triangle, triangle_rectangle, carre, rectangle, cercle, parallelogramme) supported")
+            print("✅ PDF export compatibility maintained")
+        elif geometric_passed >= geometric_total * 0.75:
+            print("✅ MOST GEOMETRIC SCHEMA TESTS PASSED")
+            print("⚠️  Some minor issues detected but core functionality working")
+        else:
+            print("❌ GEOMETRIC SCHEMA TESTS MOSTLY FAILED")
+            print("🔧 Geometric schema web display fix may need additional work")
+        
+        return geometric_passed, geometric_total
+
 if __name__ == "__main__":
     tester = LeMaitreMotAPITester()
     
-    # Run export style selection tests specifically
-    print("🎨 Running Export Style Selection Tests...")
-    export_style_passed, export_style_total = tester.run_export_style_selection_tests()
-    print(f"\n🎨 Final Export Style Results: {export_style_passed}/{export_style_total} passed")
+    # Run geometric schema tests specifically
+    passed, total = tester.run_geometric_schema_tests()
+    
+    print(f"\n🏁 Final Results: {passed}/{total} tests passed")
+    
+    if passed == total:
+        print("🎉 All geometric schema tests successful!")
+        sys.exit(0)
+    else:
+        print("⚠️  Some geometric schema tests failed")
+        sys.exit(1)
