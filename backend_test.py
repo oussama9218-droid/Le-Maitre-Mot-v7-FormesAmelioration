@@ -4319,8 +4319,8 @@ class LeMaitreMotAPITester:
             print("⚠️  Skipping export style test - no document generated")
             return False, {}
         
-        # Test with different Pro styles
-        pro_styles = ['moderne', 'eleve', 'minimal', 'corrige_detaille']
+        # Test with all Pro styles including new Académique
+        pro_styles = ['moderne', 'eleve', 'minimal', 'corrige_detaille', 'academique']
         
         for style in pro_styles:
             export_data = {
