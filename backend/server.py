@@ -41,8 +41,8 @@ def process_exercise_content(content: str) -> str:
     Processes the exercise content to render both LaTeX and geometric schemas.
     This centralizes all content processing logic for consistency.
     """
-    if not content:
-        return content
+    if not content or not isinstance(content, str):
+        return content if isinstance(content, str) else ""
     
     # 1. Process geometric schemas first
     try:
