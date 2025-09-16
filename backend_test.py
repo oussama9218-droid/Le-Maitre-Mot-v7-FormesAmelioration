@@ -12,7 +12,7 @@ class LeMaitreMotAPITester:
         self.tests_run = 0
         self.tests_passed = 0
         self.generated_document_id = None
-        self.guest_id = f"test_guest_{datetime.now().strftime('%H%M%S')}"
+        self.guest_id = f"test-styles-{datetime.now().strftime('%H%M%S')}"
         self.initial_quota = None
         # Authentication testing variables
         self.pro_user_email = "oussama92.18@gmail.com"
