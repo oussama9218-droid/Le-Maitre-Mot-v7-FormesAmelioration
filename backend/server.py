@@ -2381,12 +2381,27 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         # Generate filename with style suffix
         filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}_{requested_style}.pdf"
         
-        # Render HTML with Jinja2
+        # Render HTML using Jinja2
+        logger.info("🔧 Generating PDF with WeasyPrint...")
         template = Template(template_content)
         html_content = template.render(**render_context)
         
+        # Process mathematical expressions in the HTML content
+        logger.info("🔬 Processing mathematical expressions...")
+        html_content = math_renderer.render_math_expressions(html_content)
+        
+        # Inject math CSS into the HTML
+        math_css = math_renderer.get_math_css()
+        if '<style>' in html_content:
+            # Add math CSS to existing style block
+            html_content = html_content.replace('<style>', f'<style>\n{math_css}\n')
+        elif '</head>' in html_content:
+            # Add math CSS as new style block before </head>
+            html_content = html_content.replace('</head>', f'<style>\n{math_css}\n</style>\n</head>')
+        
+        logger.info("✅ Mathematical expressions processed and CSS injected")
+        
         # Generate PDF with WeasyPrint
-        logger.info("🔧 Generating PDF with WeasyPrint...")
         pdf_bytes = weasyprint.HTML(string=html_content).write_pdf()
         
         # Create temporary file
