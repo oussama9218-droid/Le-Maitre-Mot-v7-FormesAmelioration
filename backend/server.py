@@ -2250,11 +2250,15 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 # Convert relative URL to absolute file path
                 logo_file_path = ROOT_DIR / logo_url[1:]  # Remove leading slash
                 if logo_file_path.exists():
-                    render_context['logo_url'] = f"file://{logo_file_path}"
+                    absolute_logo_url = f"file://{logo_file_path}"
+                    render_context['logo_url'] = absolute_logo_url
+                    # CRITICAL FIX: Update template_config too since template uses template_config.logo_url
+                    template_config['logo_url'] = absolute_logo_url
                     logger.info(f"✅ Logo converted for WeasyPrint: {logo_file_path}")
                 else:
                     logger.warning(f"⚠️ Logo file not found: {logo_file_path}")
                     render_context['logo_url'] = None
+                    template_config['logo_url'] = None
             else:
                 render_context['logo_url'] = logo_url
             
