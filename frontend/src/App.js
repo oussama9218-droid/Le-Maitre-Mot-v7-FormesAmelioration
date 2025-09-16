@@ -1224,7 +1224,7 @@ function MainApp() {
                                 <Shuffle className="h-4 w-4" />
                               </Button>
                             </div>
-                            <p className="text-gray-900 whitespace-pre-wrap">{exercise.enonce}</p>
+                            <div className="text-gray-900 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: exercise.enonce }}></div>
                           </CardContent>
                         </Card>
                       ))}
