@@ -3,8 +3,6 @@
 <head>
   <meta charset="utf-8" />
   <title>Corrigé — {{ document.type_doc|title }} — {{ document.matiere }} {{ document.niveau }}</title>
-  
-
   <style>
     @page {
       size: A4;
@@ -47,3 +45,93 @@
     .footer-center { flex:1; text-align:center; }
     .footer-right { flex:1; text-align:right; font-weight:700; }
 
+    /* QCM styling */
+    .qcm-options {
+      margin: 10px 0;
+      padding-left: 0;
+      list-style: none;
+    }
+    
+    .qcm-options li {
+      margin: 6px 0;
+      padding: 4px 0;
+      display: flex;
+      align-items: center;
+    }
+    
+    .qcm-options li::before {
+      content: "☐";
+      margin-right: 8px;
+      font-size: 12pt;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">
+      {% if template_config and template_config.logo_url %}
+        <img src="{{ template_config.logo_url }}" alt="Logo" />
+      {% endif %}
+    </div>
+    <div class="school">
+      {% if template_config and template_config.school_name %}<div class="school-name">{{ template_config.school_name }}</div>{% endif %}
+      {% if template_config and template_config.professor_name %}<div>{{ template_config.professor_name }}</div>{% endif %}
+      {% if template_config and template_config.school_year %}<div>{{ template_config.school_year }}</div>{% endif %}
+    </div>
+  </div>
+
+  <div class="title">
+    Corrigé — {% if document.type_doc == 'controle' %}Contrôle{% elif document.type_doc == 'dm' %}Devoir Maison{% else %}Exercices{% endif %}
+  </div>
+  <div class="subtitle">{{ document.matiere }} — {{ document.niveau }} — {{ document.chapitre }}</div>
+
+  {% for exercise in document.exercises or [] %}
+  <div class="exercise">
+    <div class="exercise-header">
+      Exercice {{ loop.index }} 
+      <span class="points">
+        {% set total_points = (exercise.bareme or [])|sum(attribute='points') %} 
+        ({{ "%.1f"|format(total_points) }} pts)
+      </span>
+    </div>
+    <div class="exercise-text">{{ exercise.enonce or '' }}</div>
+    
+    {% if exercise.type == 'qcm' and exercise.donnees and exercise.donnees.options %}
+      <ul class="qcm-options">
+        {% for option in exercise.donnees.options %}
+          <li>{{ option }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    
+    <div class="solution">
+      <div class="solution-title">Solution :</div>
+      {% if exercise.solution and exercise.solution.etapes %}
+        {% for etape in exercise.solution.etapes %}
+          <div class="step">{{ loop.index }}. {{ etape }}</div>
+        {% endfor %}
+      {% endif %}
+      {% if exercise.solution and exercise.solution.resultat %}
+        <div class="final-result">Résultat final : {{ exercise.solution.resultat }}</div>
+      {% endif %}
+    </div>
+    
+    {% if exercise.bareme %}
+      <div class="bareme">
+        <div class="bareme-title">Barème :</div>
+        {% for item in exercise.bareme %}
+          <div class="bareme-item">• {{ item.etape }} : {{ item.points }} pt(s)</div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+  {% if not loop.last %}<div class="sep"></div>{% endif %}
+  {% endfor %}
+
+  <div class="footer">
+    <div class="footer-left">{% if template_config and template_config.footer_text %}{{ template_config.footer_text }}{% endif %}</div>
+    <div class="footer-center">{% if template_config and template_config.school_year %}{{ template_config.school_year }}{% endif %}</div>
+    <div class="footer-right">Académie</div>
+  </div>
+</body>
+</html>
