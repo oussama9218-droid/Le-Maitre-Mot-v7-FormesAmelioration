@@ -19,7 +19,18 @@ from jinja2 import Template
 import requests
 
 ROOT_DIR = Path(__file__).parent
+TEMPLATES_DIR = ROOT_DIR / 'templates'
 load_dotenv(ROOT_DIR / '.env')
+
+# Template loading function
+def load_template(template_name: str) -> str:
+    """Load HTML template from templates directory"""
+    template_path = TEMPLATES_DIR / f"{template_name}.html"
+    if not template_path.exists():
+        raise FileNotFoundError(f"Template {template_name}.html not found in {TEMPLATES_DIR}")
+    
+    with open(template_path, 'r', encoding='utf-8') as f:
+        return f.read()
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
