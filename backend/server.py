@@ -1404,9 +1404,17 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
         # CRITICAL: Apply content processing to fallback exercises too
         processed_enonce = process_exercise_content(enonce)
         
+        # Create fallback exercise data and enrich with icon
+        fallback_data = {
+            "enonce": processed_enonce,
+            "type": "text",
+            "icone": "book-open"
+        }
+        fallback_data = enrich_exercise_with_icon(fallback_data, chapitre)
+        
         exercise = Exercise(
             type="ouvert",
-            enonce=processed_enonce,
+            enonce=fallback_data["enonce"],
             donnees=None,
             difficulte=difficulte,
             solution={
@@ -1420,7 +1428,9 @@ async def generate_fallback_exercises(matiere: str, niveau: str, chapitre: str, 
                 {"etape": "Méthode", "points": 2.0},
                 {"etape": "Calcul", "points": 2.0}
             ],
-            seed=random.randint(1000, 9999)
+            seed=random.randint(1000, 9999),
+            exercise_type=fallback_data.get("type", "text"),
+            icone=fallback_data.get("icone", "book-open")
         )
         exercises.append(exercise)
     
