@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ document.type_doc|title }} - Corrigé détaillé - {{ document.matiere }}</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Source+Sans+Pro:wght@300;400;600;700&family=Source+Code+Pro:wght@400;500&display=swap');
+        
+        :root {
+            --primary: #2563eb;
+            --success: #059669;
+            --warning: #d97706;
+            --error: #dc2626;
+            --neutral: #64748b;
+            --bg-light: #f8fafc;
+            --bg-section: #f1f5f9;
+            --border: #e2e8f0;
+            --text-dark: #1e293b;
+            --text-medium: #475569;
+        }
+        
+        body {
+            font-family: 'Source Sans Pro', system-ui, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 30px;
+            background: var(--bg-light);
+            color: var(--text-dark);
+        }
+        
+        .main-wrapper {
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border);
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 25px 30px;
+            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        
+        .logo img {
+            max-height: 65px;
+            max-width: 130px;
+            border-radius: 6px;
+        }
+        
+        .school-info {
+            text-align: center;
+            flex: 1;
+            margin: 0 25px;
+        }
+        
+        .school-name {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .professor-name, .school-year {
+            font-size: 14px;
+            opacity: 0.9;
+            margin: 2px 0;
+        }
+        
+        .date {
+            font-size: 14px;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        
+        .document-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .document-subtitle {
+            font-size: 16px;
+            color: var(--text-medium);
+            text-align: center;
+            margin-bottom: 35px;
+            font-weight: 600;
+        }
+        
+        .exercise {
+            margin-bottom: 45px;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            page-break-inside: avoid;
+        }
+        
+        .exercise-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+            padding: 15px 25px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .exercise-header::before {
+            content: "📋";
+            font-size: 18px;
+        }
+        
+        .exercise-content {
+            padding: 25px;
+        }
+        
+        .question-section {
+            background: var(--bg-section);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .question-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .question-title::before {
+            content: "❓";
+            font-size: 14px;
+        }
+        
+        .question-text {
+            font-size: 15px;
+            line-height: 1.7;
+            color: var(--text-dark);
+        }
+        
+        .qcm-options {
+            margin: 15px 0;
+            display: grid;
+            gap: 8px;
+        }
+        
+        .qcm-option {
+            background: #f8fafc;
+            padding: 10px 15px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+            font-size: 14px;
+        }
+        
+        .solution-section {
+            background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+            border: 2px solid var(--success);
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        
+        .solution-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--success);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .solution-title::before {
+            content: "✅";
+            font-size: 16px;
+        }
+        
+        .solution-steps {
+            margin-bottom: 20px;
+        }
+        
+        .solution-step {
+            background: white;
+            border-left: 4px solid var(--success);
+            padding: 15px 20px;
+            margin: 12px 0;
+            border-radius: 0 8px 8px 0;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .solution-step-title {
+            font-weight: 600;
+            color: var(--success);
+            font-size: 14px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .solution-step-content {
+            font-size: 15px;
+            line-height: 1.6;
+            color: var(--text-dark);
+        }
+        
+        .final-result {
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+        
+        .final-result::before {
+            content: "🎯 ";
+            font-size: 18px;
+        }
+        
+        .scoring-section {
+            background: linear-gradient(135deg, #fef3c7 0%, #fbbf24 20%, #fef3c7 100%);
+            border: 2px solid var(--warning);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .scoring-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--warning);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .scoring-title::before {
+            content: "📊";
+            font-size: 16px;
+        }
+        
+        .scoring-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 10px 20px;
+            align-items: center;
+        }
+        
+        .scoring-item {
+            font-size: 14px;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+        
+        .scoring-points {
+            background: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-weight: 700;
+            color: var(--warning);
+            text-align: center;
+            border: 2px solid var(--warning);
+            min-width: 60px;
+        }
+        
+        .total-points {
+            grid-column: 1 / -1;
+            background: var(--warning);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+        
+        .evaluation-criteria {
+            background: #f3f4f6;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .criteria-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .criteria-title::before {
+            content: "🎯";
+            font-size: 14px;
+        }
+        
+        .criteria-list {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .criteria-item {
+            padding: 8px 0;
+            font-size: 14px;
+            color: var(--text-medium);
+            border-bottom: 1px solid #e5e7eb;
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        .criteria-item::before {
+            content: "▸";
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        .criteria-item:last-child {
+            border-bottom: none;
+        }
+        
+        .footer {
+            margin-top: 40px;
+            padding: 20px;
+            background: var(--bg-section);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-medium);
+            border: 1px solid var(--border);
+        }
+        
+        @media print {
+            body { 
+                padding: 20px; 
+                background: white;
+            }
+            .main-wrapper { 
+                box-shadow: none;
+                border: 1px solid #e5e7eb;
+            }
+            .exercise { page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-wrapper">
+        <div class="header">
+            <div class="logo">
+                {% if template_config and template_config.logo_url %}
+                    <img src="{{ template_config.logo_url }}" alt="Logo" />
+                {% endif %}
+            </div>
+            <div class="school-info">
+                {% if template_config and template_config.school_name %}
+                    <div class="school-name">{{ template_config.school_name }}</div>
+                {% endif %}
+                {% if template_config and template_config.professor_name %}
+                    <div class="professor-name">{{ template_config.professor_name }}</div>
+                {% endif %}
+                {% if template_config and template_config.school_year %}
+                    <div class="school-year">{{ template_config.school_year }}</div>
+                {% endif %}
+            </div>
+            <div class="date">{{ date_creation }}</div>
+        </div>
+
+        <div class="document-title">Corrigé détaillé</div>
+        <div class="document-subtitle">{{ document.matiere }} • {{ document.niveau }} • {{ document.chapitre }}</div>
+
+        {% for exercice in document.exercises %}
+        <div class="exercise">
+            <div class="exercise-header">Exercice {{ loop.index }}</div>
+            <div class="exercise-content">
+                
+                <!-- Question Section -->
+                <div class="question-section">
+                    <div class="question-title">Énoncé</div>
+                    <div class="question-text">
+                        {{ exercice.enonce }}
+                        
+                        {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
+                        <div class="qcm-options">
+                            {% for option in exercice.donnees.options %}
+                            <div class="qcm-option">{{ option }}</div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Solution Section -->
+                <div class="solution-section">
+                    <div class="solution-title">Solution détaillée</div>
+                    
+                    {% if exercice.solution and exercice.solution.etapes %}
+                    <div class="solution-steps">
+                        {% for etape in exercice.solution.etapes %}
+                        <div class="solution-step">
+                            <div class="solution-step-title">Étape {{ loop.index }}</div>
+                            <div class="solution-step-content">{{ etape }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    {% if exercice.solution and exercice.solution.resultat %}
+                    <div class="final-result">
+                        {{ exercice.solution.resultat }}
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Scoring Section -->
+                {% if exercice.bareme %}
+                <div class="scoring-section">
+                    <div class="scoring-title">Barème de notation</div>
+                    <div class="scoring-grid">
+                        {% set total_points = 0 %}
+                        {% for item in exercice.bareme %}
+                        <div class="scoring-item">{{ item.etape }}</div>
+                        <div class="scoring-points">{{ item.points }} pts</div>
+                        {% set total_points = total_points + item.points %}
+                        {% endfor %}
+                        <div class="total-points">Total : {{ total_points }} points</div>
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Evaluation Criteria -->
+                <div class="evaluation-criteria">
+                    <div class="criteria-title">Critères d'évaluation</div>
+                    <ul class="criteria-list">
+                        <li class="criteria-item">Compréhension de l'énoncé et identification des données</li>
+                        <li class="criteria-item">Choix et application de la méthode appropriée</li>
+                        <li class="criteria-item">Exactitude des calculs et raisonnements</li>
+                        <li class="criteria-item">Clarté et structure de la présentation</li>
+                        <li class="criteria-item">Cohérence du résultat final</li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+        {% endfor %}
+
+        <div class="footer">
+            {% if template_config and template_config.footer_text %}
+                {{ template_config.footer_text }}
+            {% else %}
+                Corrigé détaillé généré par Le Maître Mot - Outil pédagogique professionnel
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
