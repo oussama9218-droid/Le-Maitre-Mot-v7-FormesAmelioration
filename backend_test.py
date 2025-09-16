@@ -4242,44 +4242,46 @@ class LeMaitreMotAPITester:
         return success, response
     
     def test_export_styles_endpoint_pro_user(self):
-        """Test GET /api/export/styles with Pro session token"""
-        print("\n🔍 Testing export styles endpoint for Pro users...")
+        """Test GET /api/export/styles with fake Pro session token (tests endpoint structure)"""
+        print("\n🔍 Testing export styles endpoint structure with fake Pro token...")
         
-        # Use a fake Pro session token to test the endpoint structure
+        # Use a fake Pro session token - this will not validate but tests the endpoint structure
         fake_pro_token = f"pro-session-{int(time.time())}"
         headers = {"X-Session-Token": fake_pro_token}
         
         success, response = self.run_test(
-            "Export Styles - Pro User",
+            "Export Styles - Fake Pro Token",
             "GET",
             "export/styles",
-            200,  # Should work regardless of token for this endpoint
+            200,  # Should work but return free styles only (token won't validate)
             headers=headers
         )
         
         if success and isinstance(response, dict):
             styles = response.get('styles', {})
-            print(f"   Found {len(styles)} export styles")
+            user_is_pro = response.get('user_is_pro', False)
             
-            # Check that all 5 styles are present
-            expected_styles = ['classique', 'moderne', 'eleve', 'minimal', 'corrige_detaille']
-            for style_name in expected_styles:
-                if style_name in styles:
-                    style = styles[style_name]
-                    name = style.get('name')
-                    description = style.get('description')
-                    available_for = style.get('available_for', [])
-                    
-                    print(f"   ✅ {style_name}: {name} - {description}")
-                    print(f"      Available for: {available_for}")
-                    
-                    # Verify required fields
-                    if not (name and description and available_for):
-                        print(f"   ❌ {style_name} missing required fields")
+            print(f"   Found {len(styles)} export styles")
+            print(f"   User is pro: {user_is_pro}")
+            
+            # With fake token, should still only get classique (token validation fails)
+            if len(styles) == 1 and 'classique' in styles:
+                print("   ✅ Fake Pro token correctly handled - only free styles returned")
+                
+                # Verify response structure
+                classique = styles['classique']
+                required_fields = ['name', 'description', 'preview_image', 'pro_only']
+                for field in required_fields:
+                    if field not in classique:
+                        print(f"   ❌ Missing required field: {field}")
                         return False, {}
-                else:
-                    print(f"   ❌ Missing expected style: {style_name}")
-                    return False, {}
+                
+                print("   ✅ Response structure is correct")
+                print(f"   ✅ Style details: {classique.get('name')} - {classique.get('description')}")
+                
+            else:
+                print(f"   ❌ Expected only classique style with fake token, got {len(styles)} styles")
+                return False, {}
         
         return success, response
     
