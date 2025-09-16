@@ -2240,7 +2240,6 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 'professor_name': template_config.get('professor_name'),
                 'school_year': template_config.get('school_year'),
                 'footer_text': template_config.get('footer_text'),
-                'logo_url': template_config.get('logo_url'),
                 'logo_filename': template_config.get('logo_filename'),
                 **template_styles
             }
