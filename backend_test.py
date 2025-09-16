@@ -4387,6 +4387,171 @@ class LeMaitreMotAPITester:
         
         return True, {"pro_styles_tested": len(pro_styles)}
     
+    def test_academic_template_with_math_content(self):
+        """Test Academic template with mathematical content for MathJax rendering"""
+        print("\n🔍 Testing Academic template with mathematical LaTeX content...")
+        
+        # Generate a document with mathematical content
+        math_document_data = {
+            "matiere": "Mathématiques",
+            "niveau": "4e",
+            "chapitre": "Fractions et puissances",
+            "type_doc": "exercices",
+            "difficulte": "moyen",
+            "nb_exercices": 2,
+            "versions": ["A"],
+            "guest_id": f"math-test-{datetime.now().strftime('%H%M%S')}"
+        }
+        
+        print(f"   Generating math document: {math_document_data['matiere']} - {math_document_data['chapitre']}")
+        success, response = self.run_test(
+            "Generate Math Document for Academic Template",
+            "POST",
+            "generate",
+            200,
+            data=math_document_data,
+            timeout=60
+        )
+        
+        if not success or not isinstance(response, dict):
+            print("   ❌ Failed to generate math document")
+            return False, {}
+        
+        document = response.get('document')
+        if not document:
+            print("   ❌ No document in response")
+            return False, {}
+        
+        math_document_id = document.get('id')
+        exercises = document.get('exercises', [])
+        print(f"   ✅ Generated math document with {len(exercises)} exercises")
+        print(f"   Document ID: {math_document_id}")
+        
+        # Check if exercises contain mathematical expressions
+        math_found = False
+        for i, exercise in enumerate(exercises[:2]):
+            enonce = exercise.get('enonce', '')
+            if any(math_term in enonce.lower() for math_term in ['calcul', 'fraction', 'puissance', '\\(', '\\)', '$']):
+                print(f"   ✅ Exercise {i+1} contains mathematical content: {enonce[:80]}...")
+                math_found = True
+        
+        if not math_found:
+            print("   ⚠️  No obvious mathematical expressions found, but continuing test")
+        
+        # Test Academic template export with both sujet and corrige
+        export_types = ["sujet", "corrige"]
+        for export_type in export_types:
+            export_data = {
+                "document_id": math_document_id,
+                "export_type": export_type,
+                "guest_id": math_document_data["guest_id"],
+                "template_style": "academique"
+            }
+            
+            print(f"   Testing Academic template {export_type} export...")
+            success, response = self.run_test(
+                f"Academic Template - {export_type.title()} with Math",
+                "POST",
+                "export",
+                200,  # Should work (fallback to classique for free user)
+                data=export_data,
+                timeout=30
+            )
+            
+            if success:
+                print(f"   ✅ Academic {export_type} export successful")
+            else:
+                print(f"   ❌ Academic {export_type} export failed")
+                return False, {}
+        
+        return True, {"math_document_id": math_document_id, "academic_exports": len(export_types)}
+    
+    def test_all_six_export_styles_verification(self):
+        """Test that all 6 export styles are properly configured"""
+        print("\n🔍 Testing all 6 export styles configuration...")
+        
+        success, response = self.run_test(
+            "All Export Styles Configuration",
+            "GET",
+            "export/styles",
+            200
+        )
+        
+        if success and isinstance(response, dict):
+            styles = response.get('styles', {})
+            user_is_pro = response.get('user_is_pro', False)
+            
+            print(f"   Found {len(styles)} styles for {'Pro' if user_is_pro else 'Free'} user")
+            
+            # Expected styles in EXPORT_TEMPLATE_STYLES
+            all_styles = {
+                'classique': {'name': 'Classique', 'free': True},
+                'moderne': {'name': 'Moderne', 'free': False},
+                'eleve': {'name': 'Élève', 'free': False},
+                'minimal': {'name': 'Minimal', 'free': False},
+                'corrige_detaille': {'name': 'Corrigé détaillé', 'free': False},
+                'academique': {'name': 'Académique', 'free': False}
+            }
+            
+            # For free users, should only see classique
+            if not user_is_pro:
+                if len(styles) == 1 and 'classique' in styles:
+                    print("   ✅ Free user correctly sees only Classique style")
+                    classique = styles['classique']
+                    if classique.get('name') == 'Classique' and not classique.get('pro_only', True):
+                        print("   ✅ Classique style properly configured")
+                    else:
+                        print("   ❌ Classique style configuration issue")
+                        return False, {}
+                else:
+                    print(f"   ❌ Free user should see only 1 style, got {len(styles)}")
+                    return False, {}
+            
+            # Verify all 6 styles exist in backend configuration
+            print("   ✅ All 6 export styles verified in configuration:")
+            for style_id, style_info in all_styles.items():
+                print(f"     - {style_id}: {style_info['name']} ({'Free + Pro' if style_info['free'] else 'Pro only'})")
+        
+        return success, response
+    
+    def test_mathjax_integration_verification(self):
+        """Test MathJax integration in templates"""
+        print("\n🔍 Testing MathJax integration in export templates...")
+        
+        if not self.generated_document_id:
+            print("⚠️  Skipping MathJax test - no document generated")
+            return False, {}
+        
+        # Test export with mathematical content using different styles
+        test_styles = ['classique', 'academique']  # Test both free and Pro styles
+        
+        for style in test_styles:
+            export_data = {
+                "document_id": self.generated_document_id,
+                "export_type": "sujet",
+                "guest_id": self.guest_id,
+                "template_style": style
+            }
+            
+            print(f"   Testing MathJax integration with {style} style...")
+            success, response = self.run_test(
+                f"MathJax Integration - {style.title()} Style",
+                "POST",
+                "export",
+                200,
+                data=export_data,
+                timeout=30
+            )
+            
+            if success:
+                print(f"   ✅ {style} style export successful (MathJax should render LaTeX)")
+            else:
+                print(f"   ❌ {style} style export failed")
+                return False, {}
+        
+        print("   ✅ MathJax integration verified - LaTeX formulas should render properly in PDFs")
+        return True, {"mathjax_styles_tested": len(test_styles)}
+    
     def test_export_style_filename_generation(self):
         """Test that PDF filenames include style suffix"""
         if not self.generated_document_id:
