@@ -1913,6 +1913,41 @@ async def save_user_template(
         # Debug logging
         logger.info(f"🔍 Template save request for {user_email}: professor_name={professor_name}, school_name={school_name}, school_year={school_year}, footer_text={footer_text}, template_style={template_style}")
         
+        # Handle logo upload
+        logo_url = None
+        logo_filename = None
+        
+        if logo and logo.filename:
+            logger.info(f"🖼️ Logo upload detected: {logo.filename}, size: {logo.size}, content_type: {logo.content_type}")
+            
+            # Validate file type
+            allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
+            if logo.content_type not in allowed_types:
+                raise HTTPException(status_code=400, detail="Type de fichier non supporté. Utilisez JPG, PNG, GIF ou WebP.")
+            
+            # Validate file size (max 5MB)
+            if logo.size and logo.size > 5 * 1024 * 1024:
+                raise HTTPException(status_code=400, detail="Fichier trop volumineux. Taille maximum: 5MB.")
+            
+            # Create uploads directory if it doesn't exist
+            uploads_dir = ROOT_DIR / "uploads" / "logos"
+            uploads_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Generate unique filename
+            import uuid
+            file_extension = logo.filename.split('.')[-1].lower()
+            logo_filename = f"logo_{user_email.replace('@', '_').replace('.', '_')}_{uuid.uuid4().hex[:8]}.{file_extension}"
+            logo_path = uploads_dir / logo_filename
+            
+            # Save file
+            with open(logo_path, "wb") as buffer:
+                content = await logo.read()
+                buffer.write(content)
+            
+            # Create URL (relative path for serving)
+            logo_url = f"/uploads/logos/{logo_filename}"
+            logger.info(f"✅ Logo saved: {logo_path} -> {logo_url}")
+        
         # Validate template style
         if template_style not in TEMPLATE_STYLES:
             raise HTTPException(status_code=400, detail="Style de template invalide")
