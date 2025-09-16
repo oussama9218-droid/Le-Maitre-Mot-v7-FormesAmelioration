@@ -355,7 +355,7 @@ class GeometryRenderer:
             return ""
     
     def render_geometric_figure(self, schema_data: Dict[str, Any]) -> str:
-        """Render a geometric figure from structured data"""
+        """Render a geometric figure from structured data as SVG (for PDF)"""
         figure_type = schema_data.get('figure', 'triangle')
         
         if figure_type in self.figure_renderers:
@@ -367,6 +367,38 @@ class GeometryRenderer:
         else:
             logger.warning(f"Unknown figure type: {figure_type}")
             return f'<span style="color: orange; font-style: italic;">[Figure non supportée: {figure_type}]</span>'
+    
+    def render_geometry_to_base64(self, schema_data: Dict[str, Any]) -> str:
+        """Render a geometric figure from structured data as Base64 PNG (for web display)"""
+        figure_type = schema_data.get('figure', 'triangle')
+        
+        if figure_type in self.figure_renderers:
+            try:
+                # Create the figure using the same logic but return Base64
+                fig, ax = self._create_figure(6, 5)
+                
+                # Call the appropriate renderer method but intercept before SVG conversion
+                if figure_type == 'triangle_rectangle':
+                    self._render_right_triangle_to_figure(fig, ax, schema_data)
+                elif figure_type == 'triangle':
+                    self._render_triangle_to_figure(fig, ax, schema_data)
+                elif figure_type == 'carre':
+                    self._render_square_to_figure(fig, ax, schema_data)
+                elif figure_type == 'rectangle':
+                    self._render_rectangle_to_figure(fig, ax, schema_data)
+                elif figure_type == 'cercle':
+                    self._render_circle_to_figure(fig, ax, schema_data)
+                elif figure_type == 'parallelogramme':
+                    self._render_parallelogram_to_figure(fig, ax, schema_data)
+                
+                return self._figure_to_base64(fig)
+                
+            except Exception as e:
+                logger.error(f"Error rendering {figure_type} to Base64: {e}")
+                return ""
+        else:
+            logger.warning(f"Unknown figure type for Base64: {figure_type}")
+            return ""
     
     def process_geometric_schemas(self, text: str) -> str:
         """Process text to find and render geometric schemas"""
