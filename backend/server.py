@@ -1218,22 +1218,21 @@ JSON OBLIGATOIRE:
     example = examples.get(chapitre, f"Exercice {chapitre}")
     
     prompt = f"""
-{matiere} {niveau} - {chapitre}
-Génère {nb_exercices} exercices {difficulte}
+Génère {nb_exercices} exercices de {matiere} niveau {niveau} sur le chapitre: {chapitre}
+Difficulté: {difficulte}
 
-IMPORTANT: Réponds uniquement en JSON valide, sans texte supplémentaire.
+IMPORTANT: Réponds UNIQUEMENT en JSON valide, sans aucun texte avant ou après.
 
-Format JSON requis:
+JSON requis:
 {{
     "exercises": [
         {{
-            "titre": "Titre unique et descriptif de l'exercice",
-            "enonce": "Énoncé complet avec schémas géométriques si pertinent: {example}",
-            "type": "geometry|algebra|statistics|text",
-            "icone": "triangle-ruler|calculator|bar-chart|file-text",
+            "enonce": "Énoncé complet de l'exercice avec données numériques. Exemple: {example}",
+            "type": "geometry",
+            "icone": "triangle-ruler",
             "solution": {{
-                "etapes": ["Étape 1", "Étape 2", "Étape 3"],
-                "resultat": "Résultat final"
+                "etapes": ["Étape 1 détaillée", "Étape 2 détaillée"],
+                "resultat": "Résultat final avec unité"
             }},
             "difficulte": "{difficulte}",
             "bareme": [
@@ -1244,13 +1243,10 @@ Format JSON requis:
     ]
 }}
 
-Types d'exercices et icônes correspondantes:
-- geometry + triangle-ruler: Pour géométrie, Pythagore, Thalès, trigonométrie
-- algebra + calculator: Pour équations, fractions, calculs
-- statistics + bar-chart: Pour statistiques, probabilités  
-- text + file-text: Pour exercices textuels
-
-Exemple: {example}
+Types et icônes:
+- geometry/triangle-ruler: géométrie, figures
+- algebra/calculator: calculs, équations  
+- statistics/bar-chart: statistiques, données
 """
     
     try:
