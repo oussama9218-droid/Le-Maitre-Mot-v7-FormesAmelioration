@@ -2383,10 +2383,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         
         # Render HTML using Jinja2
         logger.info("🔧 Generating PDF with WeasyPrint...")
-        logger.info(f"🔍 Render context keys: {list(render_context.keys())}")
-        document_obj = render_context.get('document')
-        exercises_count = len(document_obj.exercises) if document_obj and hasattr(document_obj, 'exercises') else 0
-        logger.info(f"🔍 Document exercises count: {exercises_count}")
+        # Debug removed for production
         template = Template(template_content)
         html_content = template.render(**render_context)
         
