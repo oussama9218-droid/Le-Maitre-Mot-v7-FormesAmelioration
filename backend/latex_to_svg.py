@@ -141,7 +141,7 @@ class LaTeXToSVGRenderer:
         result = re.sub(r'\$\$([^$]+)\$\$', replace_display_math, result)
         
         # Replace inline math \(...\)
-        result = re.sub(r'\\\(\s*([^\\]+?)\s*\\\)', replace_inline_math, result)
+        result = re.sub(r'\\\(\s*([^)]+?)\s*\\\)', replace_inline_math, result)
         
         # Replace single dollar math $...$  (but not $$)
         result = re.sub(r'(?<!\$)\$([^$\n]+)\$(?!\$)', replace_dollar_math, result)
