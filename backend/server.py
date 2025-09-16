@@ -2917,23 +2917,29 @@ async def get_documents(guest_id: str = None):
             if isinstance(doc.get('created_at'), str):
                 doc['created_at'] = datetime.fromisoformat(doc['created_at'])
             
-            # Process geometric schemas for web display
+            # Apply professional content processing for backward compatibility with old documents
+            # (New documents are already processed at generation time)
             if 'exercises' in doc:
                 for exercise in doc['exercises']:
                     if 'enonce' in exercise and exercise['enonce']:
-                        exercise['enonce'] = geometry_renderer.process_geometric_schemas_for_web(exercise['enonce'])
+                        # Only process if not already processed (backward compatibility)
+                        if '{"type": "schema_geometrique"' in exercise['enonce'] or '\\(' in exercise['enonce']:
+                            exercise['enonce'] = process_exercise_content(exercise['enonce'])
                     
-                    # Process solution if it exists
+                    # Process solution if it exists and needs processing
                     if exercise.get('solution'):
                         if exercise['solution'].get('resultat'):
-                            exercise['solution']['resultat'] = geometry_renderer.process_geometric_schemas_for_web(
-                                exercise['solution']['resultat']
-                            )
+                            if '{"type": "schema_geometrique"' in exercise['solution']['resultat'] or '\\(' in exercise['solution']['resultat']:
+                                exercise['solution']['resultat'] = process_exercise_content(exercise['solution']['resultat'])
+                                
                         if exercise['solution'].get('etapes') and isinstance(exercise['solution']['etapes'], list):
-                            exercise['solution']['etapes'] = [
-                                geometry_renderer.process_geometric_schemas_for_web(step)
-                                for step in exercise['solution']['etapes']
-                            ]
+                            processed_etapes = []
+                            for step in exercise['solution']['etapes']:
+                                if '{"type": "schema_geometrique"' in step or '\\(' in step:
+                                    processed_etapes.append(process_exercise_content(step))
+                                else:
+                                    processed_etapes.append(step)
+                            exercise['solution']['etapes'] = processed_etapes
         
         return {"documents": [Document(**doc) for doc in documents]}
         
