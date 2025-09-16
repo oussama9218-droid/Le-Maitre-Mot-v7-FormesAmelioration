@@ -3363,7 +3363,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         if is_pro_user and template_config:
             # Use Pro templates with personalization
             logger.info("📄 Using Pro templates with personalization")
-            template_content = SUJET_PRO_TEMPLATE if request.export_type == "sujet" else CORRIGE_PRO_TEMPLATE
+            template_content = load_template("sujet_pro") if request.export_type == "sujet" else load_template("corrige_pro")
             
             # Get colors and fonts for template
             template_styles = get_template_colors_and_fonts(template_config)
