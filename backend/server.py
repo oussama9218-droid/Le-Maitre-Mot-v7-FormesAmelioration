@@ -2878,6 +2878,24 @@ async def get_documents(guest_id: str = None):
         for doc in documents:
             if isinstance(doc.get('created_at'), str):
                 doc['created_at'] = datetime.fromisoformat(doc['created_at'])
+            
+            # Process geometric schemas for web display
+            if 'exercises' in doc:
+                for exercise in doc['exercises']:
+                    if 'enonce' in exercise and exercise['enonce']:
+                        exercise['enonce'] = geometry_renderer.process_geometric_schemas_for_web(exercise['enonce'])
+                    
+                    # Process solution if it exists
+                    if exercise.get('solution'):
+                        if exercise['solution'].get('resultat'):
+                            exercise['solution']['resultat'] = geometry_renderer.process_geometric_schemas_for_web(
+                                exercise['solution']['resultat']
+                            )
+                        if exercise['solution'].get('etapes') and isinstance(exercise['solution']['etapes'], list):
+                            exercise['solution']['etapes'] = [
+                                geometry_renderer.process_geometric_schemas_for_web(step)
+                                for step in exercise['solution']['etapes']
+                            ]
         
         return {"documents": [Document(**doc) for doc in documents]}
         
