@@ -1989,7 +1989,9 @@ async def save_user_template(
                 school_name=school_name,
                 school_year=school_year,
                 footer_text=footer_text,
-                template_style=template_style
+                template_style=template_style,
+                logo_url=logo_url,
+                logo_filename=logo_filename
             )
             
             logger.info(f"🔍 Creating new template: {template.dict()}")
