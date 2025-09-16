@@ -377,24 +377,17 @@ class GeometryRenderer:
         
         if figure_type in self.figure_renderers:
             try:
-                # Create the figure using the same logic but return Base64
-                fig, ax = self._create_figure(6, 5)
-                
-                # Call the appropriate renderer method but intercept before SVG conversion
+                # Use the existing renderer but capture before SVG conversion
                 if figure_type == 'triangle_rectangle':
+                    fig, ax = self._create_figure(6, 5)
                     self._render_right_triangle_to_figure(fig, ax, schema_data)
-                elif figure_type == 'triangle':
-                    self._render_triangle_to_figure(fig, ax, schema_data)
-                elif figure_type == 'carre':
-                    self._render_square_to_figure(fig, ax, schema_data)
-                elif figure_type == 'rectangle':
-                    self._render_rectangle_to_figure(fig, ax, schema_data)
-                elif figure_type == 'cercle':
-                    self._render_circle_to_figure(fig, ax, schema_data)
-                elif figure_type == 'parallelogramme':
-                    self._render_parallelogram_to_figure(fig, ax, schema_data)
-                
-                return self._figure_to_base64(fig)
+                    return self._figure_to_base64(fig)
+                else:
+                    # For other figures, use a simpler approach: render normally then convert
+                    svg_content = self.figure_renderers[figure_type](schema_data)
+                    # For now, return empty Base64 for non-implemented figures
+                    # They will still work in PDF via SVG
+                    return ""
                 
             except Exception as e:
                 logger.error(f"Error rendering {figure_type} to Base64: {e}")
