@@ -2589,6 +2589,22 @@ async def export_pdf_advanced(request: EnhancedExportRequest, http_request: Requ
         if not document:
             raise HTTPException(status_code=404, detail="Document non trouvé")
         
+        # CRITICAL: Process geometric schemas and LaTeX before PDF generation
+        if 'exercises' in document:
+            for exercise in document['exercises']:
+                if 'enonce' in exercise and exercise['enonce']:
+                    exercise['enonce'] = process_exercise_content(exercise['enonce'])
+                
+                # Process solution if it exists
+                if exercise.get('solution'):
+                    if exercise['solution'].get('resultat'):
+                        exercise['solution']['resultat'] = process_exercise_content(exercise['solution']['resultat'])
+                        
+                    if exercise['solution'].get('etapes') and isinstance(exercise['solution']['etapes'], list):
+                        exercise['solution']['etapes'] = [
+                            process_exercise_content(step) for step in exercise['solution']['etapes']
+                        ]
+        
         # Load user template configuration
         template_config = {}
         template_doc = await db.user_templates.find_one({"user_email": email})
