@@ -1,4 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Response, Depends, BackgroundTasks, Request, Form, UploadFile, File
+from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
