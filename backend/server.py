@@ -2235,6 +2235,13 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 'date_creation': document.created_at.strftime("%d/%m/%Y à %H:%M"),
                 'template_config': template_config,
                 'template_style': template_config.get('template_style', 'minimaliste'),
+                # Add template variables directly for Pro templates
+                'school_name': template_config.get('school_name'),
+                'professor_name': template_config.get('professor_name'),
+                'school_year': template_config.get('school_year'),
+                'footer_text': template_config.get('footer_text'),
+                'logo_url': template_config.get('logo_url'),
+                'logo_filename': template_config.get('logo_filename'),
                 **template_styles
             }
             
