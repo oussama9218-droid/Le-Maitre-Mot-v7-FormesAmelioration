@@ -115,6 +115,54 @@ def enrich_exercise_with_icon(exercise_data: dict, chapitre: str) -> dict:
     
     return exercise_data
 
+def sanitize_ai_response(text: str) -> str:
+    """
+    Tries to fix common JSON formatting errors in AI responses.
+    Makes the system more robust against AI formatting inconsistencies.
+    """
+    if not text or not isinstance(text, str):
+        return text
+    
+    # Find the JSON object, which starts with '{' and ends with '}'
+    start_index = text.find('{')
+    end_index = text.rfind('}')
+    
+    if start_index == -1 or end_index == -1:
+        logger.warning("No JSON object found in AI response")
+        return text
+    
+    json_string = text[start_index:end_index + 1]
+    
+    try:
+        # Try to clean up known issues
+        json_string = json_string.strip()
+        
+        # Remove problematic characters that often cause parsing issues
+        json_string = json_string.replace('\n\n', '\n')  # Multiple newlines
+        json_string = json_string.replace('\\\\', '\\')  # Double backslashes
+        
+        # Fix common quote issues
+        json_string = json_string.replace('""', '"')  # Double quotes
+        json_string = json_string.replace('"",', '",')  # Double quotes with comma
+        
+        # Ensure proper JSON structure for exercises array
+        if '"exercises"' not in json_string and '"exercise"' in json_string:
+            json_string = json_string.replace('"exercise"', '"exercises"')
+        
+        # Test if the cleaned JSON is valid
+        parsed = json.loads(json_string)
+        logger.info(f"Successfully sanitized AI response JSON")
+        return json_string
+        
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON sanitization failed: {e}")
+        logger.error(f"Problematic JSON: {json_string[:200]}...")
+        return text
+    
+    except Exception as e:
+        logger.error(f"Unexpected error during JSON sanitization: {e}")
+        return text
+
 # Professional content processing function
 def process_exercise_content(content: str) -> str:
     """
@@ -1127,32 +1175,36 @@ async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, t
     
     # Subject-specific instructions
     subject_instructions = {
-        "Mathématiques": f"""Tu es un générateur d'exercices de mathématiques français pour {niveau} - {chapitre}.
+        "Mathématiques": f"""
+        En tant qu'enseignant de mathématiques et expert en conception d'exercices, crée un exercice pour un élève de {niveau} en {matiere}, sur le chapitre suivant: "{chapitre}". L'exercice doit avoir une difficulté {difficulte}.
+        
+        **Instruction cruciale** : Utilise des **valeurs numériques différentes et variées** pour chaque exercice. Par exemple, si une longueur est de 5 cm, utilise une autre valeur (comme 7,5 cm ou 12 cm) dans le suivant.
+        
+        L'exercice doit respecter le format JSON suivant et inclure un schéma géométrique si applicable.
 
-Génère {nb_exercices} exercices RAPIDES ET EFFICACES dont un premier avec une Figures disponibles géométrique.
+        **POUR LES SCHÉMAS GÉOMÉTRIQUES** : L'énoncé (enonce) doit contenir une balise JSON nommée "schéma" avec une structure très précise, comme dans l'exemple ci-dessous. Tu ne dois pas utiliser de texte pour décrire le schéma. Tu dois uniquement utiliser cette balise.
+        
+        **Exemple de JSON pour un triangle** :
+        {{
+          "titre": "Calculer l’hypoténuse d’un triangle rectangle",
+          "enonce": "Dans un triangle ABC rectangle en B, on a AB=8 et BC=6. Calcule la longueur AC.
+          {{
+            \"schéma\": {{
+              \"type\": \"triangle\",
+              \"points\": [\"A\", \"B\", \"C\"],
+              \"labels\": {{\"A\": \"(0,8)\", \"B\": \"(0,0)\", \"C\": \"(6,0)\"}},
+              \"segments\": [[\"A\",\"B\", {{\"longueur\": 8}}], [\"B\",\"C\", {{\"longueur\": 6}}]],
+              \"angles\": [[\"B\", {{\"angle_droit\": true}}]]
+            }}
+          }}",
+          "type": "geometry",
+          "solution": {{
+            "etapes": ["..."]
+          }}
+        }}
 
-RÈGLES MATHÉMATIQUES:
-1. Niveau {niveau} - Chapitre "{chapitre}"
-2. {level_guide}
-3. Format français correct (virgules décimaux, pas de points)
-4. Solutions en 2-3 étapes maximum
-5. Calculs adaptés au niveau, résultats simples
-
-SCHÉMAS GÉOMÉTRIQUES:
-Si l'exercice nécessite une figure géométrique, inclus un code de schéma JSON dans l'énoncé:
-
-Pour un triangle rectangle ABC avec angle droit en B:
-{{"type": "schema_geometrique", "figure": "triangle_rectangle", "points": ["A", "B", "C"], "angle_droit": "B", "marques_distance": ["AB=5cm"]}}
-
-Figures disponibles:
-- "triangle_rectangle": triangle avec angle droit
-- "triangle": triangle quelconque  
-- "carre": carré avec 4 points
-- "rectangle": rectangle avec 4 points
-- "cercle": cercle avec centre et rayon
-- "parallelogramme": parallélogramme
-
-Le code JSON doit être sur une seule ligne dans l'énoncé.""",
+        Réponds uniquement avec le code JSON, sans texte ni explication supplémentaire.
+        """,
 
         "Français": f"""Tu es un générateur d'exercices de français pour {niveau} - {chapitre}.
 
