@@ -3170,6 +3170,12 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         # Update render context with processed document
         render_context['document'] = document_dict
         
+        # Log schema_svg presence for debugging
+        exercises = document_dict.get('exercises', [])
+        for i, ex in enumerate(exercises, start=1):
+            schema_svg_length = len(ex.get('schema_svg', ''))
+            logger.info(f"[EXPORT][PDF] Exercice {i} - schema_svg length = {schema_svg_length}")
+        
         # Render HTML using Jinja2
         logger.info("🔧 Generating PDF with WeasyPrint...")
         template = Template(template_content)
