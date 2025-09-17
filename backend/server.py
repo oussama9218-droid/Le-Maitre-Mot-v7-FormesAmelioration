@@ -3045,7 +3045,8 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                         exercise['solution']['etapes'] = [
                             process_exercise_content(step) for step in exercise['solution']['etapes']
                         ]
-        
+            
+
         # Convert to Document object
         if isinstance(doc.get('created_at'), str):
             doc['created_at'] = datetime.fromisoformat(doc['created_at'])
@@ -3112,7 +3113,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             logger.info(f"   school_name: {render_context.get('school_name')}")
             logger.info(f"   professor_name: {render_context.get('professor_name')}")
             logger.info(f"   logo_url: {render_context.get('logo_url')}")
-        
+       
         # Generate filename with style suffix
         filename = f"LeMaitremot_{document.type_doc}_{document.matiere}_{document.niveau}_{request.export_type}_{requested_style}.pdf"
         

@@ -125,9 +125,9 @@
     
     <!-- NEW: Render geometric schema SVG if generated -->
     {% if exercise.schema_svg %}
-        <div class="geometric-schema">
-            {{ exercise.schema_svg|safe }}
-        </div>
+    <div class="geometric-schema">
+        {{ exercise.schema_svg|safe }}
+    </div>
     {% endif %}</div>
     
     {% if exercise.type == 'qcm' and exercise.donnees and exercise.donnees.options %}
