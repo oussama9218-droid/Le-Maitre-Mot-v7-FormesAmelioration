@@ -147,6 +147,21 @@
             font-style: italic;
             margin-bottom: 30px;
         }
+        
+        /* NEW: Style for geometric schemas */
+        .geometric-schema {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #1a1a1a;
+            background-color: #fafafa;
+            border-radius: 8px;
+        }
+        
+        .geometric-schema svg {
+            max-width: 100%;
+            height: auto;
+        }
 
         @media print {
             body { padding: 20px; }
@@ -185,6 +200,13 @@
         <div class="exercise-header">Exercice {{ loop.index }}</div>
         <div class="exercise-content">
             {{ exercice.enonce }}
+            
+            <!-- NEW: Render geometric schema SVG if generated -->
+            {% if exercice.schema_svg %}
+                <div class="geometric-schema">
+                    {{ exercice.schema_svg|safe }}
+                </div>
+            {% endif %}
             
             {% if exercice.type == "qcm" and exercice.donnees and exercice.donnees.options %}
             <div class="qcm-options">

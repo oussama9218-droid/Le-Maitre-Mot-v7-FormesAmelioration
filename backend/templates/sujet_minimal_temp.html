@@ -109,6 +109,21 @@
             color: #666;
             font-style: italic;
         }
+        /* NEW: Style for geometric schemas */
+        .geometric-schema {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #333;
+            background-color: #fafafa;
+            border-radius: 8px;
+        }
+        
+        .geometric-schema svg {
+            max-width: 100%;
+            height: auto;
+        }
+
     </style>
 </head>
 <body>
@@ -134,7 +149,23 @@
             </span>
         </div>
         <div class="exercise-content">
-            <div class="exercise-text">{{ exercise.enonce }}</div>
+            <div class="exercise-text">{{ exercise.enonce }}
+    
+    <!-- NEW: Render geometric schema SVG if generated -->
+    {% if exercise.schema_svg %}
+        <div class="geometric-schema">
+            {{ exercise.schema_svg|safe }}
+        </div>
+    {% endif %}
+    
+    
+    <!-- NEW: Render geometric schema SVG if generated -->
+    {% if exercise.schema_svg %}
+        <div class="geometric-schema">
+            {{ exercise.schema_svg|safe }}
+        </div>
+    {% endif %}
+    </div>
             <div class="answer-space">
                 <div class="answer-lines"></div>
             </div>

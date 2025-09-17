@@ -63,6 +63,21 @@
       margin-right: 8px;
       font-size: 12pt;
     }
+        /* NEW: Style for geometric schemas */
+        .geometric-schema {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #333;
+            background-color: #fafafa;
+            border-radius: 8px;
+        }
+        
+        .geometric-schema svg {
+            max-width: 100%;
+            height: auto;
+        }
+
   </style>
 </head>
 <body>
@@ -106,7 +121,14 @@
         ({{ "%.1f"|format(total_points) }} pts)
       </span>
     </div>
-    <div class="exercise-text">{{ exercise.enonce or '' }}</div>
+    <div class="exercise-text">{{ exercise.enonce or '' }}
+    
+    <!-- NEW: Render geometric schema SVG if generated -->
+    {% if exercise.schema_svg %}
+        <div class="geometric-schema">
+            {{ exercise.schema_svg|safe }}
+        </div>
+    {% endif %}</div>
     
     {% if exercise.type == 'qcm' and exercise.donnees and exercise.donnees.options %}
       <ul class="qcm-options">

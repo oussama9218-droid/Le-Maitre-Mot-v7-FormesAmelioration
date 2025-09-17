@@ -63,6 +63,21 @@
     .footer-left { flex:1; }
     .footer-center { flex:1; text-align:center; }
     .footer-right { flex:1; text-align:right; font-weight:700; color:var(--primary); }
+        /* NEW: Style for geometric schemas */
+        .geometric-schema {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #333;
+            background-color: #fafafa;
+            border-radius: 8px;
+        }
+        
+        .geometric-schema svg {
+            max-width: 100%;
+            height: auto;
+        }
+
   </style>
 </head>
 <body>
@@ -114,7 +129,23 @@
       <div class="points">{% set total_points = exercise.bareme|sum(attribute='points') %} ({{ "%.1f"|format(total_points) }} pts)</div>
     </div>
     <div class="exercise-content">
-      <div class="exercise-text">{{ exercise.enonce }}</div>
+      <div class="exercise-text">{{ exercise.enonce }}
+    
+    <!-- NEW: Render geometric schema SVG if generated -->
+    {% if exercise.schema_svg %}
+        <div class="geometric-schema">
+            {{ exercise.schema_svg|safe }}
+        </div>
+    {% endif %}
+    
+    
+    <!-- NEW: Render geometric schema SVG if generated -->
+    {% if exercise.schema_svg %}
+        <div class="geometric-schema">
+            {{ exercise.schema_svg|safe }}
+        </div>
+    {% endif %}
+    </div>
       {% if exercise.type == 'qcm' and exercise.donnees and exercise.donnees.options %}
         <ul>
           {% for option in exercise.donnees.options %}<li>{{ option }}</li>{% endfor %}

@@ -44,6 +44,21 @@
     .footer-left { flex:1; }
     .footer-center { flex:1; text-align:center; }
     .footer-right { flex:1; text-align:right; font-weight:700; }
+        /* NEW: Style for geometric schemas */
+        .geometric-schema {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border: 2px solid #333;
+            background-color: #fafafa;
+            border-radius: 8px;
+        }
+        
+        .geometric-schema svg {
+            max-width: 100%;
+            height: auto;
+        }
+
   </style>
 </head>
 <body>
@@ -66,7 +81,14 @@
   {% for exercise in document.exercises or [] %}
   <div class="exercise">
     <div class="exercise-header">Exercice {{ loop.index }} <span class="points">{% set total_points = (exercise.bareme or [])|sum(attribute='points') %} ({{ "%.1f"|format(total_points) }} pts)</span></div>
-    <div class="exercise-text">{{ exercise.enonce or '' }}</div>
+    <div class="exercise-text">{{ exercise.enonce or '' }}
+    
+    <!-- NEW: Render geometric schema SVG if generated -->
+    {% if exercise.schema_svg %}
+        <div class="geometric-schema">
+            {{ exercise.schema_svg|safe }}
+        </div>
+    {% endif %}</div>
     <div class="solution">
       <div class="solution-title">Solution :</div>
       {% if exercise.solution and exercise.solution.etapes %}

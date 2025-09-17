@@ -14,12 +14,15 @@ from datetime import datetime, timezone, timedelta
 from emergentintegrations.llm.chat import LlmChat, UserMessage
 from emergentintegrations.payments.stripe.checkout import StripeCheckout, CheckoutSessionResponse, CheckoutStatusResponse, CheckoutSessionRequest
 import json
+import re
 import tempfile
 import weasyprint
 from jinja2 import Template
 from latex_to_svg import latex_renderer
 from geometry_renderer import geometry_renderer
+from render_schema import schema_renderer
 import requests
+from logger import get_logger, log_execution_time, log_ai_generation, log_schema_processing, log_user_context, log_quota_check
 
 ROOT_DIR = Path(__file__).parent
 TEMPLATES_DIR = ROOT_DIR / 'templates'
@@ -115,55 +118,66 @@ def enrich_exercise_with_icon(exercise_data: dict, chapitre: str) -> dict:
     
     return exercise_data
 
-def sanitize_ai_response(text: str) -> str:
-    """
-    Tries to fix common JSON formatting errors in AI responses.
-    Makes the system more robust against AI formatting inconsistencies.
-    """
-    if not text or not isinstance(text, str):
-        return text
-    
-    # Find the JSON object, which starts with '{' and ends with '}'
-    start_index = text.find('{')
-    end_index = text.rfind('}')
-    
-    if start_index == -1 or end_index == -1:
-        logger.warning("No JSON object found in AI response")
-        return text
-    
-    json_string = text[start_index:end_index + 1]
-    
-    try:
-        # Try to clean up known issues
-        json_string = json_string.strip()
-        
-        # Remove problematic characters that often cause parsing issues
-        json_string = json_string.replace('\n\n', '\n')  # Multiple newlines
-        json_string = json_string.replace('\\\\', '\\')  # Double backslashes
-        
-        # Fix common quote issues
-        json_string = json_string.replace('""', '"')  # Double quotes
-        json_string = json_string.replace('"",', '",')  # Double quotes with comma
-        
-        # Ensure proper JSON structure for exercises array
-        if '"exercises"' not in json_string and '"exercise"' in json_string:
-            json_string = json_string.replace('"exercise"', '"exercises"')
-        
-        # Test if the cleaned JSON is valid
-        parsed = json.loads(json_string)
-        logger.info(f"Successfully sanitized AI response JSON")
-        return json_string
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"JSON sanitization failed: {e}")
-        logger.error(f"Problematic JSON: {json_string[:200]}...")
-        return text
-    
-    except Exception as e:
-        logger.error(f"Unexpected error during JSON sanitization: {e}")
-        return text
+# Removed duplicate sanitize_ai_response function - using the newer one below
 
 # Professional content processing function
+@log_execution_time("process_schema_to_base64")
+def process_schema_to_base64(schema: Optional[dict]) -> Optional[str]:
+    """
+    Process a geometric schema dictionary to Base64 image for web display.
+    Returns Base64 string or None if no schema or processing failed.
+    """
+    logger = get_logger()
+    
+    if not schema or not isinstance(schema, dict):
+        logger.debug("No schema provided or invalid schema format")
+        return None
+    
+    schema_type = schema.get("type", "unknown")
+    logger.debug(
+        "Starting schema to Base64 conversion",
+        module_name="schema",
+        func_name="process_schema_to_base64",
+        schema_type=schema_type
+    )
+    
+    try:
+        # Convert schema to geometry_renderer format
+        geometry_schema = {
+            "type": "schema_geometrique",
+            "figure": schema.get("type", "triangle"),
+            "donnees": schema
+        }
+        
+        # Render to Base64 for web display
+        base64_image = geometry_renderer.render_geometry_to_base64(geometry_schema)
+        
+        if base64_image:
+            logger.info(
+                "Schema successfully rendered to Base64",
+                module_name="schema",
+                func_name="process_schema_to_base64",
+                schema_type=schema_type,
+                base64_length=len(base64_image),
+                status="success"
+            )
+            log_schema_processing(schema_type, True)
+            return base64_image
+        else:
+            logger.warning(
+                "Schema rendering failed",
+                module_name="schema",
+                func_name="process_schema_to_base64",
+                schema_type=schema_type,
+                status="failed"
+            )
+            log_schema_processing(schema_type, False)
+            return None
+            
+    except Exception as e:
+        logger.error(f"❌ Error processing schema to Base64: {e}")
+        return None
+
 def process_exercise_content(content: str) -> str:
     """
     Processes the exercise content to render both LaTeX and geometric schemas.
@@ -172,11 +186,11 @@ def process_exercise_content(content: str) -> str:
     if not content or not isinstance(content, str):
         return content if isinstance(content, str) else ""
     
-    # 1. Process geometric schemas first
+    # 1. Process legacy geometric schemas (for backward compatibility)
     try:
         content = geometry_renderer.process_geometric_schemas_for_web(content)
     except Exception as e:
-        logger.error(f"Error processing geometric schemas: {e}")
+        logger.error(f"Error processing legacy geometric schemas: {e}")
     
     # 2. Process LaTeX formulas
     try:
@@ -292,6 +306,10 @@ class Exercise(BaseModel):
     # New fields for UI enhancement
     exercise_type: Optional[str] = "text"  # "geometry", "algebra", "statistics", "text"
     icone: Optional[str] = "book-open"  # Icon identifier for frontend
+    # NEW: Separate schema field (clean design)
+    schema: Optional[dict] = None  # Geometric schema data separate from text
+    # CRITICAL: Base64 schema image for frontend display
+    schema_img: Optional[str] = None  # Base64 PNG image for web display
 
 class Document(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -835,8 +853,18 @@ PDF_LAYOUT_OPTIONS = {
 
 # Pro Templates - Ultra Professional Design
 
+@log_execution_time("check_guest_quota")
 async def check_guest_quota(guest_id: str):
     """Check if guest user can export (3 exports max)"""
+    logger = get_logger()
+    logger.debug(
+        "Starting guest quota check",
+        module_name="quota",
+        func_name="check_guest_quota",
+        user_type="guest",
+        guest_id=guest_id[:8] + "..." if guest_id and len(guest_id) > 8 else guest_id
+    )
+    
     try:
         thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         export_count = await db.exports.count_documents({
@@ -845,6 +873,19 @@ async def check_guest_quota(guest_id: str):
         })
         
         remaining = max(0, 3 - export_count)
+        
+        # Log quota check result
+        log_quota_check("guest", export_count, 3, guest_id=guest_id[:8] + "..." if guest_id and len(guest_id) > 8 else guest_id)
+        
+        logger.info(
+            "Guest quota check completed",
+            module_name="quota",
+            func_name="check_guest_quota",
+            user_type="guest",
+            exports_used=export_count,
+            exports_remaining=remaining,
+            quota_exceeded=remaining == 0
+        )
         
         return {
             "exports_used": export_count,
@@ -1110,8 +1151,220 @@ async def validate_session_token(session_token: str):
         logger.error(f"Error validating session token: {e}")
         return None
 
+def sanitize_ai_response(response: str) -> str:
+    """
+    Clean and validate AI JSON responses to handle common formatting issues.
+    Ensures consistent JSON structure for schema processing.
+    """
+    try:
+        # Remove any leading/trailing whitespace and non-JSON text
+        response = response.strip()
+        
+        # Find JSON boundaries
+        json_start = response.find('{')
+        json_end = response.rfind('}') + 1
+        
+        if json_start == -1 or json_end == 0:
+            logger.warning("No JSON found in AI response")
+            return '{"schema": null}'
+        
+        json_content = response[json_start:json_end]
+        
+        # PHASE 3 FIX: Clean common JSON formatting issues
+        # Fix single quotes to double quotes
+        json_content = re.sub(r"'([^']*)':", r'"\1":', json_content)  # Fix keys
+        json_content = re.sub(r":\s*'([^']*)'", r': "\1"', json_content)  # Fix values
+        
+        # Fix missing commas (basic pattern)
+        json_content = re.sub(r'}\s*{', '}, {', json_content)
+        json_content = re.sub(r']\s*"', '], "', json_content)
+        
+        # Validate JSON syntax
+        try:
+            parsed = json.loads(json_content)
+            
+            # Ensure standard "schema" key (handle various formats)
+            if "schéma" in parsed:
+                parsed["schema"] = parsed.pop("schéma")
+            elif "schema_geometrique" in parsed:
+                parsed["schema"] = parsed.pop("schema_geometrique")
+            
+            # PHASE 3 FIX: Validate schema completeness
+            if "schema" in parsed and parsed["schema"] is not None:
+                schema = parsed["schema"]
+                if isinstance(schema, dict):
+                    points = schema.get("points", [])
+                    labels = schema.get("labels", {})
+                    
+                    # Check if all points have coordinates
+                    missing_coords = [p for p in points if p not in labels]
+                    if missing_coords:
+                        logger.warning(
+                            "Schema has points without coordinates",
+                            module_name="sanitize",
+                            func_name="sanitize_ai_response",
+                            missing_coords=missing_coords,
+                            available_coords=list(labels.keys())
+                        )
+                        # Try to add default coordinates for missing points
+                        for i, point in enumerate(missing_coords):
+                            labels[point] = f"({i*2},{i*2})"  # Simple fallback
+                        schema["labels"] = labels
+                        logger.info(f"Added fallback coordinates for points: {missing_coords}")
+            
+            # Return cleaned JSON
+            return json.dumps(parsed)
+            
+        except json.JSONDecodeError as e:
+            logger.error(
+                "Invalid JSON syntax in AI response after cleaning",
+                module_name="sanitize",
+                func_name="sanitize_ai_response",
+                error=str(e),
+                json_preview=json_content[:200]
+            )
+            return '{"schema": null}'
+            
+    except Exception as e:
+        logger.error(f"Error sanitizing AI response: {e}")
+        return '{"schema": null}'
+
+@log_execution_time("generate_geometry_schema_with_ai")
+async def generate_geometry_schema_with_ai(enonce: str) -> str:
+    """
+    Makes a second AI call to generate a geometry schema based on the exercise text.
+    Returns the JSON string of the schema.
+    """
+    logger = get_logger()
+    logger.debug(
+        "Starting geometry schema generation",
+        module_name="schema",
+        func_name="generate_geometry_schema_with_ai",
+        enonce_length=len(enonce),
+        enonce_preview=enonce[:100]
+    )
+    
+    try:
+        # Create LLM chat instance with faster model
+        chat = LlmChat(
+            api_key=emergent_key,
+            session_id=f"schema_gen_{uuid.uuid4()}",
+            system_message="""En tant que moteur de génération de schémas, ton unique tâche est de créer un schéma géométrique JSON à partir de l'énoncé d'exercice.
+
+**Instructions :**
+1. Analyse l'énoncé pour identifier les points, segments et longueurs mentionnés.
+2. Crée une structure JSON valide pour le schéma, comme dans l'exemple ci-dessous.
+3. Ne renvoie QUE le code JSON, sans texte ni explication supplémentaire.
+4. Si l'énoncé ne contient pas de géométrie, renvoie un objet JSON vide `{}`.
+
+**Exemple de JSON pour un triangle** :
+{
+    "type": "triangle",
+    "points": ["A", "B", "C"],
+    "labels": {"A": "(0,8)", "B": "(0,0)", "C": "(6,0)"},
+    "segments": [["A","B", {"longueur": 8}], ["B","C", {"longueur": 6}]],
+    "angles": [["B", {"angle_droit": true}]]
+}
+
+**RÈGLE CRITIQUE** : Si tu listes N points, tu DOIS fournir N coordonnées dans labels.
+Exemple INCORRECT: points: ["A","B","C","D"] avec labels: {"A":"(0,3)", "B":"(0,0)", "C":"(4,0)"}
+Exemple CORRECT: points: ["A","B","C","D"] avec labels: {"A":"(0,3)", "B":"(0,0)", "C":"(4,0)", "D":"(4,3)"}
+
+**Types de figures supportés** : triangle, triangle_rectangle, carre, rectangle, cercle, pyramide
+**IMPORTANT** : 
+- TOUJOURS fournir des coordonnées pour TOUS les points listés
+- Si points: ["A", "B", "C", "D"], alors labels DOIT contenir A, B, C ET D
+- Ne PAS générer trapeze ou autres types non supportés (sauf ceux listés ci-dessus)"""
+        ).with_model("openai", "gpt-4o")
+        
+        # Create focused prompt for schema generation with STRICT format requirements  
+        prompt = f"""
+**ÉNONCÉ DE L'EXERCICE :**
+"{enonce}"
+
+Tu dois analyser cet énoncé et générer un schéma géométrique dans le format JSON EXACT suivant :
+
+```json
+{{
+    "schema": {{
+        "type": "triangle",
+        "points": ["A", "B", "C"],
+        "segments": [["A", "B", {{"longueur": 5}}], ["B", "C", {{"longueur": 3}}]],
+        "angles": [["B", {{"angle_droit": true}}]]
+    }}
+}}
+```
+
+**RÈGLES IMPÉRATIVES :**
+1. TOUJOURS utiliser la clé "schema" (sans accent, sans underscore)
+2. TOUJOURS fermer toutes les accolades et crochets
+3. TOUJOURS utiliser des virgules correctes
+4. Types valides : "triangle", "rectangle", "carre", "cercle", "pyramide"
+5. Si pas de géométrie, retourner : {{"schema": null}}
+
+Réponds UNIQUEMENT avec ce JSON, rien d'autre.
+"""
+
+        user_message = UserMessage(text=prompt)
+        
+        # Set shorter timeout for faster response
+        import asyncio
+        response = await asyncio.wait_for(
+            chat.send_message(user_message), 
+            timeout=15.0  # 15 seconds max for schema generation
+        )
+        
+        # Sanitize and validate the AI response
+        sanitized_response = sanitize_ai_response(response)
+        
+        # Verify we have a valid schema
+        try:
+            parsed = json.loads(sanitized_response)
+            if parsed.get("schema") is not None:
+                schema_type = parsed['schema'].get('type', 'unknown')
+                logger.info(
+                    "Valid schema generated successfully",
+                    module_name="schema",
+                    func_name="generate_geometry_schema_with_ai",
+                    schema_type=schema_type,
+                    status="success"
+                )
+                log_ai_generation("second_pass_success", True, schema_type=schema_type)
+            else:
+                logger.debug("No schema needed for this exercise")
+                
+            return sanitized_response
+        except json.JSONDecodeError as e:
+            logger.warning(
+                "Failed to parse sanitized schema response",
+                module_name="schema",
+                func_name="generate_geometry_schema_with_ai",
+                error=str(e),
+                status="parse_error"
+            )
+            return '{"schema": null}'
+        
+    except Exception as e:
+        logger.error(f"Error in AI geometry generation: {e}")
+        return "{}"  # Return empty JSON object on error
+
+@log_execution_time("generate_exercises_with_ai")
 async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, type_doc: str, difficulte: str, nb_exercices: int) -> List[Exercise]:
     """Generate exercises using AI"""
+    logger = get_logger()
+    
+    # Log input parameters
+    logger.info(
+        "Starting AI exercise generation",
+        module_name="generation",
+        func_name="generate_exercises_with_ai",
+        matiere=matiere,
+        niveau=niveau,
+        chapitre=chapitre,
+        type_doc=type_doc,
+        difficulte=difficulte,
+        nb_exercices=nb_exercices
+    )
     
     # Level-specific guidance
     niveau_guidance = {
@@ -1176,35 +1429,45 @@ async def generate_exercises_with_ai(matiere: str, niveau: str, chapitre: str, t
     # Subject-specific instructions
     subject_instructions = {
         "Mathématiques": f"""
-        En tant qu'enseignant de mathématiques et expert en conception d'exercices, crée un exercice pour un élève de {niveau} en {matiere}, sur le chapitre suivant: "{chapitre}". L'exercice doit avoir une difficulté {difficulte}.
-        
-        **Instruction cruciale** : Utilise des **valeurs numériques différentes et variées** pour chaque exercice. Par exemple, si une longueur est de 5 cm, utilise une autre valeur (comme 7,5 cm ou 12 cm) dans le suivant.
-        
-        L'exercice doit respecter le format JSON suivant et inclure un schéma géométrique si applicable.
+En tant qu'enseignant de mathématiques et expert en conception d'exercices, crée {nb_exercices} exercices pour un élève de {niveau} en {matiere}, sur le chapitre suivant: "{chapitre}". 
+Chaque exercice doit avoir une difficulté {difficulte}.
 
-        **POUR LES SCHÉMAS GÉOMÉTRIQUES** : L'énoncé (enonce) doit contenir une balise JSON nommée "schéma" avec une structure très précise, comme dans l'exemple ci-dessous. Tu ne dois pas utiliser de texte pour décrire le schéma. Tu dois uniquement utiliser cette balise.
-        
-        **Exemple de JSON pour un triangle** :
-        {{
-          "titre": "Calculer l’hypoténuse d’un triangle rectangle",
-          "enonce": "Dans un triangle ABC rectangle en B, on a AB=8 et BC=6. Calcule la longueur AC.
-          {{
-            \"schéma\": {{
-              \"type\": \"triangle\",
-              \"points\": [\"A\", \"B\", \"C\"],
-              \"labels\": {{\"A\": \"(0,8)\", \"B\": \"(0,0)\", \"C\": \"(6,0)\"}},
-              \"segments\": [[\"A\",\"B\", {{\"longueur\": 8}}], [\"B\",\"C\", {{\"longueur\": 6}}]],
-              \"angles\": [[\"B\", {{\"angle_droit\": true}}]]
-            }}
-          }}",
-          "type": "geometry",
-          "solution": {{
-            "etapes": ["..."]
-          }}
-        }}
+**Instructions cruciales** :
+1. Utilise des **valeurs numériques différentes et variées** pour chaque exercice (pas de répétition des mêmes données).
+2.  Tous les exercices de géométrie doivent inclure systématiquement un schéma.
+3. L’EXERCICE 2 DOIT OBLIGATOIREMENT avoir un schéma, quel que soit le type d’exercice.
+4. Le schéma doit toujours être placé dans `"donnees.schema"` et jamais dans `"enonce"`.
+5. L’énoncé doit contenir uniquement du texte lisible pour l’élève.
+6. Le schéma doit suivre une structure claire (type, points, labels, segments, angles, etc.).
 
-        Réponds uniquement avec le code JSON, sans texte ni explication supplémentaire.
-        """,
+**Format JSON attendu pour chaque exercice** :
+{{
+  "titre": "Titre concis",
+  "enonce": "Texte clair de l'exercice (sans JSON).",
+  "type": "geometry",
+  "difficulte": "{difficulte}",
+  "donnees": {{
+    "schema": {{
+      "type": "triangle",
+      "points": ["A", "B", "C"],
+      "labels": {{"A": "(0,8)", "B": "(0,0)", "C": "(6,0)"}},
+      "segments": [["A","B", {{"longueur": 8}}], ["B","C", {{"longueur": 6}}]],
+      "angles": [["B", {{"angle_droit": true}}]]
+    }}
+  }},
+  "solution": {{
+    "etapes": ["..."],
+    "resultat": "..."
+  }},
+  "bareme": [
+    {{"etape": "Méthode", "points": 2.0}},
+    {{"etape": "Résultat", "points": 2.0}}
+  ]
+}}
+
+Réponds uniquement avec un tableau JSON contenant tous les exercices, sans texte ni explication supplémentaire.
+"""
+,
 
         "Français": f"""Tu es un générateur d'exercices de français pour {niveau} - {chapitre}.
 
@@ -1317,12 +1580,17 @@ Types et icônes:
     try:
         user_message = UserMessage(text=prompt)
         
-        # Set shorter timeout for faster response
+        # FIRST PASS: Generate the exercise content
+        logger.debug("Starting first AI pass - exercise content generation")
+        log_ai_generation("first_pass_start", True)
+        
         import asyncio
         response = await asyncio.wait_for(
             chat.send_message(user_message), 
             timeout=20.0  # 20 seconds max
         )
+        
+        logger.debug(f"First AI pass completed, response length: {len(response)} chars")
         
         # Parse the JSON response
         json_start = response.find('{')
@@ -1335,13 +1603,85 @@ Types et icônes:
         
         # Convert to Exercise objects with professional content processing
         exercises = []
-        for ex_data in data.get("exercises", []):
+        for i, ex_data in enumerate(data.get("exercises", [])):
             # Enrich with icon before processing
             ex_data = enrich_exercise_with_icon(ex_data, chapitre)
             
-            # Clean and process the enonce with professional content processing
+            # Get the raw enonce
             enonce = ex_data.get("enonce", "").strip()
-            enonce = process_exercise_content(enonce)  # Apply centralized processing
+            
+            # SECOND PASS: Generate geometric schema if this is a geometry exercise
+            if matiere.lower() == "mathématiques":
+                # Check if the exercise might need a geometric schema
+                geometry_keywords = ["triangle", "cercle", "carré", "rectangle", "parallélogramme", 
+                                   "géométrie", "figure", "pythagore", "thalès", "trigonométrie", 
+                                   "angle", "périmètre", "aire", "longueur", "côté", "hypoténuse"]
+                
+                if any(keyword in enonce.lower() for keyword in geometry_keywords):
+                    logger.info(
+                        "Geometry keywords detected, starting schema generation",
+                        module_name="generation",
+                        func_name="schema_detection",
+                        enonce_preview=enonce[:100],
+                        detected_keywords=[kw for kw in geometry_keywords if kw in enonce.lower()]
+                    )
+                    
+                    # Generate schema with second AI call
+                    log_ai_generation("second_pass_start", True)
+                    schema_json_str = await generate_geometry_schema_with_ai(enonce)
+                    
+                    # Add schema to separate field (CLEAN DESIGN - no more JSON in text!)
+                    if len(schema_json_str.strip()) > 10:  # More robust check for content
+                        try:
+                            # Validate the generated schema with STANDARDIZED format
+                            schema_data = json.loads(schema_json_str)
+                            schema_content = schema_data.get("schema")  # STANDARD KEY: "schema"
+                            
+                            if schema_content is not None and isinstance(schema_content, dict) and "type" in schema_content:
+                                # Store schema in separate field - KEEP ENONCE PURE TEXT!
+                                ex_data["schema"] = schema_content
+                                ex_data["type"] = "geometry"
+                                
+                                log_schema_processing(
+                                    schema_type=schema_content.get('type', 'unknown'),
+                                    success=True,
+                                    exercise_id=str(i+1)
+                                )
+                                logger.info(
+                                    "Schema successfully stored in separate field",
+                                    module_name="generation",
+                                    func_name="schema_storage",
+                                    schema_type=schema_content.get('type'),
+                                    exercise_id=i+1
+                                )
+                            else:
+                                logger.debug("No geometric schema needed for this exercise")
+                                log_ai_generation("second_pass_skip", True)
+                                
+                        except json.JSONDecodeError as e:
+                            logger.warning(f"⚠️ Invalid JSON schema generated: {e}, keeping text-only exercise")
+            
+            # CRITICAL FIX: Clean the enonce by removing any residual JSON schema blocks
+            enonce_clean = re.sub(r'\{\s*"sch[ée]ma".*?\}', "", enonce, flags=re.DOTALL)
+            enonce_clean = re.sub(r'\{\s*"schema".*?\}', "", enonce_clean, flags=re.DOTALL)
+            enonce_clean = enonce_clean.strip()
+            
+            # Remove any trailing newlines or multiple spaces caused by JSON removal
+            enonce_clean = re.sub(r'\n\s*\n+', '\n\n', enonce_clean)  # Clean up multiple newlines
+            enonce_clean = re.sub(r'\s+$', '', enonce_clean)  # Remove trailing whitespace
+            
+            if enonce_clean != enonce:
+                logger.info(
+                    "Cleaned JSON artifacts from enonce",
+                    module_name="generation",
+                    func_name="enonce_cleaning",
+                    original_length=len(enonce),
+                    cleaned_length=len(enonce_clean),
+                    exercise_id=i+1
+                )
+            
+            # Process the CLEANED enonce with centralized content processing
+            processed_enonce = process_exercise_content(enonce_clean)
             
             # Process solution steps and result
             solution = ex_data.get("solution", {"etapes": ["Étape 1", "Étape 2"], "resultat": "Résultat"})
@@ -1356,23 +1696,58 @@ Types et icônes:
             if "resultat" in solution:
                 solution["resultat"] = process_exercise_content(solution["resultat"])
             
+            # CRITICAL FIX: Preserve schema data and generate Base64 image
+            schema_data = ex_data.get("schema", None)
+            donnees_to_store = None
+            schema_img_base64 = None
+            
+            if schema_data is not None:
+                # Store schema in donnees for PDF processing
+                donnees_to_store = {"schema": schema_data}
+                logger.info(f"✅ Schema data preserved in donnees field: {schema_data.get('type', 'unknown')}")
+                
+                # CRITICAL: Generate Base64 image for frontend immediately
+                schema_img_base64 = process_schema_to_base64(schema_data)
+                if schema_img_base64:
+                    schema_img_base64 = f"data:image/png;base64,{schema_img_base64}"
+                    logger.info(
+                        "Schema Base64 generated during exercise creation",
+                        module_name="generation",
+                        func_name="create_exercise",
+                        exercise_id=i+1,
+                        schema_type=schema_data.get('type'),
+                        base64_length=len(schema_img_base64)
+                    )
+            
             exercise = Exercise(
                 type=ex_data.get("type", "ouvert"),
-                enonce=enonce,
-                donnees=None,  # Don't show technical data to users
+                enonce=processed_enonce,
+                donnees=donnees_to_store,  # ✅ PRESERVE SCHEMA DATA
                 difficulte=ex_data.get("difficulte", difficulte),
                 solution=solution,
                 bareme=ex_data.get("bareme", [{"etape": "Méthode", "points": 2.0}, {"etape": "Résultat", "points": 2.0}]),
-                seed=hash(enonce) % 1000000,
+                seed=hash(processed_enonce) % 1000000,
                 # Add icon and exercise type information
                 exercise_type=ex_data.get("type", "text"),
-                icone=ex_data.get("icone", EXERCISE_ICON_MAPPING["default"])
+                icone=ex_data.get("icone", EXERCISE_ICON_MAPPING["default"]),
+                # NEW: Clean schema field (separate from text)
+                schema=ex_data.get("schema", None),
+                # CRITICAL: Base64 schema image for frontend
+                schema_img=schema_img_base64
             )
             exercises.append(exercise)
         
         if not exercises:
             raise ValueError("No exercises generated")
             
+        logger.info(
+            "Successfully completed AI exercise generation",
+            module_name="generation",
+            func_name="generate_exercises_with_ai",
+            total_exercises=len(exercises),
+            geometry_exercises=sum(1 for ex in exercises if hasattr(ex, 'exercise_type') and ex.exercise_type == 'geometry'),
+            approach="two_pass"
+        )
         return exercises
         
     except asyncio.TimeoutError:
@@ -2427,9 +2802,31 @@ async def get_pdf_options():
     }
 
 @api_router.get("/quota/check")
+@log_execution_time("check_quota_status")
 async def check_quota_status(guest_id: str):
     """Check current quota status for guest user"""
-    return await check_guest_quota(guest_id)
+    logger = get_logger()
+    logger.info(
+        "Checking quota status",
+        module_name="quota",
+        func_name="check_quota_status",
+        user_type="guest",
+        guest_id=guest_id[:8] + "..." if guest_id and len(guest_id) > 8 else guest_id
+    )
+    
+    result = await check_guest_quota(guest_id)
+    
+    logger.info(
+        "Quota check completed",
+        module_name="quota",
+        func_name="check_quota_status",
+        user_type="guest",
+        current_count=result.get("current_count", 0),
+        limit=result.get("limit", 0),
+        can_generate=result.get("can_generate", False)
+    )
+    
+    return result
 @api_router.get("/auth/session/validate")
 async def validate_session(request: Request):
     """Validate current session and return user info"""
@@ -2498,8 +2895,20 @@ def get_template_colors_and_fonts(template_config):
     }
 
 @api_router.post("/export")
+@log_execution_time("export_pdf")
 async def export_pdf(request: ExportRequest, http_request: Request):
     """Export document as PDF using unified WeasyPrint approach"""
+    logger = get_logger()
+    
+    logger.info(
+        "Starting PDF export",
+        module_name="export",
+        func_name="export_pdf",
+        doc_id=request.document_id,
+        export_type=request.export_type,
+        template_style=getattr(request, 'template_style', 'default')
+    )
+    
     try:
         # Check authentication - ONLY session token method (no legacy email fallback)
         session_token = http_request.headers.get("X-Session-Token")
@@ -2579,10 +2988,53 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             raise HTTPException(status_code=404, detail="Document non trouvé")
         
         # CRITICAL: Process geometric schemas and LaTeX before PDF generation
+        
         if 'exercises' in doc:
             for exercise in doc['exercises']:
                 if 'enonce' in exercise and exercise['enonce']:
                     exercise['enonce'] = process_exercise_content(exercise['enonce'])
+                
+                # NEW: Generate SVG for schema if present in donnees
+                if exercise.get('donnees') and isinstance(exercise['donnees'], dict):
+                    schema_data = exercise['donnees'].get('schema')
+                    if schema_data:
+                        schema_type = schema_data.get('type', 'unknown')
+                        logger.info(
+                            "Generating SVG for PDF schema",
+                            module_name="export",
+                            func_name="generate_svg",
+                            doc_id=request.document_id,
+                            schema_type=schema_type
+                        )
+                        
+                        svg_content = schema_renderer.render_to_svg(schema_data)
+                        if svg_content:
+                            exercise['schema_svg'] = svg_content
+                            logger.info(
+                                "SVG generated successfully for PDF",
+                                module_name="export",
+                                func_name="generate_svg",
+                                doc_id=request.document_id,
+                                schema_type=schema_type,
+                                svg_length=len(svg_content),
+                                status="success"
+                            )
+                            log_schema_processing(schema_type, True, doc_id=request.document_id)
+                        else:
+                            logger.warning(
+                                "Failed to generate SVG for PDF schema",
+                                module_name="export",
+                                func_name="generate_svg",
+                                doc_id=request.document_id,
+                                schema_type=schema_type,
+                                status="failed"
+                            )
+                            log_schema_processing(schema_type, False, doc_id=request.document_id)
+                            exercise['schema_svg'] = ""
+                    else:
+                        exercise['schema_svg'] = ""
+                else:
+                    exercise['schema_svg'] = ""
                 
                 # Process solution if it exists
                 if exercise.get('solution'):
@@ -3148,8 +3600,20 @@ async def get_user_status(email: str):
         return {"is_pro": False, "account_type": "guest"}
 
 @api_router.get("/documents")
+@log_execution_time("get_documents")
 async def get_documents(guest_id: str = None):
     """Get user documents"""
+    logger = get_logger()
+    user_type = "guest" if guest_id else "unknown"
+    
+    logger.info(
+        "Starting document retrieval",
+        module_name="documents",
+        func_name="get_documents",
+        user_type=user_type,
+        guest_id=guest_id[:8] + "..." if guest_id and len(guest_id) > 8 else guest_id
+    )
+    
     try:
         if guest_id:
             # Get documents for guest user
@@ -3168,6 +3632,16 @@ async def get_documents(guest_id: str = None):
                     if 'enonce' in exercise and exercise['enonce']:
                         exercise['enonce'] = process_exercise_content(exercise['enonce'])
                     
+                    # schema_img is now generated during exercise creation, no need to process again
+                    if exercise.get('schema_img'):
+                        logger.debug(
+                            "Schema image already present from generation",
+                            module_name="documents",
+                            func_name="check_schemas",
+                            doc_id=str(doc.get('id', 'unknown'))[:8],
+                            has_schema_img=bool(exercise.get('schema_img'))
+                        )
+
                     # Process solution if it exists
                     if exercise.get('solution'):
                         if exercise['solution'].get('resultat'):
@@ -3178,7 +3652,15 @@ async def get_documents(guest_id: str = None):
                                 process_exercise_content(step) for step in exercise['solution']['etapes']
                             ]
         
-        return {"documents": [Document(**doc) for doc in documents]}
+        # Clean up MongoDB-specific fields that can't be JSON serialized
+        for doc in documents:
+            # Remove MongoDB ObjectId fields that cause serialization issues
+            if '_id' in doc:
+                del doc['_id']
+        
+        # Return raw documents to preserve dynamic fields like schema_img
+        # Don't use Pydantic models here as they filter out dynamic fields
+        return {"documents": documents}
         
     except Exception as e:
         logger.error(f"Error getting documents: {e}")

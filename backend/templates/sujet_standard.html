@@ -72,8 +72,22 @@
         }
         
         .exercise-text {
-            text-align: justify;
             margin-bottom: 1cm;
+            text-align: justify;
+        }
+        
+        /* NEW: Style for geometric schemas */
+        .geometric-schema {
+            text-align: center;
+            margin: 1cm 0;
+            padding: 0.5cm;
+            border: 1px solid #ddd;
+            background-color: #fafafa;
+        }
+        
+        .geometric-schema svg {
+            max-width: 100%;
+            height: auto;
         }
         
         .answer-space {
@@ -134,7 +148,31 @@
             </span>
         </div>
         <div class="exercise-content">
-            <div class="exercise-text">{{ exercise.enonce }}</div>
+            <div class="exercise-text">{{ exercise.enonce }}
+    
+    <!-- NEW: Render geometric schema SVG if generated -->
+    {% if exercise.schema_svg %}
+        <div class="geometric-schema">
+            {{ exercise.schema_svg|safe }}
+        </div>
+    {% endif %}
+    
+    
+    <!-- NEW: Render geometric schema SVG if generated -->
+    {% if exercise.schema_svg %}
+        <div class="geometric-schema">
+            {{ exercise.schema_svg|safe }}
+        </div>
+    {% endif %}
+    </div>
+            
+            <!-- NEW: Render geometric schema SVG if generated -->
+            {% if exercise.schema_svg %}
+                <div class="geometric-schema">
+                    {{ exercise.schema_svg|safe }}
+                </div>
+            {% endif %}
+            
             <div class="answer-space">
                 <div class="answer-lines"></div>
             </div>

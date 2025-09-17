@@ -1225,6 +1225,17 @@ function MainApp() {
                               </Button>
                             </div>
                             <div className="text-gray-900 whitespace-pre-wrap" dangerouslySetInnerHTML={{ __html: exercise.enonce }}></div>
+                            {/* NEW: Display geometric schema if present */}
+                            {exercise.schema_img && (
+                              <div className="mt-4 text-center">
+                                <img 
+                                  src={exercise.schema_img} 
+                                  alt="Schéma géométrique" 
+                                  className="max-w-full h-auto mx-auto border border-gray-300 rounded-lg shadow-sm"
+                                  style={{ maxHeight: '400px' }}
+                                />
+                              </div>
+                            )}
                           </CardContent>
                         </Card>
                       ))}
