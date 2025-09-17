@@ -1,184 +1,157 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ document.type_doc|title }} - Corrigé - {{ document.matiere }}</title>
-
+    <meta charset="utf-8">
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Crimson+Text:wght@400;600&display=swap');
+        @page {
+            size: A4;
+            margin: 2cm;
+        }
         
         body {
-            font-family: 'Crimson Text', Georgia, serif;
+            font-family: 'Times New Roman', serif;
+            font-size: 11pt;
             line-height: 1.6;
-            margin: 0;
-            padding: 40px;
-            background: #fefefe;
-            color: #2c2c2c;
+            color: #2c3e50;
+            background: #ffffff;
         }
         
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid #1a1a1a;
-            padding-bottom: 20px;
-            margin-bottom: 40px;
-        }
-        
-        .logo img {
-            max-height: 80px;
-            max-width: 150px;
-            filter: grayscale(100%);
-        }
-        
-        .school-info {
+        .document-header {
             text-align: center;
-            flex: 1;
-            margin: 0 30px;
-        }
-        
-        .school-name {
-            font-family: 'Playfair Display', serif;
-            font-size: 24px;
-            font-weight: 700;
-            color: #1a1a1a;
-            margin-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-        
-        .professor-name {
-            font-size: 16px;
-            color: #555;
-            font-style: italic;
-            margin-bottom: 3px;
-        }
-        
-        .school-year {
-            font-size: 14px;
-            color: #777;
-            font-weight: 600;
-        }
-        
-        .date {
-            text-align: right;
-            font-size: 14px;
-            color: #666;
-            font-style: italic;
             margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #8b4513;
         }
         
         .document-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 28px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 15px;
-            text-align: center;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 18pt;
+            font-weight: bold;
+            color: #8b4513;
+            margin-bottom: 8px;
         }
         
         .document-subtitle {
-            font-size: 18px;
-            color: #555;
-            text-align: center;
-            margin-bottom: 30px;
+            font-size: 12pt;
+            color: #654321;
             font-style: italic;
         }
         
         .exercise {
-            margin-bottom: 40px;
-            border-left: 4px solid #1a1a1a;
-            padding-left: 25px;
-            page-break-inside: avoid;
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #faf8f3;
+            border: 1px solid #e8dcc0;
+            border-radius: 5px;
         }
         
         .exercise-header {
-            font-family: 'Playfair Display', serif;
-            font-size: 20px;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            font-size: 13pt;
+            font-weight: bold;
+            color: #8b4513;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #d4b896;
         }
         
         .exercise-content {
-            font-size: 16px;
-            line-height: 1.8;
-            margin-bottom: 20px;
-        }
-        
-        .solution-section {
-            background: #f8f8f8;
-            border: 2px solid #1a1a1a;
-            border-radius: 0;
-            padding: 25px;
-            margin: 20px 0;
-        }
-        
-        .solution-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 18px;
-            font-weight: 600;
-            color: #1a1a1a;
             margin-bottom: 15px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-align: center;
-            border-bottom: 1px solid #1a1a1a;
-            padding-bottom: 10px;
+            color: #2c3e50;
+        }
+        
+        .solution {
+            background: #f0f8ff;
+            padding: 12px;
+            border: 1px solid #b8d4f0;
+            border-radius: 4px;
+        }
+        
+        .solution-header {
+            font-weight: bold;
+            color: #2c5aa0;
+            margin-bottom: 10px;
         }
         
         .solution-steps {
-            margin-bottom: 20px;
+            margin-bottom: 10px;
         }
         
         .solution-step {
-            margin: 12px 0;
-            padding: 10px 0;
-            border-bottom: 1px dotted #999;
-            font-size: 15px;
-            line-height: 1.7;
-        }
-        
-        .solution-step:last-child {
-            border-bottom: none;
-            font-weight: 600;
-            color: #1a1a1a;
-            text-align: center;
-            background: #1a1a1a;
-            color: white;
-            padding: 15px;
-            margin-top: 20px;
-        }
-        
-        .qcm-options {
-            margin: 15px 0;
-            padding-left: 20px;
-        }
-        
-        .qcm-option {
-            margin: 8px 0;
-            font-size: 15px;
+            margin-bottom: 8px;
+            padding-left: 15px;
             position: relative;
         }
         
-        .qcm-option::before {
-            content: "○ ";
+        .solution-step::before {
+            content: "→";
+            position: absolute;
+            left: 0;
+            color: #2c5aa0;
             font-weight: bold;
-            color: #1a1a1a;
-            margin-right: 8px;
         }
         
-        .footer {
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 2px solid #1a1a1a;
+        .solution-result {
+            font-weight: bold;
+            color: #2c5aa0;
+            background: #e8f4f8;
+            padding: 8px;
+            border-radius: 3px;
+            border-left: 4px solid #2c5aa0;
+        }
+        
+        /* Geometric schema styling */
+        .geometric-schema {
             text-align: center;
-            font-size: 12px;
-            color: #777;
+            margin: 15px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
         }
         
+        .geometric-schema svg {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="document-header">
+        <div class="document-title">{{ document.type_doc|title }} - Corrigé</div>
+        <div class="document-subtitle">{{ document.matiere }} • {{ document.niveau }} • {{ document.chapitre }}</div>
+    </div>
+
+    {% for exercice in document.exercises %}
+    <div class="exercise">
+        <div class="exercise-header">Exercice {{ loop.index }}</div>
+        <div class="exercise-content">
+            {{ exercice.enonce }}
+            
+            <!-- NEW: Render geometric schema SVG if generated -->
+            {% if exercice.schema_svg %}
+                <div class="geometric-schema">
+                    {{ exercice.schema_svg|safe }}
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if exercice.solution %}
+        <div class="solution">
+            <div class="solution-header">Solution :</div>
+            
+            {% if exercice.solution.etapes %}
+            <div class="solution-steps">
+                {% for etape in exercice.solution.etapes %}
+                <div class="solution-step">{{ etape }}</div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            
+            {% if exercice.solution.resultat %}
+            <div class="solution-result">Résultat : {{ exercice.solution.resultat }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+    {% endfor %}
+</body>
+</html>
