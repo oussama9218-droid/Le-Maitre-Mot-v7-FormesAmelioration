@@ -3170,8 +3170,27 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         # Update render context with processed document
         render_context['document'] = document_dict
         
-        # Log schema_svg presence for debugging
+        # Generate SVG schemas for each exercise (before template render)
         exercises = document_dict.get('exercises', [])
+        for i, exercise in enumerate(exercises, start=1):
+            schema_data = None
+            
+            # Check for schema in donnees
+            if exercise.get('donnees') and isinstance(exercise.get('donnees'), dict):
+                schema_data = exercise.get('donnees').get('schema')
+            
+            if schema_data:
+                try:
+                    svg_content = schema_renderer.render_to_svg(schema_data)
+                    if svg_content:
+                        exercise['schema_svg'] = svg_content
+                        logger.info(f"[EXPORT][PDF] Generated SVG for Exercice {i} - schema_svg length = {len(svg_content)}")
+                    else:
+                        logger.warning(f"[EXPORT][PDF] Failed to render schema for Exercice {i}")
+                except Exception as e:
+                    logger.error(f"[EXPORT][PDF] Error rendering schema for Exercice {i}: {e}")
+        
+        # Log schema_svg presence for debugging
         for i, ex in enumerate(exercises, start=1):
             schema_svg_length = len(ex.get('schema_svg', ''))
             logger.info(f"[EXPORT][PDF] Exercice {i} - schema_svg length = {schema_svg_length}")
