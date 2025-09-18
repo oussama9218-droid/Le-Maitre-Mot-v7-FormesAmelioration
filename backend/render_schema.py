@@ -36,9 +36,32 @@ class SchemaRenderer:
             ax.text(x + label_offset[0], y + label_offset[1], label, 
                    fontsize=12, fontweight='bold', ha='center', va='center')
     
-    def draw_segment(self, ax, x1, y1, x2, y2, color='blue', linewidth=2, style='-'):
-        """Draw a line segment between two points"""
+    def draw_segment(self, ax, x1, y1, x2, y2, color='blue', linewidth=2, style='-', length_text=None):
+        """Draw a line segment between two points with optional length text"""
         ax.plot([x1, x2], [y1, y2], color=color, linewidth=linewidth, linestyle=style)
+        
+        # Add length text if provided
+        if length_text:
+            # Calculate midpoint
+            mid_x, mid_y = (x1 + x2) / 2, (y1 + y2) / 2
+            
+            # Calculate perpendicular offset for label positioning
+            dx, dy = x2 - x1, y2 - y1
+            length_seg = np.sqrt(dx**2 + dy**2)
+            
+            if length_seg > 0:
+                # Perpendicular vector for offset
+                perp_x, perp_y = -dy / length_seg, dx / length_seg
+                offset = 0.3
+                label_x = mid_x + perp_x * offset
+                label_y = mid_y + perp_y * offset
+            else:
+                label_x, label_y = mid_x, mid_y + 0.3
+            
+            # Display length text with white background
+            ax.text(label_x, label_y, length_text, fontsize=10, ha='center', va='center',
+                    color='blue', fontweight='bold',
+                    bbox=dict(boxstyle="round,pad=1", facecolor='white', edgecolor='none', alpha=0.9))
     
     def draw_len_label(self, ax, x1, y1, x2, y2, length, offset=0.3):
         """Draw a length label at the midpoint of a segment"""
