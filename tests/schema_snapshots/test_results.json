@@ -1,0 +1,153 @@
+{
+  "timestamp": "2025-09-18T00:48:42.646731",
+  "total_tests": 10,
+  "successful_tests": 9,
+  "results": [
+    {
+      "name": "triangle_simple",
+      "schema_type": "triangle",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 6158,
+      "png_size": 6854,
+      "svg_md5": "e44bdebcb8e68313d31708c100caf52c",
+      "png_md5": "80bee8ed96d69d541254c29a26700018",
+      "validation_issues": [],
+      "error": null
+    },
+    {
+      "name": "triangle_rectangle",
+      "schema_type": "triangle_rectangle",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 7282,
+      "png_size": 9104,
+      "svg_md5": "864b0099ad5d9a4e8850cbc29e4370be",
+      "png_md5": "fa1db5d499476110b1fe183abb5f71f0",
+      "validation_issues": [],
+      "error": null
+    },
+    {
+      "name": "rectangle",
+      "schema_type": "rectangle",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 3869,
+      "png_size": 10744,
+      "svg_md5": "75a5e20c1fff5740b0ed1645705a3aec",
+      "png_md5": "febfee890bbab0648a804d8514c60c49",
+      "validation_issues": [
+        "Points list is missing or empty"
+      ],
+      "error": null
+    },
+    {
+      "name": "carre",
+      "schema_type": "carre",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 3861,
+      "png_size": 9762,
+      "svg_md5": "d537b4ce6eadad3c80c1faf3315276e6",
+      "png_md5": "fc63b082f322d2296aeb22de4c6349a4",
+      "validation_issues": [
+        "Points list is missing or empty"
+      ],
+      "error": null
+    },
+    {
+      "name": "cercle",
+      "schema_type": "cercle",
+      "success": false,
+      "svg_generated": false,
+      "png_generated": false,
+      "svg_size": 0,
+      "png_size": 0,
+      "svg_md5": "",
+      "png_md5": "",
+      "validation_issues": [],
+      "error": "unhashable type: 'dict'"
+    },
+    {
+      "name": "losange",
+      "schema_type": "losange",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 3614,
+      "png_size": 10950,
+      "svg_md5": "dee9e39fa333126a2e68baf504f0ef2c",
+      "png_md5": "784758a12100a35bd85db58405cc1393",
+      "validation_issues": [
+        "Points list is missing or empty"
+      ],
+      "error": null
+    },
+    {
+      "name": "parallelogramme",
+      "schema_type": "parallelogramme",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 3630,
+      "png_size": 11195,
+      "svg_md5": "421fa2b831219a94001cf147ad5b77bd",
+      "png_md5": "18de471cfe39b6b0c2fce89483e27b90",
+      "validation_issues": [
+        "Points list is missing or empty"
+      ],
+      "error": null
+    },
+    {
+      "name": "trapeze_rectangle",
+      "schema_type": "trapeze_rectangle",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 3634,
+      "png_size": 11697,
+      "svg_md5": "2264544eedab691952daad95ecc2191f",
+      "png_md5": "d2230417f36f6c2ca03e1fd008dfe153",
+      "validation_issues": [
+        "Points list is missing or empty"
+      ],
+      "error": null
+    },
+    {
+      "name": "triangle_avec_medianes",
+      "schema_type": "triangle",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 3853,
+      "png_size": 11186,
+      "svg_md5": "7fe78dcbd13445ebb86c54f14930d1d0",
+      "png_md5": "a5e9d0d6a52cabc4f20dc839ecc70c6a",
+      "validation_issues": [
+        "Missing coordinates for points: ['M', 'N', 'P']"
+      ],
+      "error": null
+    },
+    {
+      "name": "schema_invalide",
+      "schema_type": "triangle",
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 3854,
+      "png_size": 11396,
+      "svg_md5": "e91932376dc94aa5e4356615e2d42dc7",
+      "png_md5": "8e52789ac277f5056f8b5a1a5b2ee9fb",
+      "validation_issues": [
+        "Not enough points for triangle: 1 < 3",
+        "Invalid coordinate format: ['A:invalid_coord']",
+        "Segment 0: point 'B' not in points list"
+      ],
+      "error": null
+    }
+  ]
+}
