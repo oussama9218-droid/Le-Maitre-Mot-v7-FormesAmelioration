@@ -301,7 +301,6 @@ class SchemaRenderer:
                 arc_radius = 0.4
                 angle1 = math.atan2(v1_y, v1_x)
                 angle2 = math.atan2(v2_y, v2_x)
-                bisector_angle = math.atan2(bisector_y, bisector_x)
                 
                 # Draw two small arcs
                 for radius in [arc_radius * 0.7, arc_radius]:
