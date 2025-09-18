@@ -465,7 +465,7 @@ class SchemaRenderer:
     
     def _render_generic_polygon(self, data: dict) -> str:
         """Generic fallback renderer for unsupported schema types"""
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, ax = plt.subplots(figsize=(4, 4))
         
         schema_type = data.get("type", "unknown")
         points = data.get("points", [])
