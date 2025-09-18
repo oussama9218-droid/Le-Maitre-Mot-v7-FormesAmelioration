@@ -237,7 +237,7 @@ class SchemaRenderer:
     
     def _render_triangle_rectangle(self, data: dict) -> str:
         """Render a right triangle with proper right angle marker"""
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, ax = plt.subplots(figsize=(4, 4))
         
         # Get points or use defaults
         points = data.get("points", ["A", "B", "C"])
