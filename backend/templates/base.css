@@ -1,0 +1,158 @@
+/* Base CSS pour les templates PDF - Thèmes pour schémas géométriques */
+
+/* ========== THÈMES POUR SCHÉMAS ========== */
+
+/* Thème Académique - Points rouges, segments noirs, texte noir */
+.schema--academique svg circle {
+    fill: #e74c3c !important; /* Points rouges */
+    stroke: #c0392b !important;
+}
+
+.schema--academique svg line,
+.schema--academique svg path[stroke] {
+    stroke: #000000 !important; /* Segments noirs */
+}
+
+.schema--academique svg text {
+    fill: #000000 !important; /* Texte noir */
+    font-family: "Times New Roman", serif !important;
+    font-weight: 500 !important;
+}
+
+.schema--academique svg rect[fill] {
+    stroke: #000000 !important;
+}
+
+/* Thème Classique - Points noirs, segments sépia, texte sombre */
+.schema--classique svg circle {
+    fill: #2c3e50 !important; /* Points noirs */
+    stroke: #1a252f !important;
+}
+
+.schema--classique svg line,
+.schema--classique svg path[stroke] {
+    stroke: #8b4513 !important; /* Segments sépia */
+}
+
+.schema--classique svg text {
+    fill: #2c3e50 !important; /* Texte sombre */
+    font-family: "Times New Roman", serif !important;
+    font-weight: 400 !important;
+}
+
+.schema--classique svg rect[fill] {
+    stroke: #8b4513 !important;
+}
+
+/* Thème Moderne - Points bleus, segments gris foncé, texte gris clair */
+.schema--moderne svg circle {
+    fill: #3498db !important; /* Points bleus */
+    stroke: #2980b9 !important;
+}
+
+.schema--moderne svg line,
+.schema--moderne svg path[stroke] {
+    stroke: #34495e !important; /* Segments gris foncé */
+}
+
+.schema--moderne svg text {
+    fill: #7f8c8d !important; /* Texte gris clair */
+    font-family: "Arial", sans-serif !important;
+    font-weight: 300 !important;
+}
+
+.schema--moderne svg rect[fill] {
+    stroke: #34495e !important;
+}
+
+/* ========== STYLES GÉNÉRAUX POUR SCHÉMAS ========== */
+
+.exercise-schema {
+    border: 1px solid #ccc;
+    background: #fafafa;
+    padding: 8px;
+    text-align: center;
+    max-width: 250px;
+    margin: auto;
+}
+
+.exercise-schema svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Amélioration de la lisibilité des labels */
+.schema--academique svg text[font-size] {
+    font-size: 12px !important;
+}
+
+.schema--classique svg text[font-size] {
+    font-size: 11px !important;
+}
+
+.schema--moderne svg text[font-size] {
+    font-size: 10px !important;
+}
+
+/* Styles pour les formes géométriques spécifiques */
+.schema--academique svg polygon,
+.schema--academique svg ellipse {
+    fill-opacity: 0.3 !important;
+    stroke: #000000 !important;
+    stroke-width: 2 !important;
+}
+
+.schema--classique svg polygon,
+.schema--classique svg ellipse {
+    fill-opacity: 0.25 !important;
+    stroke: #8b4513 !important;
+    stroke-width: 1.5 !important;
+}
+
+.schema--moderne svg polygon,
+.schema--moderne svg ellipse {
+    fill-opacity: 0.2 !important;
+    stroke: #34495e !important;
+    stroke-width: 1.5 !important;
+}
+
+/* Styles pour les marqueurs spéciaux (angles droits, parallèles, etc.) */
+.schema--academique svg g[class*="angle"],
+.schema--academique svg g[class*="marker"] {
+    stroke: #c0392b !important;
+    fill: #c0392b !important;
+}
+
+.schema--classique svg g[class*="angle"],
+.schema--classique svg g[class*="marker"] {
+    stroke: #a0522d !important;
+    fill: #a0522d !important;
+}
+
+.schema--moderne svg g[class*="angle"],
+.schema--moderne svg g[class*="marker"] {
+    stroke: #2980b9 !important;
+    fill: #2980b9 !important;
+}
+
+/* Responsive pour impression */
+@media print {
+    .exercise-schema {
+        break-inside: avoid;
+        page-break-inside: avoid;
+    }
+    
+    .schema--academique svg text {
+        fill: #000000 !important;
+    }
+    
+    .schema--classique svg text {
+        fill: #2c3e50 !important;
+    }
+    
+    .schema--moderne svg text {
+        fill: #34495e !important;
+    }
+}
