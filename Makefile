@@ -134,7 +134,7 @@ perf-schemas:
 # Validation des schémas de test
 validate-schemas:
 	@echo "$(BLUE)✅ Validation des schémas de test$(NC)"
-	cd $(TESTS_DIR) && $(PYTHON) -c 'import sys; sys.path.insert(0, "../backend"); from render_schema import schema_renderer; test_schemas = [{"type": "triangle", "points": ["A", "B", "C"], "labels": {"A": "(0,3)", "B": "(0,0)", "C": "(4,0)"}}, {"type": "rectangle", "longueur": 5, "largeur": 3}, {"type": "triangle", "points": ["A"]}]; [print(f"{'✅' if schema_renderer.validate_schema(s)[0] else '❌'} Schéma {i+1}: {s.get('type', 'unknown')} - {'Valide' if schema_renderer.validate_schema(s)[0] else f'{len(schema_renderer.validate_schema(s)[1])} erreur(s)'}") for i, s in enumerate(test_schemas)]'
+	cd $(TESTS_DIR) && $(PYTHON) -c "import sys; sys.path.insert(0, '../backend'); from render_schema import schema_renderer; print('Triangle valide:', schema_renderer.validate_schema({'type': 'triangle', 'points': ['A', 'B', 'C'], 'labels': {'A': '(0,3)', 'B': '(0,0)', 'C': '(4,0)'}})[0]); print('Triangle invalide:', schema_renderer.validate_schema({'type': 'triangle', 'points': ['A']})[0])"
 
 # Statistiques du projet
 stats:
