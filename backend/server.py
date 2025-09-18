@@ -464,9 +464,6 @@ db = client[os.environ['DB_NAME']]
 # Create the main app without a prefix
 app = FastAPI()
 
-# Log server startup
-logger.info("🚀 Server started")
-
 # Create uploads directory and mount static files
 uploads_dir = ROOT_DIR / "uploads"
 uploads_dir.mkdir(exist_ok=True)
