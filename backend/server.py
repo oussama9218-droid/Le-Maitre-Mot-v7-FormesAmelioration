@@ -4016,11 +4016,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
+# Configure logging - handled by unified logger system
 logger = get_logger(__name__)
 
 @app.on_event("startup")
