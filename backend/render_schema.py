@@ -663,13 +663,33 @@ class SchemaRenderer:
                               edgecolor='black', linewidth=2, alpha=0.7)
         ax.add_patch(circle)
         
-        # Draw radius line
-        ax.plot([0, rayon], [0, 0], 'k--', linewidth=2)
-        ax.text(rayon/2, 0.3, f'r = {rayon} cm', fontsize=12, ha='center')
+        # Draw center point using utility function
+        self.draw_point(ax, 0, 0, 'O', label_offset=(0.2, 0.2), color='black', size=6)
         
-        # Add center point
-        ax.plot(0, 0, 'ko', markersize=6)
-        ax.text(0.2, 0.2, 'O', fontsize=12, fontweight='bold')
+        # Draw radius line using utility function
+        radius_end_x, radius_end_y = rayon, 0
+        self.draw_segment(ax, 0, 0, radius_end_x, radius_end_y, color='black', linewidth=2, style='--')
+        
+        # Add radius label using utility function
+        self.draw_len_label(ax, 0, 0, radius_end_x, radius_end_y, f'r = {rayon}', offset=0.3)
+        
+        # Optional: Add diameter line and label
+        if data.get("show_diameter", False):
+            self.draw_segment(ax, -rayon, 0, rayon, 0, color='gray', linewidth=1, style=':')
+            self.draw_len_label(ax, -rayon, 0, rayon, 0, f'd = {2*rayon}', offset=-0.3)
+        
+        # Optional: Mark points on circle
+        points = data.get("points", [])
+        for i, point_data in enumerate(points):
+            if isinstance(point_data, dict):
+                angle = point_data.get("angle", i * 90)  # Default angles at 0°, 90°, 180°, 270°
+                label = point_data.get("label", f"P{i+1}")
+                
+                import math
+                x = rayon * math.cos(math.radians(angle))
+                y = rayon * math.sin(math.radians(angle))
+                
+                self.draw_point(ax, x, y, label, label_offset=(0.3, 0.3), color='blue', size=4)
         
         # Clean axes and auto-center
         ax.set_aspect('equal')
