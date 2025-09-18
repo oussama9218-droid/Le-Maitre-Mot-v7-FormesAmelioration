@@ -1335,9 +1335,8 @@ class SchemaRenderer:
         
         return self._fig_to_svg(fig)
     
-    def _render_triangle(self, data: dict) -> str:
-        """Render a triangle"""
-        fig, ax = plt.subplots(figsize=(4, 4))
+    def _render_triangle_common(self, ax, data: dict) -> bool:
+        """Common triangle rendering logic (returns True on success)"""
         
         # Get points or use defaults
         points = data.get("points", ["A", "B", "C"])
