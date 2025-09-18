@@ -386,7 +386,6 @@ class SchemaRenderer:
                         # Find intersection point (assuming they intersect)
                         # For now, mark perpendicular at midpoints
                         mid1_x, mid1_y = (coords[p1][0] + coords[p2][0]) / 2, (coords[p1][1] + coords[p2][1]) / 2
-                        mid2_x, mid2_y = (coords[p3][0] + coords[p4][0]) / 2, (coords[p3][1] + coords[p4][1]) / 2
                         
                         # Draw perpendicular symbol at intersection
                         self.draw_right_angle(ax, mid1_x, mid1_y, coords[p1][0], coords[p1][1], 
