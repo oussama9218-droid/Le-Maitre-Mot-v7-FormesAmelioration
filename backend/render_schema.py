@@ -940,7 +940,7 @@ class SchemaRenderer:
     @log_execution_time("render_to_svg")
     def render_to_svg(self, schema_data: dict) -> str:
         """
-        Convert schema JSON to SVG string
+        Convert schema JSON to SVG string with validation and fallback
         Args:
             schema_data: JSON schema like {"type": "cylindre", "rayon": 3, "hauteur": 5}
         Returns:
@@ -949,6 +949,17 @@ class SchemaRenderer:
         if not schema_data or not isinstance(schema_data, dict):
             logger.debug("No schema data provided or invalid format")
             return ""
+        
+        # Validate schema before rendering
+        is_valid, issues = self.validate_schema(schema_data)
+        if not is_valid:
+            logger.warning(
+                "Schema validation failed, creating fallback SVG",
+                module_name="render_schema",
+                func_name="render_to_svg",
+                issues=issues
+            )
+            return self.create_fallback_svg(schema_data, issues)
         
         schema_type = schema_data.get("type", "").lower()
         logger.info(
