@@ -762,6 +762,181 @@ class SchemaRenderer:
                 ax.plot([mark2_x - perp2_x, mark2_x + perp2_x], 
                        [mark2_y - perp2_y, mark2_y + perp2_y], 'k-', linewidth=2)
     
+    # ========== SCHEMA VALIDATION AND FALLBACK ==========
+    
+    def validate_schema(self, schema_data: dict) -> tuple[bool, list[str]]:
+        """
+        Validate geometric schema data and return validation result with issues
+        Returns: (is_valid, list_of_issues)
+        """
+        issues = []
+        
+        if not schema_data or not isinstance(schema_data, dict):
+            issues.append("Schema data is missing or not a dictionary")
+            return False, issues
+        
+        schema_type = schema_data.get("type", "").lower()
+        if not schema_type:
+            issues.append("Schema type is missing")
+            return False, issues
+        
+        # Validate points
+        points = schema_data.get("points", [])
+        if not points or not isinstance(points, list):
+            issues.append("Points list is missing or empty")
+            return False, issues
+        
+        if len(points) < 3 and schema_type not in ["cercle", "cylindre"]:
+            issues.append(f"Not enough points for {schema_type}: {len(points)} < 3")
+        
+        # Validate coordinates in labels
+        labels = schema_data.get("labels", {})
+        missing_coords = []
+        invalid_coords = []
+        
+        for point in points:
+            if point not in labels:
+                missing_coords.append(point)
+            else:
+                coord_str = labels[point]
+                if isinstance(coord_str, str):
+                    try:
+                        coord_str = coord_str.strip("()")
+                        x, y = map(float, coord_str.split(","))
+                    except (ValueError, AttributeError, IndexError):
+                        invalid_coords.append(f"{point}:{coord_str}")
+        
+        if missing_coords:
+            issues.append(f"Missing coordinates for points: {missing_coords}")
+        if invalid_coords:
+            issues.append(f"Invalid coordinate format: {invalid_coords}")
+        
+        # Validate segments references
+        segments = schema_data.get("segments", [])
+        for i, segment in enumerate(segments):
+            if len(segment) >= 2:
+                p1, p2 = segment[0], segment[1]
+                if p1 not in points:
+                    issues.append(f"Segment {i}: point '{p1}' not in points list")
+                if p2 not in points:
+                    issues.append(f"Segment {i}: point '{p2}' not in points list")
+        
+        # Validate angles references
+        angles = schema_data.get("angles", [])
+        for i, angle in enumerate(angles):
+            if len(angle) >= 1:
+                vertex = angle[0]
+                if vertex not in points:
+                    issues.append(f"Angle {i}: vertex '{vertex}' not in points list")
+        
+        # Validate geometric properties references
+        for prop_name in ["hauteurs", "medianes", "bissectrices"]:
+            prop_data = schema_data.get(prop_name, [])
+            for i, item in enumerate(prop_data):
+                if len(item) >= 3:
+                    vertex, p1, p2 = item[0], item[1], item[2]
+                    for point in [vertex, p1, p2]:
+                        if point not in points:
+                            issues.append(f"{prop_name}[{i}]: point '{point}' not in points list")
+        
+        # Check for mediatrices
+        mediatrices = schema_data.get("mediatrices", [])
+        for i, item in enumerate(mediatrices):
+            if len(item) >= 2:
+                p1, p2 = item[0], item[1]
+                for point in [p1, p2]:
+                    if point not in points:
+                        issues.append(f"mediatrices[{i}]: point '{point}' not in points list")
+        
+        # Check for parallel/perpendicular references
+        for prop_name in ["paralleles", "perpendiculaires", "egaux"]:
+            prop_data = schema_data.get(prop_name, [])
+            for i, group in enumerate(prop_data):
+                for j, segment in enumerate(group):
+                    if len(segment) >= 2:
+                        p1, p2 = segment[0], segment[1]
+                        for point in [p1, p2]:
+                            if point not in points:
+                                issues.append(f"{prop_name}[{i}][{j}]: point '{point}' not in points list")
+        
+        # Determine validity
+        is_valid = len(issues) == 0
+        
+        if not is_valid:
+            logger.warning(
+                "Schema validation failed",
+                module_name="render_schema",
+                func_name="validate_schema",
+                schema_type=schema_type,
+                issues_count=len(issues),
+                issues=issues
+            )
+        
+        return is_valid, issues
+    
+    def create_fallback_svg(self, schema_data: dict, issues: list[str]) -> str:
+        """
+        Create a fallback SVG when schema validation fails
+        """
+        fig, ax = plt.subplots(figsize=(4, 4))
+        
+        schema_type = schema_data.get("type", "unknown") if schema_data else "unknown"
+        
+        # Draw a placeholder box with error message
+        error_box = patches.Rectangle((0.5, 1.5), 3, 1.5, 
+                                    facecolor='lightgray', edgecolor='red', 
+                                    linewidth=2, linestyle='--', alpha=0.7)
+        ax.add_patch(error_box)
+        
+        # Add error icon (triangle with !)
+        triangle = patches.Polygon([(1, 1), (1.5, 0.2), (0.5, 0.2)], 
+                                 facecolor='orange', edgecolor='red', linewidth=2)
+        ax.add_patch(triangle)
+        ax.text(1, 0.5, '!', fontsize=16, fontweight='bold', ha='center', va='center')
+        
+        # Add error text
+        ax.text(2, 2.7, f'Schéma {schema_type}', fontsize=12, fontweight='bold', 
+                ha='center', va='top', color='darkred')
+        ax.text(2, 2.3, 'non disponible', fontsize=10, ha='center', va='top', color='red')
+        ax.text(2, 1.9, f'({len(issues)} erreur{"s" if len(issues) > 1 else ""})', 
+                fontsize=8, ha='center', va='top', color='gray')
+        
+        # Add basic geometric placeholder based on type
+        if schema_type == "triangle":
+            # Simple triangle outline
+            triangle_coords = [(2.5, 0.5), (3.5, 0.5), (3, 1.2), (2.5, 0.5)]
+            xs, ys = zip(*triangle_coords)
+            ax.plot(xs, ys, 'gray', linewidth=1, alpha=0.5)
+        elif schema_type in ["rectangle", "carre"]:
+            # Simple rectangle outline
+            rect = patches.Rectangle((2.5, 0.3), 1, 0.7, 
+                                   facecolor='none', edgecolor='gray', 
+                                   linewidth=1, alpha=0.5)
+            ax.add_patch(rect)
+        elif schema_type == "cercle":
+            # Simple circle outline
+            circle = patches.Circle((3, 0.7), 0.4, facecolor='none', 
+                                  edgecolor='gray', linewidth=1, alpha=0.5)
+            ax.add_patch(circle)
+        
+        # Configure axes
+        ax.set_xlim(0, 4)
+        ax.set_ylim(0, 3.5)
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.set_title(f'Erreur: {schema_type}', fontsize=12, fontweight='bold', 
+                    color='red', pad=10)
+        
+        logger.info(
+            "Created fallback SVG",
+            module_name="render_schema",
+            func_name="create_fallback_svg",
+            schema_type=schema_type,
+            issues_count=len(issues)
+        )
+        
+        return self._fig_to_svg(fig)
+    
     @log_execution_time("render_to_svg")
     def render_to_svg(self, schema_data: dict) -> str:
         """
