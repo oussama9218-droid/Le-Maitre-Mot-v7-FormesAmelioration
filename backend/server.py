@@ -1835,8 +1835,11 @@ Types et icônes:
                             schema_content = schema_data.get("schema")  # STANDARD KEY: "schema"
                             
                             if schema_content is not None and isinstance(schema_content, dict) and "type" in schema_content:
-                                # Store schema in separate field - KEEP ENONCE PURE TEXT!
-                                ex_data["schema"] = schema_content
+                                # Reconcile schema with enonce text for better accuracy
+                                enriched_schema = reconcile_enonce_schema(enonce, schema_content)
+                                
+                                # Store enriched schema in separate field - KEEP ENONCE PURE TEXT!
+                                ex_data["schema"] = enriched_schema
                                 ex_data["type"] = "geometry"
                                 
                                 log_schema_processing(
