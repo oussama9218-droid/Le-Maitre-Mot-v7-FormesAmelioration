@@ -1171,6 +1171,9 @@ class SchemaRenderer:
             
             self.draw_right_angle(ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y, size=0.2)
         
+        # Process additional geometric properties
+        self.process_geometric_properties(ax, data, coords)
+        
         # Clean axes and auto-center
         ax.set_aspect('equal')
         ax.axis('off')
@@ -1247,6 +1250,9 @@ class SchemaRenderer:
                 p2_x, p2_y = coords['A']
             
             self.draw_right_angle(ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y, size=0.2)
+        
+        # Process additional geometric properties
+        self.process_geometric_properties(ax, data, coords)
         
         # Clean axes and auto-center
         ax.set_aspect('equal')
