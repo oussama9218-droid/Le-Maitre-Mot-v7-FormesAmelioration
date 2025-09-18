@@ -429,7 +429,7 @@ class SchemaRenderer:
                 coords[point] = (i * 2, i * 2)  # Simple fallback positioning
             logger.info(f"Added fallback coordinates for missing points: {missing_points}")
         
-        # Draw triangle
+        # Draw triangle outline and fill
         try:
             triangle_coords = [coords[p] for p in points[:3]] + [coords[points[0]]]  # Use only first 3 points
             xs, ys = zip(*triangle_coords)
@@ -439,46 +439,55 @@ class SchemaRenderer:
             logger.error(f"KeyError in triangle rectangle rendering: {e}")
             return ""
         
-        # Add point labels
+        # Draw points using utility function
         for point in points[:3]:  # Only label first 3 points
             if point in coords:
                 x, y = coords[point]
-                ax.plot(x, y, 'ro', markersize=6)
-                ax.text(x-0.2, y+0.2, point, fontsize=12, fontweight='bold')
+                self.draw_point(ax, x, y, point, label_offset=(-0.2, 0.2))
         
-        # Add segments with lengths
+        # Draw segments with lengths using utility functions
         segments = data.get("segments", [])
         for segment in segments:
             if len(segment) >= 3:
                 p1, p2, props = segment[0], segment[1], segment[2]
                 if p1 in coords and p2 in coords:
+                    x1, y1 = coords[p1]
+                    x2, y2 = coords[p2]
+                    
+                    # Draw segment
+                    self.draw_segment(ax, x1, y1, x2, y2)
+                    
+                    # Add length label if provided
                     longueur = props.get("longueur")
                     if longueur:
-                        x1, y1 = coords[p1]
-                        x2, y2 = coords[p2]
-                        mid_x, mid_y = (x1 + x2) / 2, (y1 + y2) / 2
-                        ax.text(mid_x, mid_y-0.3, f'{longueur} cm', 
-                               fontsize=10, ha='center', bbox=dict(boxstyle="round,pad=0.3", 
-                               facecolor="white", alpha=0.8))
+                        self.draw_len_label(ax, x1, y1, x2, y2, longueur)
         
-        # Mark right angles - more robust
+        # Mark right angles using utility function
         angles = data.get("angles", [])
+        right_angle_marked = False
+        
         for angle in angles:
             if len(angle) >= 2:
-                point, props = angle[0], angle[1]
-                if props.get("angle_droit") and point in coords:
-                    x, y = coords[point]
-                    # Draw right angle marker
-                    size = 0.3
-                    ax.plot([x, x+size, x+size, x], [y, y, y+size, y+size], 'k-', linewidth=1)
+                vertex, props = angle[0], angle[1]
+                if props.get("angle_droit") and vertex in coords:
+                    vertex_x, vertex_y = coords[vertex]
+                    
+                    # Find adjacent points for right angle
+                    adjacent_points = [p for p in points[:3] if p != vertex and p in coords]
+                    if len(adjacent_points) >= 2:
+                        p1_x, p1_y = coords[adjacent_points[0]]
+                        p2_x, p2_y = coords[adjacent_points[1]]
+                        self.draw_right_angle(ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y)
+                        right_angle_marked = True
         
         # If no explicit right angle marked, mark the right angle at the second point (B)
-        if not angles and len(points) >= 2:
-            point = points[1]  # Usually B in triangle ABC
-            if point in coords:
-                x, y = coords[point]
-                size = 0.3
-                ax.plot([x, x+size, x+size, x], [y, y, y+size, y+size], 'k-', linewidth=1)
+        if not right_angle_marked and len(points) >= 3:
+            vertex = points[1]  # Usually B in triangle ABC
+            if vertex in coords:
+                vertex_x, vertex_y = coords[vertex]
+                p1_x, p1_y = coords[points[0]]  # A
+                p2_x, p2_y = coords[points[2]]  # C
+                self.draw_right_angle(ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y)
         
         # Clean axes and auto-center
         ax.set_aspect('equal')
