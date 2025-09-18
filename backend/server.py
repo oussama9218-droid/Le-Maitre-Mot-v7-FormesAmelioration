@@ -231,6 +231,28 @@ def reconcile_enonce_schema(enonce: str, schema_data: dict) -> dict:
         warnings.append(f"Points mentionnés dans l'énoncé mais absents du schéma: {sorted(missing_in_schema)}")
         # Add missing points to schema
         enriched_schema["points"] = list(existing_points | missing_in_schema)
+        
+        # Add automatic positions for missing points
+        labels = enriched_schema.get("labels", {})
+        positions = [(5, 0), (0, 5), (-5, 0), (0, -5), (3.5, 3.5), (-3.5, 3.5), (-3.5, -3.5), (3.5, -3.5)]
+        position_index = 0
+        
+        for point in sorted(missing_in_schema):
+            if point not in labels and position_index < len(positions):
+                x, y = positions[position_index]
+                auto_coords = f"({x},{y})"
+                labels[point] = auto_coords
+                position_index += 1
+                
+                logger.warning(
+                    f"Point {point} ajouté automatiquement à {auto_coords}",
+                    module_name="server",
+                    func_name="reconcile_enonce_schema",
+                    point=point,
+                    coordinates=auto_coords
+                )
+        
+        enriched_schema["labels"] = labels
     
     # Find points in schema but not mentioned in text
     missing_in_text = existing_points - mentioned_points
