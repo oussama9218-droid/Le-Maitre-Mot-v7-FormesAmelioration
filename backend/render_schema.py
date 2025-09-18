@@ -90,7 +90,7 @@ class SchemaRenderer:
     
     def _render_cylindre(self, data: dict) -> str:
         """Render a cylinder with given radius and height"""
-        fig, ax = plt.subplots(figsize=(6, 8))
+        fig, ax = plt.subplots(figsize=(4, 4))
         
         rayon = data.get("rayon", 3)
         hauteur = data.get("hauteur", 5)
@@ -114,12 +114,12 @@ class SchemaRenderer:
         ax.text(rayon + 0.5, hauteur/2, f'h = {hauteur} cm', fontsize=12, ha='left')
         ax.text(0, -rayon*0.5, f'r = {rayon} cm', fontsize=12, ha='center')
         
-        # Configure axes
-        ax.set_xlim(-rayon*1.5, rayon*2)
-        ax.set_ylim(-rayon, hauteur + rayon*0.5)
+        # Clean axes and auto-center
         ax.set_aspect('equal')
         ax.axis('off')
-        ax.set_title('Cylindre', fontsize=14, fontweight='bold')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Cylindre', fontsize=12, fontweight='bold', pad=10)
         
         return self._fig_to_svg(fig)
     
