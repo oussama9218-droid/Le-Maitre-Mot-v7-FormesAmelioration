@@ -13,7 +13,7 @@ import base64
 from backend.logger import get_logger
 from typing import Dict, Any, List, Tuple, Optional
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class GeometryRenderer:
