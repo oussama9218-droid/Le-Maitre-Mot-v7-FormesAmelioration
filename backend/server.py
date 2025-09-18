@@ -219,8 +219,16 @@ def reconcile_enonce_schema(enonce: str, schema_data: dict) -> dict:
     warnings = []
     
     # Extract points mentioned in the text
-    points_pattern = r'\b([A-Z])\b'
-    mentioned_points = set(re.findall(points_pattern, enonce))
+    # Pattern 1: Individual letters with word boundaries
+    points_pattern1 = r'\b([A-Z])\b'
+    # Pattern 2: Consecutive letters (like "ABC", "ABCD")
+    points_pattern2 = r'([A-Z]{2,})'
+    
+    mentioned_points = set(re.findall(points_pattern1, enonce))
+    
+    # Extract points from consecutive letter sequences
+    for sequence in re.findall(points_pattern2, enonce):
+        mentioned_points.update(list(sequence))
     
     # Get existing points from schema
     existing_points = set(enriched_schema.get("points", []))
