@@ -326,6 +326,9 @@ class SchemaDebugTester:
             if result["png_generated"]:
                 report.append(f"  PNG: {result['png_size']:,} bytes, MD5: {result['png_md5'][:8]}...")
             
+            if result["png_base64_generated"]:
+                report.append(f"  PNG Base64: {result['png_base64_size']:,} chars, MD5: {result['png_base64_md5'][:8]}...")
+            
             if result["validation_issues"]:
                 report.append(f"  Validation: {len(result['validation_issues'])} problème(s)")
                 for issue in result["validation_issues"][:2]:  # Limiter à 2 pour la lisibilité
