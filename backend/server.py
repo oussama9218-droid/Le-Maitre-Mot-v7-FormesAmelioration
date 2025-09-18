@@ -201,6 +201,202 @@ def process_exercise_content(content: str) -> str:
     
     return content
 
+def reconcile_enonce_schema(enonce: str, schema_data: dict) -> dict:
+    """
+    Réconcilie l'énoncé et le schéma : complète les labels depuis l'énoncé, 
+    détecte les symboles de parallèles (//) et perpendiculaires (⊥)
+    
+    Args:
+        enonce: Texte de l'énoncé de l'exercice
+        schema_data: Données du schéma géométrique
+    
+    Returns:
+        dict: Schéma enrichi avec les informations extraites de l'énoncé
+    """
+    if not enonce or not schema_data or not isinstance(schema_data, dict):
+        return schema_data or {}
+    
+    enriched_schema = schema_data.copy()
+    warnings = []
+    
+    # Extract points mentioned in the text
+    points_pattern = r'\b([A-Z])\b'
+    mentioned_points = set(re.findall(points_pattern, enonce))
+    
+    # Get existing points from schema
+    existing_points = set(enriched_schema.get("points", []))
+    
+    # Find missing points that are mentioned in text but not in schema
+    missing_in_schema = mentioned_points - existing_points
+    if missing_in_schema:
+        warnings.append(f"Points mentionnés dans l'énoncé mais absents du schéma: {sorted(missing_in_schema)}")
+        # Add missing points to schema
+        enriched_schema["points"] = list(existing_points | missing_in_schema)
+    
+    # Find points in schema but not mentioned in text
+    missing_in_text = existing_points - mentioned_points
+    if missing_in_text:
+        warnings.append(f"Points dans le schéma mais non mentionnés dans l'énoncé: {sorted(missing_in_text)}")
+    
+    # Extract coordinate information from text
+    # Pattern for coordinates like "A(0,3)", "B(-2, 4)", etc.
+    coord_pattern = r'([A-Z])\s*\(\s*(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)\s*\)'
+    text_coordinates = re.findall(coord_pattern, enonce)
+    
+    if text_coordinates:
+        labels = enriched_schema.get("labels", {})
+        for point, x, y in text_coordinates:
+            coord_str = f"({x},{y})"
+            if point in labels and labels[point] != coord_str:
+                warnings.append(f"Coordonnées contradictoires pour {point}: énoncé={coord_str}, schéma={labels[point]}")
+            else:
+                labels[point] = coord_str
+                logger.info(f"Coordonnées extraites de l'énoncé: {point}{coord_str}")
+        
+        enriched_schema["labels"] = labels
+    
+    # Detect parallel symbols (//) in text
+    parallel_patterns = [
+        r'([A-Z]{2})\s*//\s*([A-Z]{2})',  # AB // CD
+        r'([A-Z])\s*([A-Z])\s*//\s*([A-Z])\s*([A-Z])',  # A B // C D  
+        r'\(([A-Z])([A-Z])\)\s*//\s*\(([A-Z])([A-Z])\)',  # (AB) // (CD)
+    ]
+    
+    detected_parallels = []
+    for pattern in parallel_patterns:
+        matches = re.findall(pattern, enonce)
+        for match in matches:
+            if len(match) == 2:  # Format: AB // CD
+                seg1, seg2 = match[0], match[1]
+                if len(seg1) == 2 and len(seg2) == 2:
+                    detected_parallels.append([[list(seg1), list(seg2)]])
+            elif len(match) == 4:  # Format: A B // C D
+                seg1 = [match[0], match[1]]
+                seg2 = [match[2], match[3]]
+                detected_parallels.append([[seg1, seg2]])
+    
+    if detected_parallels:
+        existing_parallels = enriched_schema.get("paralleles", [])
+        for parallel_pair in detected_parallels:
+            if parallel_pair not in existing_parallels:
+                existing_parallels.extend(parallel_pair)
+                logger.info(f"Parallèles détectées dans l'énoncé: {parallel_pair}")
+        enriched_schema["paralleles"] = existing_parallels
+    
+    # Detect perpendicular symbols (⊥) in text
+    perpendicular_patterns = [
+        r'([A-Z]{2})\s*⊥\s*([A-Z]{2})',  # AB ⊥ CD
+        r'([A-Z])\s*([A-Z])\s*⊥\s*([A-Z])\s*([A-Z])',  # A B ⊥ C D
+        r'\(([A-Z])([A-Z])\)\s*⊥\s*\(([A-Z])([A-Z])\)',  # (AB) ⊥ (CD)
+    ]
+    
+    detected_perpendiculars = []
+    for pattern in perpendicular_patterns:
+        matches = re.findall(pattern, enonce)
+        for match in matches:
+            if len(match) == 2:  # Format: AB ⊥ CD
+                seg1, seg2 = match[0], match[1]
+                if len(seg1) == 2 and len(seg2) == 2:
+                    detected_perpendiculars.append([[list(seg1), list(seg2)]])
+            elif len(match) == 4:  # Format: A B ⊥ C D
+                seg1 = [match[0], match[1]]
+                seg2 = [match[2], match[3]]
+                detected_perpendiculars.append([[seg1, seg2]])
+    
+    if detected_perpendiculars:
+        existing_perpendiculars = enriched_schema.get("perpendiculaires", [])
+        for perp_pair in detected_perpendiculars:
+            if perp_pair not in existing_perpendiculars:
+                existing_perpendiculars.extend(perp_pair)
+                logger.info(f"Perpendiculaires détectées dans l'énoncé: {perp_pair}")
+        enriched_schema["perpendiculaires"] = existing_perpendiculars
+    
+    # Detect length information from text
+    # Pattern for lengths like "AB = 5 cm", "longueur BC = 3", etc.
+    length_patterns = [
+        r'([A-Z]{2})\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|m)?',  # AB = 5 cm
+        r'longueur\s+([A-Z]{2})\s*=\s*(\d+(?:\.\d+)?)',   # longueur AB = 5
+        r'([A-Z])\s*([A-Z])\s*=\s*(\d+(?:\.\d+)?)\s*(?:cm|m)?',  # A B = 5 cm
+    ]
+    
+    detected_lengths = {}
+    for pattern in length_patterns:
+        matches = re.findall(pattern, enonce)
+        for match in matches:
+            if len(match) == 2:  # Format: AB = 5
+                segment, length = match[0], match[1]
+                if len(segment) == 2:
+                    detected_lengths[segment] = float(length)
+            elif len(match) == 3:  # Format: A B = 5
+                p1, p2, length = match[0], match[1], match[2]
+                segment = p1 + p2
+                detected_lengths[segment] = float(length)
+    
+    if detected_lengths:
+        segments = enriched_schema.get("segments", [])
+        for segment_name, length in detected_lengths.items():
+            p1, p2 = list(segment_name)
+            # Look for existing segment or add new one
+            found = False
+            for segment in segments:
+                if len(segment) >= 3 and segment[0] == p1 and segment[1] == p2:
+                    segment[2]["longueur"] = length
+                    found = True
+                    break
+            
+            if not found:
+                segments.append([p1, p2, {"longueur": length}])
+                logger.info(f"Longueur extraite de l'énoncé: {segment_name} = {length}")
+        
+        enriched_schema["segments"] = segments
+    
+    # Detect right angles in text
+    right_angle_patterns = [
+        r'angle\s+droit\s+en\s+([A-Z])',  # angle droit en B
+        r'rectangle\s+en\s+([A-Z])',      # rectangle en B
+        r'perpendiculaire\s+en\s+([A-Z])', # perpendiculaire en B
+    ]
+    
+    detected_right_angles = []
+    for pattern in right_angle_patterns:
+        matches = re.findall(pattern, enonce)
+        for vertex in matches:
+            detected_right_angles.append([vertex, {"angle_droit": True}])
+    
+    if detected_right_angles:
+        angles = enriched_schema.get("angles", [])
+        for right_angle in detected_right_angles:
+            if right_angle not in angles:
+                angles.append(right_angle)
+                logger.info(f"Angle droit détecté dans l'énoncé: {right_angle[0]}")
+        enriched_schema["angles"] = angles
+    
+    # Log warnings
+    if warnings:
+        for warning in warnings:
+            logger.warning(
+                warning,
+                module_name="server",
+                func_name="reconcile_enonce_schema",
+                enonce_length=len(enonce),
+                schema_type=schema_data.get("type", "unknown")
+            )
+    
+    # Log summary of enrichment
+    original_elements = len(schema_data.get("points", [])) + len(schema_data.get("segments", [])) + len(schema_data.get("angles", []))
+    enriched_elements = len(enriched_schema.get("points", [])) + len(enriched_schema.get("segments", [])) + len(enriched_schema.get("angles", []))
+    
+    if enriched_elements > original_elements:
+        logger.info(
+            f"Schéma enrichi par l'énoncé: {original_elements} → {enriched_elements} éléments",
+            module_name="server",
+            func_name="reconcile_enonce_schema",
+            schema_type=schema_data.get("type", "unknown"),
+            warnings_count=len(warnings)
+        )
+    
+    return enriched_schema
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
