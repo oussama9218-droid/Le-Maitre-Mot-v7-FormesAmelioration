@@ -116,7 +116,7 @@
     
     <!-- NEW: Render geometric schema SVG if generated -->
     {% if exercise.schema_svg %}
-        <div class="geometric-schema">
+        <div class="exercise-schema schema--{{ document.template_style|default('academique') }}">
             {{ exercise.schema_svg|safe }}
         </div>
     {% endif %}
