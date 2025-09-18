@@ -162,10 +162,13 @@ class SchemaDebugTester:
             "success": False,
             "svg_generated": False,
             "png_generated": False,
+            "png_base64_generated": False,
             "svg_size": 0,
             "png_size": 0,
+            "png_base64_size": 0,
             "svg_md5": "",
             "png_md5": "",
+            "png_base64_md5": "",
             "validation_issues": [],
             "error": None
         }
@@ -189,7 +192,7 @@ class SchemaDebugTester:
                 result["svg_size"] = len(svg_content.encode('utf-8'))
                 result["svg_md5"] = self.calculate_md5(svg_content.encode('utf-8'))
                 
-                # Convertir en PNG
+                # Convertir SVG en PNG via CairoSVG
                 png_path = self.test_dir / f"{name}.png"
                 png_size, png_md5 = self.svg_to_png(svg_content, png_path)
                 
@@ -197,6 +200,20 @@ class SchemaDebugTester:
                     result["png_generated"] = True
                     result["png_size"] = png_size
                     result["png_md5"] = png_md5
+            
+            # TEST NOUVEAU: Générer PNG base64 directement
+            png_base64 = schema_renderer.render_geometry_to_base64(schema)
+            
+            if png_base64:
+                result["png_base64_generated"] = True
+                
+                # Sauvegarder le base64 pour inspection
+                base64_path = self.test_dir / f"{name}_base64.txt"
+                with open(base64_path, 'w', encoding='utf-8') as f:
+                    f.write(png_base64)
+                
+                result["png_base64_size"] = len(png_base64)
+                result["png_base64_md5"] = self.calculate_md5(png_base64.encode('utf-8'))
                 
                 result["success"] = True
             
