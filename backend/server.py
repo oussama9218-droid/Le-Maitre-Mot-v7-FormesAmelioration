@@ -3195,7 +3195,11 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                 if exercise.get('donnees') and isinstance(exercise['donnees'], dict):
                     schema_data = exercise['donnees'].get('schema')
                     if schema_data:
-                        schema_type = schema_data.get('type', 'unknown')
+                        # Reconcile schema with enonce text before rendering
+                        enonce = exercise.get('enonce', '')
+                        enriched_schema = reconcile_enonce_schema(enonce, schema_data)
+                        
+                        schema_type = enriched_schema.get('type', 'unknown')
                         logger.info(
                             "Generating SVG for PDF schema",
                             module_name="export",
@@ -3204,7 +3208,10 @@ async def export_pdf(request: ExportRequest, http_request: Request):
                             schema_type=schema_type
                         )
                         
-                        svg_content = schema_renderer.render_to_svg(schema_data)
+                        # Update the schema data with enriched version
+                        exercise['donnees']['schema'] = enriched_schema
+                        
+                        svg_content = schema_renderer.render_to_svg(enriched_schema)
                         if svg_content:
                             exercise['schema_svg'] = svg_content
                             logger.info(
