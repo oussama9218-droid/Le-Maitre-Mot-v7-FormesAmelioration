@@ -337,7 +337,7 @@ class SchemaRenderer:
     
     def _render_rectangle(self, data: dict) -> str:
         """Render a rectangle"""
-        fig, ax = plt.subplots(figsize=(6, 4))
+        fig, ax = plt.subplots(figsize=(4, 4))
         
         longueur = data.get("longueur", 6)
         largeur = data.get("largeur", 4)
@@ -351,11 +351,12 @@ class SchemaRenderer:
         ax.text(longueur/2, -0.5, f'{longueur} cm', fontsize=12, ha='center')
         ax.text(-0.5, largeur/2, f'{largeur} cm', fontsize=12, ha='center', rotation=90)
         
-        ax.set_xlim(-1, longueur+1)
-        ax.set_ylim(-1, largeur+1)
+        # Clean axes and auto-center
         ax.set_aspect('equal')
         ax.axis('off')
-        ax.set_title('Rectangle', fontsize=14, fontweight='bold')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Rectangle', fontsize=12, fontweight='bold', pad=10)
         
         return self._fig_to_svg(fig)
     
