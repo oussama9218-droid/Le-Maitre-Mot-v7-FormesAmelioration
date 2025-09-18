@@ -29,10 +29,41 @@
     .field label { min-width:55px; }
     .field .line { flex:1; border-bottom:1px dotted #000; height:16px; }
 
-    .exercise { margin:0 0 20px 0; page-break-inside:avoid; }
-    .exercise-header { font-weight:700; margin-bottom:6px; border-bottom:1px solid #000; padding-bottom:2px; }
-    .points { font-size:10pt; font-style:italic; float:right; }
-    .exercise-text { text-align:justify; margin:8px 0; }
+    .exercise { 
+      margin:0 0 20px 0; 
+      page-break-inside:avoid; 
+      border: 1px solid #ddd; 
+      padding: 15px; 
+      background: #fefefe;
+    }
+    .exercise-header { 
+      font-weight:700; 
+      margin-bottom:12px; 
+      border-bottom:1px solid #000; 
+      padding-bottom:4px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center;
+    }
+    .points { font-size:10pt; font-style:italic; }
+    .exercise-content { 
+      display: grid; 
+      grid-template-columns: 1fr 250px; 
+      gap: 20px; 
+      align-items: start; 
+    }
+    .exercise-text { text-align:justify; }
+    .exercise-schema { 
+      border:1px solid #ccc; 
+      background:#fafafa; 
+      padding:8px; 
+      text-align:center; 
+      max-width:250px; 
+    }
+    .exercise-schema svg { 
+      max-width: 100%; 
+      height: auto; 
+    }
 
     .answer-space { border:1px solid #000; background:#fff; margin-top:8px; }
     .answer-lines { height:3cm; background-image:repeating-linear-gradient(transparent, transparent 0.7cm, #000 0.7cm, #000 0.72cm); }
