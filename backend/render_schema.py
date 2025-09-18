@@ -452,14 +452,31 @@ class SchemaRenderer:
         return self._fig_to_svg(fig)
     
     def _fig_to_svg(self, fig) -> str:
-        """Convert matplotlib figure to SVG string"""
+        """Convert matplotlib figure to SVG string with border"""
         svg_buffer = StringIO()
         fig.savefig(svg_buffer, format='svg', bbox_inches='tight', 
-                   facecolor='white', edgecolor='none')
+                   facecolor='white', edgecolor='none', dpi=100)
         plt.close(fig)  # Free memory
         
         svg_content = svg_buffer.getvalue()
         svg_buffer.close()
+        
+        # Add light gray border to SVG
+        if '<svg' in svg_content and '>' in svg_content:
+            # Find the opening svg tag and add border styling
+            start_idx = svg_content.find('<svg')
+            end_idx = svg_content.find('>', start_idx) + 1
+            svg_tag = svg_content[start_idx:end_idx]
+            
+            # Add border styling to the SVG
+            if 'style=' in svg_tag:
+                # Add to existing style
+                svg_tag = svg_tag.replace('style="', 'style="border: 1px solid #ccc; ')
+            else:
+                # Add new style attribute
+                svg_tag = svg_tag.replace('>', ' style="border: 1px solid #ccc; background: white;">')
+            
+            svg_content = svg_content[:start_idx] + svg_tag + svg_content[end_idx:]
         
         return svg_content
     
