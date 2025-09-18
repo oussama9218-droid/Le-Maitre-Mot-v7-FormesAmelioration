@@ -795,8 +795,8 @@ class SchemaRenderer:
                     coord_str = coord_str.strip("()")
                     x, y = map(float, coord_str.split(","))
                     coords[point] = (x, y)
-                except:
-                    pass  # Keep default
+                except (ValueError, AttributeError, IndexError):
+                    pass  # Keep default coordinates
         
         # Draw polygon
         if len(points) >= 3:
