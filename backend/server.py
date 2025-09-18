@@ -3310,6 +3310,7 @@ async def export_pdf(request: ExportRequest, http_request: Request):
         render_context = {
             'document': document,
             'date_creation': datetime.now(timezone.utc).strftime("%d/%m/%Y"),
+            'template_style': requested_style,  # Add template style for schema theming
         }
         
         # Add Pro personalization if available
