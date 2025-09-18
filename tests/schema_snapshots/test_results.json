@@ -1,7 +1,7 @@
 {
-  "timestamp": "2025-09-18T00:48:42.646731",
+  "timestamp": "2025-09-18T00:50:09.234134",
   "total_tests": 10,
-  "successful_tests": 9,
+  "successful_tests": 10,
   "results": [
     {
       "name": "triangle_simple",
@@ -11,7 +11,7 @@
       "png_generated": true,
       "svg_size": 6158,
       "png_size": 6854,
-      "svg_md5": "e44bdebcb8e68313d31708c100caf52c",
+      "svg_md5": "1c3bbe292efeb4d9c414415176485797",
       "png_md5": "80bee8ed96d69d541254c29a26700018",
       "validation_issues": [],
       "error": null
@@ -24,7 +24,7 @@
       "png_generated": true,
       "svg_size": 7282,
       "png_size": 9104,
-      "svg_md5": "864b0099ad5d9a4e8850cbc29e4370be",
+      "svg_md5": "753a7d7a8d8273b188e3308c9740c9f8",
       "png_md5": "fa1db5d499476110b1fe183abb5f71f0",
       "validation_issues": [],
       "error": null
@@ -37,7 +37,7 @@
       "png_generated": true,
       "svg_size": 3869,
       "png_size": 10744,
-      "svg_md5": "75a5e20c1fff5740b0ed1645705a3aec",
+      "svg_md5": "4be654b3b45933727f854734e8019ee6",
       "png_md5": "febfee890bbab0648a804d8514c60c49",
       "validation_issues": [
         "Points list is missing or empty"
@@ -52,7 +52,7 @@
       "png_generated": true,
       "svg_size": 3861,
       "png_size": 9762,
-      "svg_md5": "d537b4ce6eadad3c80c1faf3315276e6",
+      "svg_md5": "01d0b0c2a2f6c1910d8a5936c7f799e0",
       "png_md5": "fc63b082f322d2296aeb22de4c6349a4",
       "validation_issues": [
         "Points list is missing or empty"
@@ -62,15 +62,17 @@
     {
       "name": "cercle",
       "schema_type": "cercle",
-      "success": false,
-      "svg_generated": false,
-      "png_generated": false,
-      "svg_size": 0,
-      "png_size": 0,
-      "svg_md5": "",
-      "png_md5": "",
-      "validation_issues": [],
-      "error": "unhashable type: 'dict'"
+      "success": true,
+      "svg_generated": true,
+      "png_generated": true,
+      "svg_size": 4321,
+      "png_size": 11443,
+      "svg_md5": "a1cb62b7c90bc9559e74a97fbaaf43e9",
+      "png_md5": "1d3be5af332d7094e2a52e8bceabd2a4",
+      "validation_issues": [
+        "Points list is missing or empty"
+      ],
+      "error": null
     },
     {
       "name": "losange",
@@ -80,7 +82,7 @@
       "png_generated": true,
       "svg_size": 3614,
       "png_size": 10950,
-      "svg_md5": "dee9e39fa333126a2e68baf504f0ef2c",
+      "svg_md5": "0eaa0803087fa3d822710756f52d8a87",
       "png_md5": "784758a12100a35bd85db58405cc1393",
       "validation_issues": [
         "Points list is missing or empty"
@@ -95,7 +97,7 @@
       "png_generated": true,
       "svg_size": 3630,
       "png_size": 11195,
-      "svg_md5": "421fa2b831219a94001cf147ad5b77bd",
+      "svg_md5": "4d4d0e5e03845230868693b8ce9f8827",
       "png_md5": "18de471cfe39b6b0c2fce89483e27b90",
       "validation_issues": [
         "Points list is missing or empty"
@@ -110,7 +112,7 @@
       "png_generated": true,
       "svg_size": 3634,
       "png_size": 11697,
-      "svg_md5": "2264544eedab691952daad95ecc2191f",
+      "svg_md5": "59ffa030b474defc77042dabc757c078",
       "png_md5": "d2230417f36f6c2ca03e1fd008dfe153",
       "validation_issues": [
         "Points list is missing or empty"
@@ -125,7 +127,7 @@
       "png_generated": true,
       "svg_size": 3853,
       "png_size": 11186,
-      "svg_md5": "7fe78dcbd13445ebb86c54f14930d1d0",
+      "svg_md5": "1f7c80100c6a578a05f917f6fd1f6713",
       "png_md5": "a5e9d0d6a52cabc4f20dc839ecc70c6a",
       "validation_issues": [
         "Missing coordinates for points: ['M', 'N', 'P']"
@@ -140,7 +142,7 @@
       "png_generated": true,
       "svg_size": 3854,
       "png_size": 11396,
-      "svg_md5": "e91932376dc94aa5e4356615e2d42dc7",
+      "svg_md5": "ded5545afbffba4caaf18c53d0b9b50a",
       "png_md5": "8e52789ac277f5056f8b5a1a5b2ee9fb",
       "validation_issues": [
         "Not enough points for triangle: 1 < 3",
