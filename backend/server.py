@@ -400,6 +400,61 @@ def reconcile_enonce_schema(enonce: str, schema_data: dict) -> dict:
     
     return enriched_schema
 
+def auto_place_points(schema: dict, missing_points: list) -> dict:
+    """
+    Intelligently place missing points based on schema type
+    
+    Args:
+        schema: Schema dictionary 
+        missing_points: List of point names to place
+    
+    Returns:
+        dict: Updated labels with auto-placed points
+    """
+    if not missing_points:
+        return {}
+    
+    schema_type = schema.get("type", "").lower()
+    labels = schema.get("labels", {})
+    
+    auto_positions = {}
+    placed_count = 0
+    
+    # Rule 1: Triangle with 3 missing points
+    if schema_type in ["triangle", "triangle_rectangle"] and len(missing_points) == 3:
+        triangle_positions = {"A": (0, 0), "B": (8, 0), "C": (0, 6)}
+        for point in sorted(missing_points):
+            if placed_count < 3:
+                position_keys = list(triangle_positions.keys())
+                if placed_count < len(position_keys):
+                    pos = triangle_positions[position_keys[placed_count]]
+                    auto_positions[point] = f"({pos[0]},{pos[1]})"
+                    placed_count += 1
+    
+    # Rule 2: Quadrilaterals with 4 missing points
+    elif schema_type in ["rectangle", "carre", "losange", "parallelogramme", "trapeze", 
+                        "trapeze_rectangle", "trapeze_isocele", "quadrilatere"] and len(missing_points) == 4:
+        quad_positions = {"A": (0, 0), "B": (8, 0), "C": (8, 6), "D": (0, 6)}
+        for point in sorted(missing_points):
+            if placed_count < 4:
+                position_keys = list(quad_positions.keys())
+                if placed_count < len(position_keys):
+                    pos = quad_positions[position_keys[placed_count]]
+                    auto_positions[point] = f"({pos[0]},{pos[1]})"
+                    placed_count += 1
+    
+    # Rule 3: Distribute remaining points on circle of radius 5
+    if placed_count < len(missing_points):
+        remaining_points = missing_points[placed_count:]
+        circle_positions = [(5, 0), (0, 5), (-5, 0), (0, -5), (3.5, 3.5), (-3.5, 3.5), (-3.5, -3.5), (3.5, -3.5)]
+        
+        for i, point in enumerate(remaining_points):
+            if i < len(circle_positions):
+                x, y = circle_positions[i]
+                auto_positions[point] = f"({x},{y})"
+    
+    return auto_positions
+
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
