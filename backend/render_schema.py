@@ -938,6 +938,156 @@ class SchemaRenderer:
         
         return self._fig_to_svg(fig)
     
+    @log_execution_time("render_geometry_to_base64")
+    def render_geometry_to_base64(self, schema_data: dict) -> str:
+        """
+        Convert schema JSON to PNG base64 string for web display
+        Args:
+            schema_data: JSON schema like {"type": "triangle", "points": ["A", "B", "C"], ...}
+        Returns:
+            Base64 PNG string for embedding in HTML (data:image/png;base64,...)
+        """
+        if not schema_data or not isinstance(schema_data, dict):
+            logger.debug("No schema data provided or invalid format")
+            return ""
+        
+        # Validate schema before rendering
+        is_valid, issues = self.validate_schema(schema_data)
+        if not is_valid:
+            logger.warning(
+                "Schema validation failed, creating fallback PNG",
+                module_name="render_schema",
+                func_name="render_geometry_to_base64",
+                issues=issues
+            )
+            return self.create_fallback_png_base64(schema_data, issues)
+        
+        schema_type = schema_data.get("type", "").lower()
+        logger.info(
+            "Starting PNG base64 rendering",
+            module_name="render_schema",
+            func_name="render_geometry_to_base64", 
+            schema_type=schema_type
+        )
+        
+        try:
+            # Use the same rendering logic as SVG but output PNG
+            if schema_type == "triangle":
+                return self._render_triangle_png(schema_data)
+            elif schema_type == "triangle_rectangle":
+                return self._render_triangle_rectangle_png(schema_data)
+            elif schema_type == "rectangle":
+                return self._render_rectangle_png(schema_data)
+            elif schema_type == "carre":
+                return self._render_carre_png(schema_data)
+            elif schema_type == "cercle":
+                return self._render_cercle_png(schema_data)
+            elif schema_type == "cylindre":
+                return self._render_cylindre_png(schema_data)
+            elif schema_type == "pyramide":
+                return self._render_pyramide_png(schema_data)
+            elif schema_type == "quadrilatere":
+                return self._render_quadrilatere_png(schema_data)
+            elif schema_type == "losange":
+                return self._render_losange_png(schema_data)
+            elif schema_type == "parallelogramme":
+                return self._render_parallelogramme_png(schema_data)
+            elif schema_type in ["trapeze", "trapèze"]:
+                return self._render_trapeze_png(schema_data)
+            elif schema_type == "trapeze_rectangle":
+                return self._render_trapeze_rectangle_png(schema_data)
+            elif schema_type == "trapeze_isocele":
+                return self._render_trapeze_isocele_png(schema_data)
+            else:
+                logger.warning(
+                    "Unsupported schema type - falling back to generic polygon",
+                    module_name="render_schema",
+                    func_name="render_geometry_to_base64",
+                    schema_type=schema_type
+                )
+                return self._render_generic_polygon_png(schema_data)
+                
+        except Exception as e:
+            logger.error(
+                f"Error rendering schema to PNG base64: {e}",
+                module_name="render_schema",
+                func_name="render_geometry_to_base64",
+                schema_type=schema_type,
+                error=str(e)
+            )
+            return ""
+        
+        finally:
+            logger.info(
+                "Completed render_geometry_to_base64",
+                module_name="render_schema", 
+                func_name="render_geometry_to_base64",
+                schema_type=schema_type
+            )
+    
+    def create_fallback_png_base64(self, schema_data: dict, issues: list[str]) -> str:
+        """
+        Create a fallback PNG base64 when schema validation fails
+        """
+        fig, ax = plt.subplots(figsize=(4, 4))
+        
+        schema_type = schema_data.get("type", "unknown") if schema_data else "unknown"
+        
+        # Draw a placeholder box with error message
+        error_box = patches.Rectangle((0.5, 1.5), 3, 1.5, 
+                                    facecolor='lightgray', edgecolor='red', 
+                                    linewidth=2, linestyle='--', alpha=0.7)
+        ax.add_patch(error_box)
+        
+        # Add error icon (triangle with !)
+        triangle = patches.Polygon([(1, 1), (1.5, 0.2), (0.5, 0.2)], 
+                                 facecolor='orange', edgecolor='red', linewidth=2)
+        ax.add_patch(triangle)
+        ax.text(1, 0.5, '!', fontsize=16, fontweight='bold', ha='center', va='center')
+        
+        # Add error text
+        ax.text(2, 2.7, f'Schéma {schema_type}', fontsize=12, fontweight='bold', 
+                ha='center', va='top', color='darkred')
+        ax.text(2, 2.3, 'non disponible', fontsize=10, ha='center', va='top', color='red')
+        ax.text(2, 1.9, f'({len(issues)} erreur{"s" if len(issues) > 1 else ""})', 
+                fontsize=8, ha='center', va='top', color='gray')
+        
+        # Add basic geometric placeholder based on type
+        if schema_type == "triangle":
+            # Simple triangle outline
+            triangle_coords = [(2.5, 0.5), (3.5, 0.5), (3, 1.2), (2.5, 0.5)]
+            xs, ys = zip(*triangle_coords)
+            ax.plot(xs, ys, 'gray', linewidth=1, alpha=0.5)
+        elif schema_type in ["rectangle", "carre"]:
+            # Simple rectangle outline
+            rect = patches.Rectangle((2.5, 0.3), 1, 0.7, 
+                                   facecolor='none', edgecolor='gray', 
+                                   linewidth=1, alpha=0.5)
+            ax.add_patch(rect)
+        elif schema_type == "cercle":
+            # Simple circle outline
+            circle = patches.Circle((3, 0.7), 0.4, facecolor='none', 
+                                  edgecolor='gray', linewidth=1, alpha=0.5)
+            ax.add_patch(circle)
+        
+        # Configure axes
+        ax.set_xlim(0, 4)
+        ax.set_ylim(0, 3.5)
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.set_title(f'Erreur: {schema_type}', fontsize=12, fontweight='bold', 
+                    color='red', pad=10)
+        
+        logger.info(
+            "Created fallback PNG base64",
+            module_name="render_schema",
+            func_name="create_fallback_png_base64",
+            schema_type=schema_type,
+            issues_count=len(issues)
+        )
+        
+        return self._fig_to_png_base64(fig)
+    
     @log_execution_time("render_to_svg")
     def render_to_svg(self, schema_data: dict) -> str:
         """
