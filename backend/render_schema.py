@@ -531,6 +531,8 @@ class SchemaRenderer:
                 return self._render_cercle(schema_data)
             elif schema_type == "pyramide":
                 return self._render_pyramide(schema_data)
+            elif schema_type == "quadrilatere":
+                return self._render_quadrilatere(schema_data)
             else:
                 logger.warning(
                     "Unsupported schema type - falling back to generic polygon",
