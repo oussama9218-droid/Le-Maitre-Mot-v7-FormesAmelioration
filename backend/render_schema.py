@@ -1918,7 +1918,7 @@ class SchemaRenderer:
         return self._fig_to_svg(fig)
     
     def _fig_to_svg(self, fig) -> str:
-        """Convert matplotlib figure to SVG string with border"""
+        """Convert matplotlib figure to SVG string with border, viewBox and preserveAspectRatio"""
         svg_buffer = StringIO()
         fig.savefig(svg_buffer, format='svg', bbox_inches='tight', 
                    facecolor='white', edgecolor='none', dpi=100)
@@ -1927,12 +1927,39 @@ class SchemaRenderer:
         svg_content = svg_buffer.getvalue()
         svg_buffer.close()
         
-        # Add light gray border to SVG
+        # Process SVG to add viewBox, preserveAspectRatio, and border
         if '<svg' in svg_content and '>' in svg_content:
-            # Find the opening svg tag and add border styling
+            # Find the opening svg tag
             start_idx = svg_content.find('<svg')
             end_idx = svg_content.find('>', start_idx) + 1
             svg_tag = svg_content[start_idx:end_idx]
+            
+            # Extract width and height for viewBox
+            import re
+            width_match = re.search(r'width="([^"]+)"', svg_tag)
+            height_match = re.search(r'height="([^"]+)"', svg_tag)
+            
+            if width_match and height_match:
+                width = width_match.group(1)
+                height = height_match.group(1)
+                
+                # Convert pt to numeric (matplotlib uses pt by default)
+                try:
+                    w_num = float(width.replace('pt', ''))
+                    h_num = float(height.replace('pt', ''))
+                    
+                    # Add viewBox if missing
+                    if 'viewBox=' not in svg_tag:
+                        viewbox = f'viewBox="0 0 {w_num} {h_num}"'
+                        svg_tag = svg_tag.replace('<svg', f'<svg {viewbox}')
+                    
+                    # Add preserveAspectRatio if missing
+                    if 'preserveAspectRatio=' not in svg_tag:
+                        preserve_aspect = 'preserveAspectRatio="xMidYMid meet"'
+                        svg_tag = svg_tag.replace('<svg', f'<svg {preserve_aspect}')
+                    
+                except (ValueError, AttributeError):
+                    logger.warning("Could not parse SVG dimensions for viewBox")
             
             # Add border styling to the SVG
             if 'style=' in svg_tag:
