@@ -567,6 +567,9 @@ class SchemaRenderer:
         self.draw_len_label(ax, coords['A'][0], coords['A'][1], 
                            coords['D'][0], coords['D'][1], cote)
         
+        # Process additional geometric properties
+        self.process_geometric_properties(ax, data, coords)
+        
         # Clean axes and auto-center
         ax.set_aspect('equal')
         ax.axis('off')
