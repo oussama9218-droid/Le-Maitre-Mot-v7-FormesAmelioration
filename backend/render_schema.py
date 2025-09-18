@@ -581,13 +581,67 @@ class SchemaRenderer:
         
         cote = data.get("cote", 4)
         
-        # Draw square
+        # Define square corners
+        coords = {
+            'A': (0, cote),     # Top-left
+            'B': (0, 0),       # Bottom-left  
+            'C': (cote, 0),    # Bottom-right
+            'D': (cote, cote)  # Top-right
+        }
+        
+        # Draw square using utility functions
         square = patches.Rectangle((0, 0), cote, cote,
                                  facecolor='lightyellow', edgecolor='black', linewidth=2)
         ax.add_patch(square)
         
-        # Add label
-        ax.text(cote/2, -0.5, f'{cote} cm', fontsize=12, ha='center')
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Draw equal segments (all sides equal)
+        segments = [
+            ('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A')
+        ]
+        
+        # Mark equal sides with single tick marks
+        for i in range(len(segments)):
+            p1, p2 = segments[i]
+            x1, y1 = coords[p1]
+            x2, y2 = coords[p2]
+            
+            # Add length label only to bottom edge
+            if p1 == 'B' and p2 == 'C':
+                self.draw_len_label(ax, x1, y1, x2, y2, cote, offset=-0.4)
+        
+        # Mark opposite sides as equal
+        # AB = CD and BC = AD
+        ab_coords = coords['A'] + coords['B']
+        cd_coords = coords['C'] + coords['D']
+        bc_coords = coords['B'] + coords['C']
+        ad_coords = coords['A'] + coords['D']
+        
+        self.mark_equal(ax, *ab_coords, *cd_coords, marks=1)
+        self.mark_equal(ax, *bc_coords, *ad_coords, marks=1)
+        
+        # Mark all corners as right angles
+        for point in ['A', 'B', 'C', 'D']:
+            vertex_x, vertex_y = coords[point]
+            
+            # Get adjacent points for each corner
+            if point == 'A':
+                p1_x, p1_y = coords['D']
+                p2_x, p2_y = coords['B']
+            elif point == 'B':
+                p1_x, p1_y = coords['A']
+                p2_x, p2_y = coords['C']
+            elif point == 'C':
+                p1_x, p1_y = coords['B']
+                p2_x, p2_y = coords['D']
+            else:  # D
+                p1_x, p1_y = coords['C']
+                p2_x, p2_y = coords['A']
+            
+            self.draw_right_angle(ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y, size=0.2)
         
         # Clean axes and auto-center
         ax.set_aspect('equal')
