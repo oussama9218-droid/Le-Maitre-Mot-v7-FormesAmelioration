@@ -133,28 +133,34 @@
   {% for exercise in document.exercises or [] %}
   <div class="exercise">
     <div class="exercise-header">
-      Exercice {{ loop.index }} 
+      <span>Exercice {{ loop.index }}</span>
       <span class="points">
         {% set total_points = (exercise.bareme or [])|sum(attribute='points') %} 
         ({{ "%.1f"|format(total_points) }} pts)
       </span>
     </div>
-    <div class="exercise-text">{{ exercise.enonce or '' }}
     
-    <!-- NEW: Render geometric schema SVG if generated -->
-    {% if exercise.schema_svg %}
-    <div class="geometric-schema">
-        {{ exercise.schema_svg|safe }}
+    <div class="exercise-content">
+      <div class="exercise-left">
+        <div class="exercise-text">{{ exercise.enonce or '' }}</div>
+        
+        {% if exercise.type == 'qcm' and exercise.donnees and exercise.donnees.options %}
+          <ul class="qcm-options">
+            {% for option in exercise.donnees.options %}
+              <li>{{ option }}</li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+      </div>
+      
+      <div class="exercise-right">
+        {% if exercise.schema_svg %}
+          <div class="exercise-schema">
+            {{ exercise.schema_svg|safe }}
+          </div>
+        {% endif %}
+      </div>
     </div>
-    {% endif %}</div>
-    
-    {% if exercise.type == 'qcm' and exercise.donnees and exercise.donnees.options %}
-      <ul class="qcm-options">
-        {% for option in exercise.donnees.options %}
-          <li>{{ option }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
     
     <div class="answer-space"><div class="answer-lines"></div></div>
   </div>
