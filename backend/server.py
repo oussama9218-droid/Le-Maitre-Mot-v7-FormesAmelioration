@@ -389,13 +389,7 @@ def reconcile_enonce_schema(enonce: str, schema_data: dict) -> dict:
     # Log warnings
     if warnings:
         for warning in warnings:
-            logger.warning(
-                warning,
-                module_name="server",
-                func_name="reconcile_enonce_schema",
-                enonce_length=len(enonce),
-                schema_type=schema_data.get("type", "unknown")
-            )
+            logger.warning(f"[reconcile_enonce_schema] {warning}")
     
     # Log summary of enrichment
     original_elements = len(schema_data.get("points", [])) + len(schema_data.get("segments", [])) + len(schema_data.get("angles", []))
