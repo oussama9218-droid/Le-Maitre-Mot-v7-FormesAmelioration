@@ -226,9 +226,12 @@ class SchemaRenderer:
                     size = 0.3
                     ax.plot([x, x+size, x+size, x], [y, y, y+size, y+size], 'k-', linewidth=1)
         
+        # Clean axes and auto-center
         ax.set_aspect('equal')
-        ax.grid(True, alpha=0.3)
-        ax.set_title('Triangle', fontsize=14, fontweight='bold')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Triangle', fontsize=12, fontweight='bold', pad=10)
         
         return self._fig_to_svg(fig)
     
