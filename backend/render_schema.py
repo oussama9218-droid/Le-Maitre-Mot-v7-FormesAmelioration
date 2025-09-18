@@ -329,46 +329,56 @@ class SchemaRenderer:
             )
             return ""  # Return empty SVG instead of crashing
         
-        # Draw polygon (triangle or other) - now safe from KeyError
+        # Draw polygon outline and fill
         try:
             triangle_coords = [coords[p] for p in points] + [coords[points[0]]]
         except KeyError as e:
             logger.error(f"Unexpected KeyError after validation: {e}")
             return ""
+        
         xs, ys = zip(*triangle_coords)
         ax.plot(xs, ys, 'b-', linewidth=2)
         ax.fill(xs[:-1], ys[:-1], alpha=0.3, color='lightblue')
         
-        # Add point labels
+        # Draw points using utility function
         for point, (x, y) in coords.items():
-            ax.plot(x, y, 'ro', markersize=6)
-            ax.text(x-0.2, y+0.2, point, fontsize=12, fontweight='bold')
+            self.draw_point(ax, x, y, point, label_offset=(-0.2, 0.2))
         
-        # Add segments with lengths
+        # Draw segments with lengths using utility functions
         segments = data.get("segments", [])
         for segment in segments:
             if len(segment) >= 3:
                 p1, p2, props = segment[0], segment[1], segment[2]
                 if p1 in coords and p2 in coords:
+                    x1, y1 = coords[p1]
+                    x2, y2 = coords[p2]
+                    
+                    # Draw segment
+                    self.draw_segment(ax, x1, y1, x2, y2)
+                    
+                    # Add length label if provided
                     longueur = props.get("longueur")
                     if longueur:
-                        x1, y1 = coords[p1]
-                        x2, y2 = coords[p2]
-                        mid_x, mid_y = (x1 + x2) / 2, (y1 + y2) / 2
-                        ax.text(mid_x, mid_y-0.3, f'{longueur} cm', 
-                               fontsize=10, ha='center', bbox=dict(boxstyle="round,pad=0.3", 
-                               facecolor="white", alpha=0.8))
+                        self.draw_len_label(ax, x1, y1, x2, y2, longueur)
         
-        # Mark right angles
+        # Mark right angles using utility function
         angles = data.get("angles", [])
         for angle in angles:
             if len(angle) >= 2:
-                point, props = angle[0], angle[1]
-                if props.get("angle_droit") and point in coords:
-                    x, y = coords[point]
-                    # Draw right angle marker
-                    size = 0.3
-                    ax.plot([x, x+size, x+size, x], [y, y, y+size, y+size], 'k-', linewidth=1)
+                vertex, props = angle[0], angle[1]
+                if props.get("angle_droit") and vertex in coords:
+                    # Find two adjacent points to the vertex
+                    vertex_x, vertex_y = coords[vertex]
+                    adjacent_points = []
+                    
+                    for point in points:
+                        if point != vertex and point in coords:
+                            adjacent_points.append(point)
+                    
+                    if len(adjacent_points) >= 2:
+                        p1_x, p1_y = coords[adjacent_points[0]]
+                        p2_x, p2_y = coords[adjacent_points[1]]
+                        self.draw_right_angle(ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y)
         
         # Clean axes and auto-center
         ax.set_aspect('equal')
