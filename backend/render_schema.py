@@ -125,7 +125,7 @@ class SchemaRenderer:
     
     def _render_triangle(self, data: dict) -> str:
         """Render a triangle"""
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, ax = plt.subplots(figsize=(4, 4))
         
         # Get points or use defaults
         points = data.get("points", ["A", "B", "C"])
