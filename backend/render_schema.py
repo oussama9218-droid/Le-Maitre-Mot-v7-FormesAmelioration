@@ -533,6 +533,16 @@ class SchemaRenderer:
                 return self._render_pyramide(schema_data)
             elif schema_type == "quadrilatere":
                 return self._render_quadrilatere(schema_data)
+            elif schema_type == "losange":
+                return self._render_losange(schema_data)
+            elif schema_type == "parallelogramme":
+                return self._render_parallelogramme(schema_data)
+            elif schema_type in ["trapeze", "trapèze"]:
+                return self._render_trapeze(schema_data)
+            elif schema_type == "trapeze_rectangle":
+                return self._render_trapeze_rectangle(schema_data)
+            elif schema_type == "trapeze_isocele":
+                return self._render_trapeze_isocele(schema_data)
             else:
                 logger.warning(
                     "Unsupported schema type - falling back to generic polygon",
