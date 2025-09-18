@@ -77,11 +77,7 @@ class SchemaDebugTester:
                 "schema": {
                     "type": "cercle",
                     "rayon": 3,
-                    "points": [
-                        {"angle": 0, "label": "A"},
-                        {"angle": 90, "label": "B"},
-                        {"angle": 180, "label": "C"}
-                    ]
+                    "show_diameter": True
                 }
             },
             {
