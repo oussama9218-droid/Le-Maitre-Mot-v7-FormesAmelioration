@@ -47,13 +47,18 @@
     }
     .points { font-size:10pt; font-style:italic; }
     .exercise-content { 
-      display: grid; 
-      grid-template-columns: 1fr auto; 
+      display: flex; 
       gap: 20px; 
       align-items: start; 
     }
-    .exercise-left { min-width: 0; }
-    .exercise-right { width: 250px; }
+    .exercise-left { 
+      flex: 1; 
+      min-width: 0; 
+    }
+    .exercise-right { 
+      width: 250px; 
+      flex-shrink: 0;
+    }
     .exercise-text { text-align:justify; }
     .exercise-schema { 
       border:1px solid #ccc; 
@@ -65,10 +70,6 @@
     .exercise-schema svg { 
       max-width: 100%; 
       height: auto; 
-    }
-    /* Si pas de schéma, le texte prend toute la largeur */
-    .exercise-content:has(.exercise-right:empty) {
-      grid-template-columns: 1fr;
     }
 
     .answer-space { border:1px solid #000; background:#fff; margin-top:8px; }
