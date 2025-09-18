@@ -130,7 +130,7 @@ class AppLogger:
         logger.addHandler(console_handler)
 
         # File handler with rotation
-        log_dir = "logs"
+        log_dir = "backend/log"
         os.makedirs(log_dir, exist_ok=True)
 
         file_handler = RotatingFileHandler(
