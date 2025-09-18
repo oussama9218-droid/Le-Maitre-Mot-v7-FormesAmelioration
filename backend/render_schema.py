@@ -396,7 +396,6 @@ class SchemaRenderer:
         for equal_group in egaux:
             if len(equal_group) >= 2:
                 segments = equal_group
-                marks = len(segments)  # Different number of marks for different groups
                 
                 for i in range(len(segments) - 1):
                     seg1, seg2 = segments[i], segments[i + 1]
