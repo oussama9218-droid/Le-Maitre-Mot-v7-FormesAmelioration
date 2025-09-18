@@ -1088,6 +1088,134 @@ class SchemaRenderer:
         
         return self._fig_to_png_base64(fig)
     
+    # ========== PNG RENDERING METHODS (same logic as SVG but output PNG base64) ==========
+    
+    def _render_triangle_png(self, data: dict) -> str:
+        """Render a triangle as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_triangle_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_triangle_rectangle_png(self, data: dict) -> str:
+        """Render a right triangle as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_triangle_rectangle_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_rectangle_png(self, data: dict) -> str:
+        """Render a rectangle as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_rectangle_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_carre_png(self, data: dict) -> str:
+        """Render a square as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_carre_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_cercle_png(self, data: dict) -> str:
+        """Render a circle as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_cercle_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_cylindre_png(self, data: dict) -> str:
+        """Render a cylinder as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_cylindre_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_pyramide_png(self, data: dict) -> str:
+        """Render a pyramid as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_pyramide_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_quadrilatere_png(self, data: dict) -> str:
+        """Render a quadrilateral as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_quadrilatere_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_losange_png(self, data: dict) -> str:
+        """Render a diamond as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_losange_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_parallelogramme_png(self, data: dict) -> str:
+        """Render a parallelogram as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_parallelogramme_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_trapeze_png(self, data: dict) -> str:
+        """Render a trapezoid as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_trapeze_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_trapeze_rectangle_png(self, data: dict) -> str:
+        """Render a right trapezoid as PNG base64"""
+        fig, ax = plt.subpluts(fixsize=(4, 4))
+        result = self._render_trapeze_rectangle_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_trapeze_isocele_png(self, data: dict) -> str:
+        """Render an isosceles trapezoid as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_trapeze_isocele_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
+    def _render_generic_polygon_png(self, data: dict) -> str:
+        """Render a generic polygon as PNG base64"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_generic_polygon_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
+        return self._fig_to_png_base64(fig)
+    
     @log_execution_time("render_to_svg")
     def render_to_svg(self, schema_data: dict) -> str:
         """
