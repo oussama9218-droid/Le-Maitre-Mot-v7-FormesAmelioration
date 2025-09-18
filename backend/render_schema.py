@@ -1570,6 +1570,29 @@ class SchemaRenderer:
         
         return svg_content
     
+    def _fig_to_png_base64(self, fig) -> str:
+        """Convert matplotlib figure to PNG base64 string"""
+        try:
+            png_buffer = BytesIO()
+            fig.savefig(png_buffer, format='png', bbox_inches='tight', 
+                       facecolor='white', edgecolor='none', dpi=100)
+            plt.close(fig)  # Free memory
+            
+            # Get PNG bytes and encode to base64
+            png_buffer.seek(0)
+            png_bytes = png_buffer.getvalue()
+            png_buffer.close()
+            
+            # Encode to base64 string
+            base64_string = base64.b64encode(png_bytes).decode('utf-8')
+            
+            return f"data:image/png;base64,{base64_string}"
+            
+        except Exception as e:
+            logger.error(f"Error converting figure to PNG base64: {e}")
+            plt.close(fig)  # Ensure figure is closed even on error
+            return ""
+    
     def _render_generic_polygon(self, data: dict) -> str:
         """Generic fallback renderer for unsupported schema types"""
         fig, ax = plt.subplots(figsize=(4, 4))
