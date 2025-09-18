@@ -1524,13 +1524,12 @@ class SchemaRenderer:
                     x1, y1 = coords[p1]
                     x2, y2 = coords[p2]
                     
-                    # Draw segment
-                    self.draw_segment(ax, x1, y1, x2, y2)
-                    
-                    # Add length label if provided
+                    # Get length text if provided
                     longueur = props.get("longueur")
-                    if longueur:
-                        self.draw_len_label(ax, x1, y1, x2, y2, longueur)
+                    length_text = f"{longueur} cm" if longueur else None
+                    
+                    # Draw segment with length text
+                    self.draw_segment(ax, x1, y1, x2, y2, length_text=length_text)
         
         # Mark right angles using utility function
         angles = data.get("angles", [])
@@ -1636,13 +1635,12 @@ class SchemaRenderer:
                     x1, y1 = coords[p1]
                     x2, y2 = coords[p2]
                     
-                    # Draw segment
-                    self.draw_segment(ax, x1, y1, x2, y2)
-                    
-                    # Add length label if provided
+                    # Get length text if provided
                     longueur = props.get("longueur")
-                    if longueur:
-                        self.draw_len_label(ax, x1, y1, x2, y2, longueur)
+                    length_text = f"{longueur} cm" if longueur else None
+                    
+                    # Draw segment with length text
+                    self.draw_segment(ax, x1, y1, x2, y2, length_text=length_text)
         
         # Mark right angles using utility function
         angles = data.get("angles", [])
