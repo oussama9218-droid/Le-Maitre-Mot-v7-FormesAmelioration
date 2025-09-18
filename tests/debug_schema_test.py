@@ -299,6 +299,7 @@ class SchemaDebugTester:
         successful_tests = sum(1 for r in self.results if r["success"])
         svg_generated = sum(1 for r in self.results if r["svg_generated"])
         png_generated = sum(1 for r in self.results if r["png_generated"])
+        png_base64_generated = sum(1 for r in self.results if r["png_base64_generated"])
         
         report = [
             "=" * 60,
@@ -308,6 +309,7 @@ class SchemaDebugTester:
             f"Tests réussis: {successful_tests}/{total_tests} ({successful_tests/total_tests*100:.1f}%)",
             f"SVG générés: {svg_generated}/{total_tests}",
             f"PNG générés: {png_generated}/{total_tests}",
+            f"PNG Base64 générés: {png_base64_generated}/{total_tests}",
             "",
             "DÉTAILS PAR TEST:",
             "-" * 40
