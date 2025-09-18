@@ -9,9 +9,9 @@ from typing import Dict, Any
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from io import BytesIO
-import logging
+from backend.logger import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class LaTeXToSVGRenderer:
