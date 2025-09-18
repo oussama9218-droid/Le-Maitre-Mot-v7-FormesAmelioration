@@ -7,9 +7,9 @@ import matplotlib.patches as patches
 import numpy as np
 from io import StringIO, BytesIO
 import base64
-from logger import get_logger, log_execution_time, log_schema_processing
+from backend.logger import get_logger, log_execution_time, log_schema_processing
 
-logger = get_logger()
+logger = get_logger(__name__)
 
 class SchemaRenderer:
     """Converts JSON schema descriptions to SVG figures"""
