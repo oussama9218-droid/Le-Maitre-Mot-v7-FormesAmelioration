@@ -1091,6 +1091,9 @@ class SchemaRenderer:
                 p2_x, p2_y = coords[points[2]]  # C
                 self.draw_right_angle(ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y)
         
+        # Process additional geometric properties
+        self.process_geometric_properties(ax, data, coords)
+        
         # Clean axes and auto-center
         ax.set_aspect('equal')
         ax.axis('off')
