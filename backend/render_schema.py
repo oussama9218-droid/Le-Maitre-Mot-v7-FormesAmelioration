@@ -1191,7 +1191,7 @@ class SchemaRenderer:
     
     def _render_trapeze_rectangle_png(self, data: dict) -> str:
         """Render a right trapezoid as PNG base64"""
-        fig, ax = plt.subpluts(fixsize=(4, 4))
+        fig, ax = plt.subplots(figsize=(4, 4))
         result = self._render_trapeze_rectangle_common(ax, data)
         if not result:
             plt.close(fig)
