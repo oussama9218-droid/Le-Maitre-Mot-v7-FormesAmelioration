@@ -148,7 +148,7 @@ stats:
 	@find $(BACKEND_DIR)/templates -name "*.html" | xargs wc -l | tail -1
 	@echo ""
 	@echo "$(YELLOW)Schémas disponibles:$(NC)"
-	@cd $(BACKEND_DIR) && $(PYTHON) -c 'import sys; sys.path.insert(0, "."); from render_schema import schema_renderer; methods = [m for m in dir(schema_renderer) if m.startswith("_render_") and callable(getattr(schema_renderer, m))]; print(f"Types de schémas supportés: {len(methods)}"); [print(f"  - {method.replace('_render_', '')}") for method in sorted(methods)]'
+	@cd $(BACKEND_DIR) && $(PYTHON) -c "import sys; sys.path.insert(0, '.'); from render_schema import schema_renderer; methods = [m for m in dir(schema_renderer) if m.startswith('_render_') and callable(getattr(schema_renderer, m))]; print('Types de schémas supportés:', len(methods)); [print('  -', method.replace('_render_', '')) for method in sorted(methods)]"
 
 # Installation des dépendances manquantes pour les tests
 install-test-deps:
