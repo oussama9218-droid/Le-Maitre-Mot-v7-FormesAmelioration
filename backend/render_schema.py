@@ -413,7 +413,7 @@ class SchemaRenderer:
     
     def _render_pyramide(self, data: dict) -> str:
         """Render a pyramid"""
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, ax = plt.subplots(figsize=(4, 4))
         
         base = data.get("base", "carre")
         hauteur = data.get("hauteur", 5)
