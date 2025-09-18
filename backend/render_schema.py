@@ -442,9 +442,12 @@ class SchemaRenderer:
             ax.plot(apex[0], apex[1], 'ro', markersize=6)
             ax.text(apex[0]+0.2, apex[1]+0.2, 'S', fontsize=12, fontweight='bold')
         
+        # Clean axes and auto-center
         ax.set_aspect('equal')
         ax.axis('off')
-        ax.set_title('Pyramide', fontsize=14, fontweight='bold')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Pyramide', fontsize=12, fontweight='bold', pad=10)
         
         return self._fig_to_svg(fig)
     
