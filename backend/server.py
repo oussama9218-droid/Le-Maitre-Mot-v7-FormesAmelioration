@@ -3321,6 +3321,9 @@ async def export_pdf(request: ExportRequest, http_request: Request):
             render_context['footer_text'] = template_config.get('footer_text')
             render_context['logo_filename'] = template_config.get('logo_filename')
             
+            # Add template style for schema theming
+            render_context['template_style'] = template_config.get('template_style', 'academique')
+            
             # Convert logo URL to absolute file path for WeasyPrint
             logo_url = template_config.get('logo_url')
             if logo_url and logo_url.startswith('/uploads/'):
