@@ -5,7 +5,8 @@ Schema Rendering Module - Convert JSON geometric schemas to SVG images
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 import numpy as np
-from io import StringIO
+from io import StringIO, BytesIO
+import base64
 from logger import get_logger, log_execution_time, log_schema_processing
 
 logger = get_logger()
