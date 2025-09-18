@@ -129,27 +129,7 @@ clean:
 perf-schemas:
 	@echo "$(BLUE)⚡ Tests de performance des schémas$(NC)"
 	@echo "$(YELLOW)Génération de 100 schémas pour mesurer les performances...$(NC)"
-	cd $(TESTS_DIR) && time $(PYTHON) -c "
-import sys
-sys.path.insert(0, '../backend')
-from render_schema import schema_renderer
-import time
-
-schemas = [
-    {'type': 'triangle', 'points': ['A', 'B', 'C'], 'labels': {'A': '(0,3)', 'B': '(0,0)', 'C': '(4,0)'}},
-    {'type': 'rectangle', 'longueur': 5, 'largeur': 3},
-    {'type': 'cercle', 'rayon': 2}
-] * 34  # 102 schémas au total
-
-start = time.time()
-for i, schema in enumerate(schemas):
-    svg = schema_renderer.render_to_svg(schema)
-    if i % 10 == 0:
-        print(f'Schéma {i+1}/100 généré ({len(svg)} chars)')
-
-end = time.time()
-print(f'Performance: {len(schemas)} schémas en {end-start:.2f}s ({len(schemas)/(end-start):.1f} schémas/sec)')
-"
+	cd $(TESTS_DIR) && $(PYTHON) -c 'import sys; sys.path.insert(0, "../backend"); from render_schema import schema_renderer; import time; schemas = [{"type": "triangle", "points": ["A", "B", "C"], "labels": {"A": "(0,3)", "B": "(0,0)", "C": "(4,0)"}}, {"type": "rectangle", "longueur": 5, "largeur": 3}, {"type": "cercle", "rayon": 2}] * 34; start = time.time(); [schema_renderer.render_to_svg(s) for s in schemas]; end = time.time(); print(f"Performance: {len(schemas)} schémas en {end-start:.2f}s ({len(schemas)/(end-start):.1f} schémas/sec)")'
 
 # Validation des schémas de test
 validate-schemas:
