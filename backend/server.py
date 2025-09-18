@@ -396,13 +396,7 @@ def reconcile_enonce_schema(enonce: str, schema_data: dict) -> dict:
     enriched_elements = len(enriched_schema.get("points", [])) + len(enriched_schema.get("segments", [])) + len(enriched_schema.get("angles", []))
     
     if enriched_elements > original_elements:
-        logger.info(
-            f"Schéma enrichi par l'énoncé: {original_elements} → {enriched_elements} éléments",
-            module_name="server",
-            func_name="reconcile_enonce_schema",
-            schema_type=schema_data.get("type", "unknown"),
-            warnings_count=len(warnings)
-        )
+        logger.info(f"[reconcile_enonce_schema] Schéma enrichi par l'énoncé: {original_elements} → {enriched_elements} éléments")
     
     return enriched_schema
 
