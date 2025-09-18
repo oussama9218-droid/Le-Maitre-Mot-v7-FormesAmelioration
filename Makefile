@@ -134,25 +134,7 @@ perf-schemas:
 # Validation des schémas de test
 validate-schemas:
 	@echo "$(BLUE)✅ Validation des schémas de test$(NC)"
-	cd $(TESTS_DIR) && $(PYTHON) -c "
-import sys
-sys.path.insert(0, '../backend')
-from render_schema import schema_renderer
-
-test_schemas = [
-    {'type': 'triangle', 'points': ['A', 'B', 'C'], 'labels': {'A': '(0,3)', 'B': '(0,0)', 'C': '(4,0)'}},
-    {'type': 'rectangle', 'longueur': 5, 'largeur': 3},
-    {'type': 'triangle', 'points': ['A']},  # Invalide
-]
-
-for i, schema in enumerate(test_schemas):
-    is_valid, issues = schema_renderer.validate_schema(schema)
-    status = '✅' if is_valid else '❌'
-    print(f'{status} Schéma {i+1}: {schema.get(\"type\", \"unknown\")} - {\"Valide\" if is_valid else f\"{len(issues)} erreur(s)\"}')
-    if issues:
-        for issue in issues[:2]:
-            print(f'  - {issue}')
-"
+	cd $(TESTS_DIR) && $(PYTHON) -c 'import sys; sys.path.insert(0, "../backend"); from render_schema import schema_renderer; test_schemas = [{"type": "triangle", "points": ["A", "B", "C"], "labels": {"A": "(0,3)", "B": "(0,0)", "C": "(4,0)"}}, {"type": "rectangle", "longueur": 5, "largeur": 3}, {"type": "triangle", "points": ["A"]}]; [print(f"{'✅' if schema_renderer.validate_schema(s)[0] else '❌'} Schéma {i+1}: {s.get('type', 'unknown')} - {'Valide' if schema_renderer.validate_schema(s)[0] else f'{len(schema_renderer.validate_schema(s)[1])} erreur(s)'}") for i, s in enumerate(test_schemas)]'
 
 # Statistiques du projet
 stats:
