@@ -507,8 +507,12 @@ class SchemaRenderer:
                     ax.plot(x, y, 'ro', markersize=6)
                     ax.text(x-0.2, y+0.2, point, fontsize=12, fontweight='bold')
                 
+                # Clean axes and auto-center
                 ax.set_aspect('equal')
-                ax.set_title(f'{schema_type.title()} (générique)', fontsize=14, fontweight='bold')
+                ax.axis('off')
+                ax.relim()
+                ax.autoscale_view()
+                ax.set_title(f'{schema_type.title()} (générique)', fontsize=12, fontweight='bold', pad=10)
                 
                 logger.info(f"Generic polygon rendered for type: {schema_type}")
                 return self._fig_to_svg(fig)
