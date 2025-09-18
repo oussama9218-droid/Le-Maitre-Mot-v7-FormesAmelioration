@@ -9,7 +9,7 @@ from typing import Dict, Any
 import matplotlib.pyplot as plt
 import matplotlib.mathtext as mathtext
 from io import BytesIO
-from backend.logger import get_logger
+from logger import get_logger
 
 logger = get_logger(__name__)
 
