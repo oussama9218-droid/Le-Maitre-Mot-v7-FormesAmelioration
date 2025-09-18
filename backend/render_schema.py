@@ -1467,9 +1467,8 @@ class SchemaRenderer:
             return ""
         return self._fig_to_svg(fig)
     
-    def _render_triangle_rectangle(self, data: dict) -> str:
-        """Render a right triangle with proper right angle marker"""
-        fig, ax = plt.subplots(figsize=(4, 4))
+    def _render_triangle_rectangle_common(self, ax, data: dict) -> bool:
+        """Common right triangle rendering logic (returns True on success)"""
         
         # Get points or use defaults
         points = data.get("points", ["A", "B", "C"])
