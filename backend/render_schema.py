@@ -505,14 +505,66 @@ class SchemaRenderer:
         longueur = data.get("longueur", 6)
         largeur = data.get("largeur", 4)
         
-        # Draw rectangle
+        # Define rectangle corners
+        coords = {
+            'A': (0, largeur),     # Top-left
+            'B': (0, 0),          # Bottom-left  
+            'C': (longueur, 0),   # Bottom-right
+            'D': (longueur, largeur)  # Top-right
+        }
+        
+        # Draw rectangle using utility functions
         rect = patches.Rectangle((0, 0), longueur, largeur, 
                                facecolor='lightgreen', edgecolor='black', linewidth=2)
         ax.add_patch(rect)
         
-        # Add labels
-        ax.text(longueur/2, -0.5, f'{longueur} cm', fontsize=12, ha='center')
-        ax.text(-0.5, largeur/2, f'{largeur} cm', fontsize=12, ha='center', rotation=90)
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Draw segments with lengths
+        segments = [
+            ('A', 'B', largeur, 'vertical'),
+            ('B', 'C', longueur, 'horizontal'),
+            ('C', 'D', largeur, 'vertical'),
+            ('D', 'A', longueur, 'horizontal')
+        ]
+        
+        for p1, p2, length, orientation in segments:
+            x1, y1 = coords[p1]
+            x2, y2 = coords[p2]
+            
+            # Draw length label
+            if orientation == 'horizontal':
+                if y1 == 0:  # Bottom edge
+                    self.draw_len_label(ax, x1, y1, x2, y2, length, offset=-0.4)
+                else:  # Top edge
+                    self.draw_len_label(ax, x1, y1, x2, y2, length, offset=0.4)
+            else:  # vertical
+                if x1 == 0:  # Left edge
+                    self.draw_len_label(ax, x1, y1, x2, y2, length, offset=-0.4)
+                else:  # Right edge
+                    self.draw_len_label(ax, x1, y1, x2, y2, length, offset=0.4)
+        
+        # Mark all corners as right angles
+        for point in ['A', 'B', 'C', 'D']:
+            vertex_x, vertex_y = coords[point]
+            
+            # Get adjacent points for each corner
+            if point == 'A':
+                p1_x, p1_y = coords['D']
+                p2_x, p2_y = coords['B']
+            elif point == 'B':
+                p1_x, p1_y = coords['A']
+                p2_x, p2_y = coords['C']
+            elif point == 'C':
+                p1_x, p1_y = coords['B']
+                p2_x, p2_y = coords['D']
+            else:  # D
+                p1_x, p1_y = coords['C']
+                p2_x, p2_y = coords['A']
+            
+            self.draw_right_angle(ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y, size=0.2)
         
         # Clean axes and auto-center
         ax.set_aspect('equal')
