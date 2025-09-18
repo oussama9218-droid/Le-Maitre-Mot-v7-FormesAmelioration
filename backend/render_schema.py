@@ -362,7 +362,7 @@ class SchemaRenderer:
     
     def _render_carre(self, data: dict) -> str:
         """Render a square"""
-        fig, ax = plt.subplots(figsize=(5, 5))
+        fig, ax = plt.subplots(figsize=(4, 4))
         
         cote = data.get("cote", 4)
         
@@ -374,11 +374,12 @@ class SchemaRenderer:
         # Add label
         ax.text(cote/2, -0.5, f'{cote} cm', fontsize=12, ha='center')
         
-        ax.set_xlim(-1, cote+1)
-        ax.set_ylim(-1, cote+1)
+        # Clean axes and auto-center
         ax.set_aspect('equal')
         ax.axis('off')
-        ax.set_title('Carré', fontsize=14, fontweight='bold')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Carré', fontsize=12, fontweight='bold', pad=10)
         
         return self._fig_to_svg(fig)
     
