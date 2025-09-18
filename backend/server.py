@@ -21,6 +21,7 @@ from jinja2 import Template
 from latex_to_svg import latex_renderer
 from geometry_renderer import geometry_renderer
 from render_schema import schema_renderer
+import re
 import requests
 from logger import get_logger, log_execution_time, log_ai_generation, log_schema_processing, log_user_context, log_quota_check
 
