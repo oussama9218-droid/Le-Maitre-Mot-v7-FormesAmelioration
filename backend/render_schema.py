@@ -137,6 +137,331 @@ class SchemaRenderer:
                 ax.plot([mark2_x - perp2_x*0.5, mark2_x + perp2_x*0.5], 
                        [mark2_y - perp2_y*0.5, mark2_y + perp2_y*0.5], 'k-', linewidth=2)
     
+    def draw_polygon(self, ax, points_coords, fill_color='lightblue', edge_color='blue', linewidth=2, alpha=0.3):
+        """Draw a polygon with automatic closure"""
+        if not points_coords or len(points_coords) < 3:
+            logger.warning("draw_polygon: Need at least 3 points")
+            return
+        
+        # Automatic closure - add first point at the end if not already closed
+        closed_coords = points_coords.copy()
+        if closed_coords[0] != closed_coords[-1]:
+            closed_coords.append(closed_coords[0])
+        
+        # Extract x and y coordinates
+        xs, ys = zip(*closed_coords)
+        
+        # Draw polygon outline
+        ax.plot(xs, ys, color=edge_color, linewidth=linewidth)
+        
+        # Fill polygon
+        if alpha > 0:
+            ax.fill(xs[:-1], ys[:-1], color=fill_color, alpha=alpha)
+    
+    def draw_circle(self, ax, center_x, center_y, radius=None, point_on_circle=None, 
+                   fill_color='lightcoral', edge_color='black', linewidth=2, alpha=0.7):
+        """Draw a circle with center + radius OR center + point on circle"""
+        
+        if radius is not None:
+            # Method 1: center + radius
+            circle_radius = radius
+        elif point_on_circle is not None:
+            # Method 2: center + point on circle
+            px, py = point_on_circle
+            circle_radius = np.sqrt((px - center_x)**2 + (py - center_y)**2)
+        else:
+            logger.warning("draw_circle: Need either radius or point_on_circle")
+            return
+        
+        # Draw circle using matplotlib patch
+        circle = patches.Circle((center_x, center_y), circle_radius, 
+                              facecolor=fill_color, edgecolor=edge_color, 
+                              linewidth=linewidth, alpha=alpha)
+        ax.add_patch(circle)
+        
+        return circle_radius  # Return calculated radius for further use
+    
+    # ========== QUADRILATERAL ALIASES ==========
+    
+    def _render_quadrilatere(self, data: dict) -> str:
+        """Generic quadrilateral renderer - delegates to specific types"""
+        quad_type = data.get("sous_type", "rectangle").lower()
+        
+        # Map quadrilateral aliases to specific renderers
+        quad_mapping = {
+            "rectangle": self._render_rectangle,
+            "carre": self._render_carre,
+            "losange": self._render_losange,
+            "parallelogramme": self._render_parallelogramme,
+            "trapeze": self._render_trapeze,
+            "trapeze_rectangle": self._render_trapeze_rectangle,
+            "trapeze_isocele": self._render_trapeze_isocele
+        }
+        
+        renderer = quad_mapping.get(quad_type, self._render_rectangle)
+        logger.info(f"Rendering quadrilateral type: {quad_type}")
+        return renderer(data)
+    
+    def _render_losange(self, data: dict) -> str:
+        """Render a diamond/rhombus"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        
+        cote = data.get("cote", 4)
+        angle = data.get("angle", 60)  # Angle in degrees
+        
+        import math
+        angle_rad = math.radians(angle)
+        
+        # Calculate diamond vertices
+        coords = {
+            'A': (0, 0),                                    # Bottom
+            'B': (cote * math.cos(angle_rad), cote * math.sin(angle_rad)),  # Left
+            'C': (cote * (1 + math.cos(angle_rad)), cote * math.sin(angle_rad)),  # Top
+            'D': (cote, 0)                                  # Right
+        }
+        
+        # Draw diamond using utility functions
+        diamond_coords = [coords['A'], coords['B'], coords['C'], coords['D']]
+        self.draw_polygon(ax, diamond_coords, fill_color='lightpink', edge_color='purple')
+        
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Mark all sides as equal
+        sides = [('A', 'B'), ('B', 'C'), ('C', 'D'), ('D', 'A')]
+        for i in range(len(sides)):
+            p1, p2 = sides[i]
+            next_p1, next_p2 = sides[(i + 1) % len(sides)]
+            
+            # Mark adjacent sides as equal
+            x1, y1 = coords[p1]
+            x2, y2 = coords[p2]
+            x3, y3 = coords[next_p1]
+            x4, y4 = coords[next_p2]
+            
+            self.mark_equal(ax, x1, y1, x2, y2, x3, y3, x4, y4, marks=1)
+        
+        # Add side length label
+        self.draw_len_label(ax, coords['A'][0], coords['A'][1], 
+                           coords['B'][0], coords['B'][1], cote)
+        
+        # Clean axes and auto-center
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Losange', fontsize=12, fontweight='bold', pad=10)
+        
+        return self._fig_to_svg(fig)
+    
+    def _render_parallelogramme(self, data: dict) -> str:
+        """Render a parallelogram"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        
+        base = data.get("base", 5)
+        cote = data.get("cote", 3)
+        angle = data.get("angle", 60)  # Angle in degrees
+        
+        import math
+        angle_rad = math.radians(angle)
+        
+        # Calculate parallelogram vertices
+        coords = {
+            'A': (0, 0),                                    # Bottom-left
+            'B': (base, 0),                                # Bottom-right
+            'C': (base + cote * math.cos(angle_rad), cote * math.sin(angle_rad)),  # Top-right
+            'D': (cote * math.cos(angle_rad), cote * math.sin(angle_rad))          # Top-left
+        }
+        
+        # Draw parallelogram using utility functions
+        para_coords = [coords['A'], coords['B'], coords['C'], coords['D']]
+        self.draw_polygon(ax, para_coords, fill_color='lightsteelblue', edge_color='steelblue')
+        
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Mark opposite sides as parallel and equal
+        # AB || DC and AD || BC
+        ab_coords = coords['A'] + coords['B']
+        dc_coords = coords['D'] + coords['C']
+        ad_coords = coords['A'] + coords['D']
+        bc_coords = coords['B'] + coords['C']
+        
+        self.mark_parallel(ax, *ab_coords, *dc_coords)
+        self.mark_parallel(ax, *ad_coords, *bc_coords)
+        self.mark_equal(ax, *ab_coords, *dc_coords, marks=1)
+        self.mark_equal(ax, *ad_coords, *bc_coords, marks=2)
+        
+        # Add length labels
+        self.draw_len_label(ax, coords['A'][0], coords['A'][1], 
+                           coords['B'][0], coords['B'][1], base, offset=-0.4)
+        self.draw_len_label(ax, coords['A'][0], coords['A'][1], 
+                           coords['D'][0], coords['D'][1], cote)
+        
+        # Clean axes and auto-center
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Parallélogramme', fontsize=12, fontweight='bold', pad=10)
+        
+        return self._fig_to_svg(fig)
+    
+    def _render_trapeze(self, data: dict) -> str:
+        """Render a trapezoid"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        
+        base_grande = data.get("base_grande", 6)
+        base_petite = data.get("base_petite", 4)
+        hauteur = data.get("hauteur", 3)
+        decalage = data.get("decalage", 1)  # Offset for slanted sides
+        
+        # Calculate trapezoid vertices
+        coords = {
+            'A': (0, 0),                                    # Bottom-left
+            'B': (base_grande, 0),                         # Bottom-right
+            'C': (decalage + base_petite, hauteur),        # Top-right
+            'D': (decalage, hauteur)                       # Top-left
+        }
+        
+        # Draw trapezoid using utility functions
+        trap_coords = [coords['A'], coords['B'], coords['C'], coords['D']]
+        self.draw_polygon(ax, trap_coords, fill_color='lightsalmon', edge_color='darkorange')
+        
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Mark parallel bases
+        ab_coords = coords['A'] + coords['B']
+        dc_coords = coords['D'] + coords['C']
+        self.mark_parallel(ax, *ab_coords, *dc_coords)
+        
+        # Add length labels
+        self.draw_len_label(ax, coords['A'][0], coords['A'][1], 
+                           coords['B'][0], coords['B'][1], base_grande, offset=-0.4)
+        self.draw_len_label(ax, coords['D'][0], coords['D'][1], 
+                           coords['C'][0], coords['C'][1], base_petite, offset=0.4)
+        
+        # Add height label
+        mid_x = (coords['A'][0] + coords['D'][0]) / 2
+        self.draw_segment(ax, mid_x, 0, mid_x, hauteur, color='gray', linewidth=1, style=':')
+        ax.text(mid_x - 0.3, hauteur/2, f'h = {hauteur}', fontsize=10, ha='center', va='center',
+                rotation=90, bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8))
+        
+        # Clean axes and auto-center
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Trapèze', fontsize=12, fontweight='bold', pad=10)
+        
+        return self._fig_to_svg(fig)
+    
+    def _render_trapeze_rectangle(self, data: dict) -> str:
+        """Render a right trapezoid"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        
+        base_grande = data.get("base_grande", 6)
+        base_petite = data.get("base_petite", 4)
+        hauteur = data.get("hauteur", 3)
+        
+        # Right trapezoid - perpendicular sides
+        coords = {
+            'A': (0, 0),                     # Bottom-left
+            'B': (base_grande, 0),          # Bottom-right
+            'C': (base_petite, hauteur),    # Top-right
+            'D': (0, hauteur)               # Top-left
+        }
+        
+        # Draw trapezoid using utility functions
+        trap_coords = [coords['A'], coords['B'], coords['C'], coords['D']]
+        self.draw_polygon(ax, trap_coords, fill_color='lightcyan', edge_color='teal')
+        
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Mark parallel bases
+        ab_coords = coords['A'] + coords['B']
+        dc_coords = coords['D'] + coords['C']
+        self.mark_parallel(ax, *ab_coords, *dc_coords)
+        
+        # Mark right angles at A and D
+        self.draw_right_angle(ax, coords['A'][0], coords['A'][1], 
+                             coords['B'][0], coords['B'][1], coords['D'][0], coords['D'][1], size=0.2)
+        self.draw_right_angle(ax, coords['D'][0], coords['D'][1], 
+                             coords['A'][0], coords['A'][1], coords['C'][0], coords['C'][1], size=0.2)
+        
+        # Add length labels
+        self.draw_len_label(ax, coords['A'][0], coords['A'][1], 
+                           coords['B'][0], coords['B'][1], base_grande, offset=-0.4)
+        self.draw_len_label(ax, coords['D'][0], coords['D'][1], 
+                           coords['C'][0], coords['C'][1], base_petite, offset=0.4)
+        self.draw_len_label(ax, coords['A'][0], coords['A'][1], 
+                           coords['D'][0], coords['D'][1], hauteur, offset=-0.4)
+        
+        # Clean axes and auto-center
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Trapèze Rectangle', fontsize=12, fontweight='bold', pad=10)
+        
+        return self._fig_to_svg(fig)
+    
+    def _render_trapeze_isocele(self, data: dict) -> str:
+        """Render an isosceles trapezoid"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        
+        base_grande = data.get("base_grande", 6)
+        base_petite = data.get("base_petite", 4)
+        hauteur = data.get("hauteur", 3)
+        
+        # Isosceles trapezoid - symmetric
+        decalage = (base_grande - base_petite) / 2
+        coords = {
+            'A': (0, 0),                              # Bottom-left
+            'B': (base_grande, 0),                   # Bottom-right
+            'C': (decalage + base_petite, hauteur),  # Top-right
+            'D': (decalage, hauteur)                 # Top-left
+        }
+        
+        # Draw trapezoid using utility functions
+        trap_coords = [coords['A'], coords['B'], coords['C'], coords['D']]
+        self.draw_polygon(ax, trap_coords, fill_color='lavender', edge_color='mediumpurple')
+        
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Mark parallel bases
+        ab_coords = coords['A'] + coords['B']
+        dc_coords = coords['D'] + coords['C']
+        self.mark_parallel(ax, *ab_coords, *dc_coords)
+        
+        # Mark equal legs (AD = BC)
+        ad_coords = coords['A'] + coords['D']
+        bc_coords = coords['B'] + coords['C']
+        self.mark_equal(ax, *ad_coords, *bc_coords, marks=1)
+        
+        # Add length labels
+        self.draw_len_label(ax, coords['A'][0], coords['A'][1], 
+                           coords['B'][0], coords['B'][1], base_grande, offset=-0.4)
+        self.draw_len_label(ax, coords['D'][0], coords['D'][1], 
+                           coords['C'][0], coords['C'][1], base_petite, offset=0.4)
+        
+        # Clean axes and auto-center
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Trapèze Isocèle', fontsize=12, fontweight='bold', pad=10)
+        
+        return self._fig_to_svg(fig)
+    
     def mark_equal(self, ax, x1, y1, x2, y2, x3, y3, x4, y4, marks=1):
         """Mark two segments as equal with tick marks"""
         # First segment midpoint and perpendicular
