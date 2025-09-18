@@ -1456,6 +1456,15 @@ class SchemaRenderer:
         ax.autoscale_view()
         ax.set_title('Triangle', fontsize=12, fontweight='bold', pad=10)
         
+        return True
+    
+    def _render_triangle(self, data: dict) -> str:
+        """Render a triangle as SVG"""
+        fig, ax = plt.subplots(figsize=(4, 4))
+        result = self._render_triangle_common(ax, data)
+        if not result:
+            plt.close(fig)
+            return ""
         return self._fig_to_svg(fig)
     
     def _render_triangle_rectangle(self, data: dict) -> str:
