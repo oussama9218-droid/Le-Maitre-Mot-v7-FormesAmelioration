@@ -10,7 +10,7 @@ from matplotlib.patches import FancyBboxPatch
 import numpy as np
 from io import StringIO, BytesIO
 import base64
-import logging
+from backend.logger import get_logger
 from typing import Dict, Any, List, Tuple, Optional
 
 logger = logging.getLogger(__name__)
