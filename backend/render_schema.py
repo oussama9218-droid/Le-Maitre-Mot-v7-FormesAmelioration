@@ -20,7 +20,11 @@ class SchemaRenderer:
             'font.size': 10,
             'font.family': 'sans-serif',
             'svg.fonttype': 'none',  # Keep text as text in SVG
-            'figure.figsize': (8, 6)
+            'figure.figsize': (4, 4),  # Fixed uniform size
+            'figure.facecolor': 'white',  # White background
+            'axes.facecolor': 'white',
+            'savefig.facecolor': 'white',
+            'savefig.edgecolor': 'none'
         })
     
     @log_execution_time("render_to_svg")
