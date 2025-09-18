@@ -181,6 +181,270 @@ class SchemaRenderer:
         
         return circle_radius  # Return calculated radius for further use
     
+    # ========== ADVANCED GEOMETRIC ELEMENTS ==========
+    
+    def draw_height(self, ax, vertex_x, vertex_y, base_p1_x, base_p1_y, base_p2_x, base_p2_y, 
+                   color='green', linewidth=1.5, symbol_size=0.15):
+        """Draw height from vertex perpendicular to base with foot marker"""
+        # Calculate foot of perpendicular
+        # Vector from base_p1 to base_p2
+        base_dx = base_p2_x - base_p1_x
+        base_dy = base_p2_y - base_p1_y
+        base_length_sq = base_dx**2 + base_dy**2
+        
+        if base_length_sq == 0:
+            return  # Degenerate base
+        
+        # Vector from base_p1 to vertex
+        vertex_dx = vertex_x - base_p1_x
+        vertex_dy = vertex_y - base_p1_y
+        
+        # Project vertex onto base line
+        t = (vertex_dx * base_dx + vertex_dy * base_dy) / base_length_sq
+        foot_x = base_p1_x + t * base_dx
+        foot_y = base_p1_y + t * base_dy
+        
+        # Draw height line (dashed)
+        self.draw_segment(ax, vertex_x, vertex_y, foot_x, foot_y, 
+                         color=color, linewidth=linewidth, style='--')
+        
+        # Mark foot with small square (perpendicular symbol)
+        self.draw_right_angle(ax, foot_x, foot_y, vertex_x, vertex_y, 
+                             base_p1_x if t > 0.5 else base_p2_x, 
+                             base_p1_y if t > 0.5 else base_p2_y, size=symbol_size)
+        
+        # Label height
+        mid_x, mid_y = (vertex_x + foot_x) / 2, (vertex_y + foot_y) / 2
+        ax.text(mid_x + 0.2, mid_y, 'h', fontsize=10, color=color, 
+                fontweight='bold', ha='center', va='center')
+        
+        return (foot_x, foot_y)
+    
+    def draw_median(self, ax, vertex_x, vertex_y, side_p1_x, side_p1_y, side_p2_x, side_p2_y,
+                   color='orange', linewidth=1.5):
+        """Draw median from vertex to midpoint of opposite side"""
+        # Calculate midpoint of opposite side
+        mid_x = (side_p1_x + side_p2_x) / 2
+        mid_y = (side_p1_y + side_p2_y) / 2
+        
+        # Draw median line (dash-dot)
+        ax.plot([vertex_x, mid_x], [vertex_y, mid_y], 
+                color=color, linewidth=linewidth, linestyle='-.', alpha=0.8)
+        
+        # Mark midpoint
+        self.draw_point(ax, mid_x, mid_y, '', color=color, size=3)
+        
+        # Add small perpendicular marks on both halves of the side to show equal parts
+        # Vector along the side
+        side_dx = side_p2_x - side_p1_x
+        side_dy = side_p2_y - side_p1_y
+        side_length = np.sqrt(side_dx**2 + side_dy**2)
+        
+        if side_length > 0:
+            # Perpendicular vector
+            perp_x = -side_dy / side_length * 0.1
+            perp_y = side_dx / side_length * 0.1
+            
+            # Mark equal halves
+            for point in [(side_p1_x + mid_x)/2, (side_p1_y + mid_y)/2]:
+                ax.plot([point - perp_x, point + perp_x], 
+                       [(side_p1_y + mid_y)/2 - perp_y, (side_p1_y + mid_y)/2 + perp_y], 
+                       color=color, linewidth=2)
+            
+            for point in [(mid_x + side_p2_x)/2, (mid_y + side_p2_y)/2]:
+                ax.plot([point - perp_x, point + perp_x], 
+                       [(mid_y + side_p2_y)/2 - perp_y, (mid_y + side_p2_y)/2 + perp_y], 
+                       color=color, linewidth=2)
+        
+        # Label median
+        label_x, label_y = (vertex_x + mid_x) / 2, (vertex_y + mid_y) / 2
+        ax.text(label_x + 0.2, label_y, 'm', fontsize=10, color=color, 
+                fontweight='bold', ha='center', va='center')
+        
+        return (mid_x, mid_y)
+    
+    def draw_bisector(self, ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y, 
+                     length=2.0, color='purple', linewidth=1.5):
+        """Draw angle bisector from vertex between two points"""
+        import math
+        
+        # Vectors from vertex to the two points
+        v1_x, v1_y = p1_x - vertex_x, p1_y - vertex_y
+        v2_x, v2_y = p2_x - vertex_x, p2_y - vertex_y
+        
+        # Normalize vectors
+        len1 = np.sqrt(v1_x**2 + v1_y**2)
+        len2 = np.sqrt(v2_x**2 + v2_y**2)
+        
+        if len1 > 0 and len2 > 0:
+            v1_x, v1_y = v1_x / len1, v1_y / len1
+            v2_x, v2_y = v2_x / len2, v2_y / len2
+            
+            # Bisector direction (sum of unit vectors)
+            bisector_x = v1_x + v2_x
+            bisector_y = v1_y + v2_y
+            bisector_length = np.sqrt(bisector_x**2 + bisector_y**2)
+            
+            if bisector_length > 0:
+                bisector_x /= bisector_length
+                bisector_y /= bisector_length
+                
+                # End point of bisector
+                end_x = vertex_x + bisector_x * length
+                end_y = vertex_y + bisector_y * length
+                
+                # Draw bisector line (dotted)
+                ax.plot([vertex_x, end_x], [vertex_y, end_y], 
+                        color=color, linewidth=linewidth, linestyle=':', alpha=0.8)
+                
+                # Draw small arcs to show equal angles
+                arc_radius = 0.4
+                angle1 = math.atan2(v1_y, v1_x)
+                angle2 = math.atan2(v2_y, v2_x)
+                bisector_angle = math.atan2(bisector_y, bisector_x)
+                
+                # Draw two small arcs
+                for radius in [arc_radius * 0.7, arc_radius]:
+                    angles = np.linspace(min(angle1, angle2), max(angle1, angle2), 20)
+                    arc_x = vertex_x + radius * np.cos(angles)
+                    arc_y = vertex_y + radius * np.sin(angles)
+                    ax.plot(arc_x, arc_y, color=color, linewidth=1, alpha=0.6)
+                
+                # Label bisector
+                label_x = vertex_x + bisector_x * (length * 0.6)
+                label_y = vertex_y + bisector_y * (length * 0.6)
+                ax.text(label_x + 0.1, label_y, 'b', fontsize=10, color=color, 
+                        fontweight='bold', ha='center', va='center')
+    
+    def draw_perpendicular_bisector(self, ax, p1_x, p1_y, p2_x, p2_y, 
+                                   length=3.0, color='red', linewidth=1.5):
+        """Draw perpendicular bisector of a segment (médiatrice)"""
+        # Midpoint of segment
+        mid_x = (p1_x + p2_x) / 2
+        mid_y = (p1_y + p2_y) / 2
+        
+        # Perpendicular direction
+        dx = p2_x - p1_x
+        dy = p2_y - p1_y
+        segment_length = np.sqrt(dx**2 + dy**2)
+        
+        if segment_length > 0:
+            # Perpendicular unit vector
+            perp_x = -dy / segment_length
+            perp_y = dx / segment_length
+            
+            # End points of perpendicular bisector
+            end1_x = mid_x + perp_x * length / 2
+            end1_y = mid_y + perp_y * length / 2
+            end2_x = mid_x - perp_x * length / 2
+            end2_y = mid_y - perp_y * length / 2
+            
+            # Draw perpendicular bisector (dash-dot-dot)
+            ax.plot([end1_x, end2_x], [end1_y, end2_y], 
+                    color=color, linewidth=linewidth, linestyle=(0, (3, 1, 1, 1)), alpha=0.8)
+            
+            # Mark midpoint with special symbol
+            self.draw_point(ax, mid_x, mid_y, '', color=color, size=4)
+            
+            # Draw small perpendicular symbol at midpoint
+            symbol_size = 0.15
+            self.draw_right_angle(ax, mid_x, mid_y, p1_x, p1_y, end1_x, end1_y, size=symbol_size)
+            
+            # Mark equal distances from midpoint to endpoints of original segment
+            self.mark_equal(ax, mid_x, mid_y, p1_x, p1_y, mid_x, mid_y, p2_x, p2_y, marks=1)
+            
+            # Label perpendicular bisector
+            label_x = mid_x + perp_x * (length * 0.3)
+            label_y = mid_y + perp_y * (length * 0.3)
+            ax.text(label_x, label_y, '⊥', fontsize=12, color=color, 
+                    fontweight='bold', ha='center', va='center')
+    
+    def process_geometric_properties(self, ax, data: dict, coords: dict):
+        """Process and draw geometric properties from schema data"""
+        
+        # Process parallels
+        paralleles = data.get("paralleles", [])
+        for parallel_pair in paralleles:
+            if len(parallel_pair) >= 2:
+                seg1, seg2 = parallel_pair[0], parallel_pair[1]
+                if len(seg1) >= 2 and len(seg2) >= 2:
+                    p1, p2 = seg1[0], seg1[1]
+                    p3, p4 = seg2[0], seg2[1]
+                    
+                    if all(p in coords for p in [p1, p2, p3, p4]):
+                        self.mark_parallel(ax, *coords[p1], *coords[p2], *coords[p3], *coords[p4])
+        
+        # Process perpendiculars
+        perpendiculaires = data.get("perpendiculaires", [])
+        for perp_pair in perpendiculaires:
+            if len(perp_pair) >= 2:
+                seg1, seg2 = perp_pair[0], perp_pair[1]
+                if len(seg1) >= 2 and len(seg2) >= 2:
+                    p1, p2 = seg1[0], seg1[1]
+                    p3, p4 = seg2[0], seg2[1]
+                    
+                    if all(p in coords for p in [p1, p2, p3, p4]):
+                        # Find intersection point (assuming they intersect)
+                        # For now, mark perpendicular at midpoints
+                        mid1_x, mid1_y = (coords[p1][0] + coords[p2][0]) / 2, (coords[p1][1] + coords[p2][1]) / 2
+                        mid2_x, mid2_y = (coords[p3][0] + coords[p4][0]) / 2, (coords[p3][1] + coords[p4][1]) / 2
+                        
+                        # Draw perpendicular symbol at intersection
+                        self.draw_right_angle(ax, mid1_x, mid1_y, coords[p1][0], coords[p1][1], 
+                                            coords[p3][0], coords[p3][1], size=0.2)
+        
+        # Process equal segments
+        egaux = data.get("egaux", [])
+        for equal_group in egaux:
+            if len(equal_group) >= 2:
+                segments = equal_group
+                marks = len(segments)  # Different number of marks for different groups
+                
+                for i in range(len(segments) - 1):
+                    seg1, seg2 = segments[i], segments[i + 1]
+                    if len(seg1) >= 2 and len(seg2) >= 2:
+                        p1, p2 = seg1[0], seg1[1]
+                        p3, p4 = seg2[0], seg2[1]
+                        
+                        if all(p in coords for p in [p1, p2, p3, p4]):
+                            self.mark_equal(ax, *coords[p1], *coords[p2], *coords[p3], *coords[p4], marks=1)
+        
+        # Process heights
+        hauteurs = data.get("hauteurs", [])
+        for height_data in hauteurs:
+            if len(height_data) >= 3:
+                vertex, base_p1, base_p2 = height_data[0], height_data[1], height_data[2]
+                
+                if all(p in coords for p in [vertex, base_p1, base_p2]):
+                    self.draw_height(ax, *coords[vertex], *coords[base_p1], *coords[base_p2])
+        
+        # Process medians
+        medianes = data.get("medianes", [])
+        for median_data in medianes:
+            if len(median_data) >= 3:
+                vertex, side_p1, side_p2 = median_data[0], median_data[1], median_data[2]
+                
+                if all(p in coords for p in [vertex, side_p1, side_p2]):
+                    self.draw_median(ax, *coords[vertex], *coords[side_p1], *coords[side_p2])
+        
+        # Process angle bisectors
+        bissectrices = data.get("bissectrices", [])
+        for bisector_data in bissectrices:
+            if len(bisector_data) >= 3:
+                vertex, p1, p2 = bisector_data[0], bisector_data[1], bisector_data[2]
+                
+                if all(p in coords for p in [vertex, p1, p2]):
+                    self.draw_bisector(ax, *coords[vertex], *coords[p1], *coords[p2])
+        
+        # Process perpendicular bisectors
+        mediatrices = data.get("mediatrices", [])
+        for mediator_data in mediatrices:
+            if len(mediator_data) >= 2:
+                p1, p2 = mediator_data[0], mediator_data[1]
+                
+                if all(p in coords for p in [p1, p2]):
+                    self.draw_perpendicular_bisector(ax, *coords[p1], *coords[p2])
+    
     # ========== QUADRILATERAL ALIASES ==========
     
     def _render_quadrilatere(self, data: dict) -> str:
