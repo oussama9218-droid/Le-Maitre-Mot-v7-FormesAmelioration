@@ -410,8 +410,6 @@ def auto_place_points(schema: dict, missing_points: list) -> dict:
         return {}
     
     schema_type = schema.get("type", "").lower()
-    labels = schema.get("labels", {})
-    
     auto_positions = {}
     placed_count = 0
     
