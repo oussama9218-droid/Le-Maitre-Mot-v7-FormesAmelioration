@@ -27,6 +27,150 @@ class SchemaRenderer:
             'savefig.edgecolor': 'none'
         })
     
+    # ========== UTILITY FUNCTIONS FOR DRAWING GEOMETRIC ELEMENTS ==========
+    
+    def draw_point(self, ax, x, y, label="", label_offset=(0.2, 0.2), color='red', size=6):
+        """Draw a point with optional label"""
+        ax.plot(x, y, 'o', color=color, markersize=size)
+        if label:
+            ax.text(x + label_offset[0], y + label_offset[1], label, 
+                   fontsize=12, fontweight='bold', ha='center', va='center')
+    
+    def draw_segment(self, ax, x1, y1, x2, y2, color='blue', linewidth=2, style='-'):
+        """Draw a line segment between two points"""
+        ax.plot([x1, x2], [y1, y2], color=color, linewidth=linewidth, linestyle=style)
+    
+    def draw_len_label(self, ax, x1, y1, x2, y2, length, offset=0.3):
+        """Draw a length label at the midpoint of a segment"""
+        mid_x, mid_y = (x1 + x2) / 2, (y1 + y2) / 2
+        
+        # Calculate perpendicular offset for label positioning
+        dx, dy = x2 - x1, y2 - y1
+        length_seg = np.sqrt(dx**2 + dy**2)
+        if length_seg > 0:
+            # Perpendicular vector
+            perp_x, perp_y = -dy / length_seg, dx / length_seg
+            label_x = mid_x + perp_x * offset
+            label_y = mid_y + perp_y * offset
+        else:
+            label_x, label_y = mid_x, mid_y + offset
+        
+        ax.text(label_x, label_y, f'{length} cm', fontsize=10, ha='center', va='center',
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8, edgecolor='gray'))
+    
+    def draw_right_angle(self, ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y, size=0.3):
+        """Draw a right angle marker at vertex between two points"""
+        # Vectors from vertex to the two points
+        v1_x, v1_y = p1_x - vertex_x, p1_y - vertex_y
+        v2_x, v2_y = p2_x - vertex_x, p2_y - vertex_y
+        
+        # Normalize vectors
+        len1 = np.sqrt(v1_x**2 + v1_y**2)
+        len2 = np.sqrt(v2_x**2 + v2_y**2)
+        
+        if len1 > 0 and len2 > 0:
+            v1_x, v1_y = v1_x / len1 * size, v1_y / len1 * size
+            v2_x, v2_y = v2_x / len2 * size, v2_y / len2 * size
+            
+            # Draw right angle square
+            corner_x = vertex_x + v1_x + v2_x
+            corner_y = vertex_y + v1_y + v2_y
+            
+            square_x = [vertex_x, vertex_x + v1_x, corner_x, vertex_x + v2_x, vertex_x]
+            square_y = [vertex_y, vertex_y + v1_y, corner_y, vertex_y + v2_y, vertex_y]
+            
+            ax.plot(square_x, square_y, 'k-', linewidth=1)
+    
+    def draw_angle_arc(self, ax, vertex_x, vertex_y, p1_x, p1_y, p2_x, p2_y, radius=0.5, label=""):
+        """Draw an arc to mark an angle"""
+        import math
+        
+        # Calculate angles
+        angle1 = math.atan2(p1_y - vertex_y, p1_x - vertex_x)
+        angle2 = math.atan2(p2_y - vertex_y, p2_x - vertex_x)
+        
+        # Ensure angle2 > angle1
+        if angle2 < angle1:
+            angle2 += 2 * math.pi
+        
+        # Create arc
+        angles = np.linspace(angle1, angle2, 50)
+        arc_x = vertex_x + radius * np.cos(angles)
+        arc_y = vertex_y + radius * np.sin(angles)
+        
+        ax.plot(arc_x, arc_y, 'k-', linewidth=1)
+        
+        # Add label if provided
+        if label:
+            mid_angle = (angle1 + angle2) / 2
+            label_x = vertex_x + (radius + 0.2) * math.cos(mid_angle)
+            label_y = vertex_y + (radius + 0.2) * math.sin(mid_angle)
+            ax.text(label_x, label_y, label, fontsize=9, ha='center', va='center')
+    
+    def mark_parallel(self, ax, x1, y1, x2, y2, x3, y3, x4, y4, offset=0.1):
+        """Mark two segments as parallel with arrow symbols"""
+        # First segment midpoint and direction
+        mid1_x, mid1_y = (x1 + x2) / 2, (y1 + y2) / 2
+        dx1, dy1 = x2 - x1, y2 - y1
+        len1 = np.sqrt(dx1**2 + dy1**2)
+        
+        # Second segment midpoint and direction  
+        mid2_x, mid2_y = (x3 + x4) / 2, (y3 + y4) / 2
+        dx2, dy2 = x4 - x3, y4 - y3
+        len2 = np.sqrt(dx2**2 + dy2**2)
+        
+        if len1 > 0 and len2 > 0:
+            # Perpendicular vectors for offset
+            perp1_x, perp1_y = -dy1 / len1 * offset, dx1 / len1 * offset
+            perp2_x, perp2_y = -dy2 / len2 * offset, dx2 / len2 * offset
+            
+            # Draw parallel marks (double arrows)
+            for i, mult in enumerate([-0.1, 0.1]):
+                # First segment marks
+                mark1_x = mid1_x + perp1_x + mult * dx1 / len1 * 0.2
+                mark1_y = mid1_y + perp1_y + mult * dy1 / len1 * 0.2
+                ax.plot([mark1_x - perp1_x*0.5, mark1_x + perp1_x*0.5], 
+                       [mark1_y - perp1_y*0.5, mark1_y + perp1_y*0.5], 'k-', linewidth=2)
+                
+                # Second segment marks
+                mark2_x = mid2_x + perp2_x + mult * dx2 / len2 * 0.2
+                mark2_y = mid2_y + perp2_y + mult * dy2 / len2 * 0.2
+                ax.plot([mark2_x - perp2_x*0.5, mark2_x + perp2_x*0.5], 
+                       [mark2_y - perp2_y*0.5, mark2_y + perp2_y*0.5], 'k-', linewidth=2)
+    
+    def mark_equal(self, ax, x1, y1, x2, y2, x3, y3, x4, y4, marks=1):
+        """Mark two segments as equal with tick marks"""
+        # First segment midpoint and perpendicular
+        mid1_x, mid1_y = (x1 + x2) / 2, (y1 + y2) / 2
+        dx1, dy1 = x2 - x1, y2 - y1
+        len1 = np.sqrt(dx1**2 + dy1**2)
+        
+        # Second segment midpoint and perpendicular
+        mid2_x, mid2_y = (x3 + x4) / 2, (y3 + y4) / 2
+        dx2, dy2 = x4 - x3, y4 - y3
+        len2 = np.sqrt(dx2**2 + dy2**2)
+        
+        if len1 > 0 and len2 > 0:
+            # Perpendicular vectors
+            perp1_x, perp1_y = -dy1 / len1 * 0.15, dx1 / len1 * 0.15
+            perp2_x, perp2_y = -dy2 / len2 * 0.15, dx2 / len2 * 0.15
+            
+            # Draw equal marks
+            for i in range(marks):
+                offset = (i - (marks-1)/2) * 0.1
+                
+                # First segment marks
+                mark1_x = mid1_x + offset * dx1 / len1
+                mark1_y = mid1_y + offset * dy1 / len1
+                ax.plot([mark1_x - perp1_x, mark1_x + perp1_x], 
+                       [mark1_y - perp1_y, mark1_y + perp1_y], 'k-', linewidth=2)
+                
+                # Second segment marks
+                mark2_x = mid2_x + offset * dx2 / len2
+                mark2_y = mid2_y + offset * dy2 / len2
+                ax.plot([mark2_x - perp2_x, mark2_x + perp2_x], 
+                       [mark2_y - perp2_y, mark2_y + perp2_y], 'k-', linewidth=2)
+    
     @log_execution_time("render_to_svg")
     def render_to_svg(self, schema_data: dict) -> str:
         """
