@@ -244,13 +244,7 @@ def reconcile_enonce_schema(enonce: str, schema_data: dict) -> dict:
                 labels[point] = auto_coords
                 position_index += 1
                 
-                logger.warning(
-                    f"Point {point} ajouté automatiquement à {auto_coords}",
-                    module_name="server",
-                    func_name="reconcile_enonce_schema",
-                    point=point,
-                    coordinates=auto_coords
-                )
+                logger.warning(f"Point {point} ajouté automatiquement à {auto_coords}")
         
         enriched_schema["labels"] = labels
     
