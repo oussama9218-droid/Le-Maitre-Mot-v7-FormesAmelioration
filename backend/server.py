@@ -232,19 +232,14 @@ def reconcile_enonce_schema(enonce: str, schema_data: dict) -> dict:
         # Add missing points to schema
         enriched_schema["points"] = list(existing_points | missing_in_schema)
         
-        # Add automatic positions for missing points
+        # Add automatic positions for missing points using intelligent placement
         labels = enriched_schema.get("labels", {})
-        positions = [(5, 0), (0, 5), (-5, 0), (0, -5), (3.5, 3.5), (-3.5, 3.5), (-3.5, -3.5), (3.5, -3.5)]
-        position_index = 0
+        auto_positions = auto_place_points(enriched_schema, list(missing_in_schema))
         
-        for point in sorted(missing_in_schema):
-            if point not in labels and position_index < len(positions):
-                x, y = positions[position_index]
-                auto_coords = f"({x},{y})"
-                labels[point] = auto_coords
-                position_index += 1
-                
-                logger.warning(f"Point {point} ajouté automatiquement à {auto_coords}")
+        for point, coords in auto_positions.items():
+            if point not in labels:
+                labels[point] = coords
+                logger.warning(f"Point {point} ajouté automatiquement à {coords}")
         
         enriched_schema["labels"] = labels
     
