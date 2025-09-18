@@ -310,8 +310,8 @@ class SchemaRenderer:
                     coord_str = coord_str.strip("()")
                     x, y = map(float, coord_str.split(","))
                     coords[point] = (x, y)
-                except:
-                    logger.warning(f"Failed to parse coordinate '{coord_str}' for point '{point}'")
+                except (ValueError, AttributeError, IndexError) as e:
+                    logger.warning(f"Failed to parse coordinate '{coord_str}' for point '{point}': {e}")
         
         # Validate that we have coordinates for all points
         available_coords = {p: coords[p] for p in points if p in coords}
