@@ -1109,111 +1109,193 @@ class SchemaRenderer:
         return self._fig_to_png_base64(fig)
     
     def _render_rectangle_png(self, data: dict) -> str:
-        """Render a rectangle as PNG base64"""
+        """Render a rectangle as PNG base64 - using SVG logic"""
+        # Create a copy of SVG method but output PNG
         fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_rectangle_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
+        
+        longueur = data.get("longueur", 6)
+        largeur = data.get("largeur", 4)
+        
+        # Define rectangle corners
+        coords = {
+            'A': (0, largeur),     # Top-left
+            'B': (0, 0),          # Bottom-left  
+            'C': (longueur, 0),   # Bottom-right
+            'D': (longueur, largeur)  # Top-right
+        }
+        
+        # Draw rectangle using utility functions
+        rect = patches.Rectangle((0, 0), longueur, largeur, 
+                               facecolor='lightgreen', edgecolor='black', linewidth=2)
+        ax.add_patch(rect)
+        
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Process additional geometric properties
+        self.process_geometric_properties(ax, data, coords)
+        
+        # Clean axes and auto-center
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Rectangle', fontsize=12, fontweight='bold', pad=10)
+        
         return self._fig_to_png_base64(fig)
     
     def _render_carre_png(self, data: dict) -> str:
-        """Render a square as PNG base64"""
+        """Render a square as PNG base64 - using SVG logic"""
         fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_carre_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
+        
+        cote = data.get("cote", 4)
+        
+        # Define square corners
+        coords = {
+            'A': (0, cote),     # Top-left
+            'B': (0, 0),       # Bottom-left  
+            'C': (cote, 0),    # Bottom-right
+            'D': (cote, cote)  # Top-right
+        }
+        
+        # Draw square using utility functions
+        square = patches.Rectangle((0, 0), cote, cote,
+                                 facecolor='lightyellow', edgecolor='black', linewidth=2)
+        ax.add_patch(square)
+        
+        # Draw corner points
+        for point, (x, y) in coords.items():
+            self.draw_point(ax, x, y, point, label_offset=(0.2, 0.2), size=4)
+        
+        # Process additional geometric properties
+        self.process_geometric_properties(ax, data, coords)
+        
+        # Clean axes and auto-center
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Carré', fontsize=12, fontweight='bold', pad=10)
+        
         return self._fig_to_png_base64(fig)
     
     def _render_cercle_png(self, data: dict) -> str:
-        """Render a circle as PNG base64"""
+        """Render a circle as PNG base64 - using SVG logic"""
         fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_cercle_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
+        
+        rayon = data.get("rayon", 3)
+        
+        # Draw circle
+        circle = patches.Circle((0, 0), rayon, facecolor='lightcoral', 
+                              edgecolor='black', linewidth=2, alpha=0.7)
+        ax.add_patch(circle)
+        
+        # Draw center point using utility function
+        self.draw_point(ax, 0, 0, 'O', label_offset=(0.2, 0.2), color='black', size=6)
+        
+        # Draw radius line using utility function
+        radius_end_x, radius_end_y = rayon, 0
+        self.draw_segment(ax, 0, 0, radius_end_x, radius_end_y, color='black', linewidth=2, style='--')
+        
+        # Add radius label using utility function
+        self.draw_len_label(ax, 0, 0, radius_end_x, radius_end_y, f'r = {rayon}', offset=0.3)
+        
+        # Clean axes and auto-center
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Cercle', fontsize=12, fontweight='bold', pad=10)
+        
         return self._fig_to_png_base64(fig)
     
     def _render_cylindre_png(self, data: dict) -> str:
-        """Render a cylinder as PNG base64"""
+        """Render a cylinder as PNG base64 - using SVG logic"""
         fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_cylindre_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
+        
+        rayon = data.get("rayon", 3)
+        hauteur = data.get("hauteur", 5)
+        
+        # Draw cylinder (side view) - same as SVG version
+        ellipse_top = patches.Ellipse((0, hauteur), rayon*2, rayon*0.3, 
+                                    facecolor='lightblue', edgecolor='black', linewidth=2)
+        ax.add_patch(ellipse_top)
+        
+        ellipse_bottom = patches.Ellipse((0, 0), rayon*2, rayon*0.3,
+                                       facecolor='lightblue', edgecolor='black', linewidth=2)
+        ax.add_patch(ellipse_bottom)
+        
+        ax.plot([-rayon, -rayon], [0, hauteur], 'k-', linewidth=2)
+        ax.plot([rayon, rayon], [0, hauteur], 'k-', linewidth=2)
+        
+        ax.text(rayon + 0.5, hauteur/2, f'h = {hauteur} cm', fontsize=12, ha='left')
+        ax.text(0, -rayon*0.5, f'r = {rayon} cm', fontsize=12, ha='center')
+        
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Cylindre', fontsize=12, fontweight='bold', pad=10)
+        
         return self._fig_to_png_base64(fig)
     
     def _render_pyramide_png(self, data: dict) -> str:
-        """Render a pyramid as PNG base64"""
-        fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_pyramide_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
-        return self._fig_to_png_base64(fig)
+        """Render a pyramid as PNG base64 - fallback to generic"""
+        return self._render_generic_polygon_png(data)
     
     def _render_quadrilatere_png(self, data: dict) -> str:
-        """Render a quadrilateral as PNG base64"""
-        fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_quadrilatere_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
-        return self._fig_to_png_base64(fig)
+        """Render a quadrilateral as PNG base64 - delegate to specific types"""
+        quad_type = data.get("sous_type", "rectangle").lower()
+        
+        if quad_type == "rectangle":
+            return self._render_rectangle_png(data)
+        elif quad_type == "carre":
+            return self._render_carre_png(data)
+        else:
+            return self._render_generic_polygon_png(data)
     
     def _render_losange_png(self, data: dict) -> str:
-        """Render a diamond as PNG base64"""
-        fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_losange_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
-        return self._fig_to_png_base64(fig)
+        """Render a diamond as PNG base64 - fallback to generic"""
+        return self._render_generic_polygon_png(data)
     
     def _render_parallelogramme_png(self, data: dict) -> str:
-        """Render a parallelogram as PNG base64"""
-        fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_parallelogramme_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
-        return self._fig_to_png_base64(fig)
+        """Render a parallelogram as PNG base64 - fallback to generic"""
+        return self._render_generic_polygon_png(data)
     
     def _render_trapeze_png(self, data: dict) -> str:
-        """Render a trapezoid as PNG base64"""
-        fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_trapeze_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
-        return self._fig_to_png_base64(fig)
+        """Render a trapezoid as PNG base64 - fallback to generic"""
+        return self._render_generic_polygon_png(data)
     
     def _render_trapeze_rectangle_png(self, data: dict) -> str:
-        """Render a right trapezoid as PNG base64"""
-        fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_trapeze_rectangle_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
-        return self._fig_to_png_base64(fig)
+        """Render a right trapezoid as PNG base64 - fallback to generic"""
+        return self._render_generic_polygon_png(data)
     
     def _render_trapeze_isocele_png(self, data: dict) -> str:
-        """Render an isosceles trapezoid as PNG base64"""
-        fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_trapeze_isocele_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
-        return self._fig_to_png_base64(fig)
+        """Render an isosceles trapezoid as PNG base64 - fallback to generic"""
+        return self._render_generic_polygon_png(data)
     
     def _render_generic_polygon_png(self, data: dict) -> str:
         """Render a generic polygon as PNG base64"""
         fig, ax = plt.subplots(figsize=(4, 4))
-        result = self._render_generic_polygon_common(ax, data)
-        if not result:
-            plt.close(fig)
-            return ""
+        
+        schema_type = data.get("type", "polygone")
+        
+        # Draw simple placeholder shape
+        placeholder = patches.Rectangle((1, 1), 2, 2, 
+                                      facecolor='lightblue', edgecolor='black', 
+                                      linewidth=2, alpha=0.7)
+        ax.add_patch(placeholder)
+        
+        ax.text(2, 2, schema_type.title(), fontsize=10, ha='center', va='center', 
+                fontweight='bold')
+        
+        ax.set_xlim(0, 4)
+        ax.set_ylim(0, 4)
+        ax.set_aspect('equal')
+        ax.axis('off')
+        ax.set_title(f'{schema_type.title()} (générique)', fontsize=12, fontweight='bold', pad=10)
+        
         return self._fig_to_png_base64(fig)
     
     @log_execution_time("render_to_svg")
