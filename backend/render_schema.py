@@ -385,7 +385,7 @@ class SchemaRenderer:
     
     def _render_cercle(self, data: dict) -> str:
         """Render a circle"""
-        fig, ax = plt.subplots(figsize=(6, 6))
+        fig, ax = plt.subplots(figsize=(4, 4))
         
         rayon = data.get("rayon", 3)
         
@@ -402,11 +402,12 @@ class SchemaRenderer:
         ax.plot(0, 0, 'ko', markersize=6)
         ax.text(0.2, 0.2, 'O', fontsize=12, fontweight='bold')
         
-        ax.set_xlim(-rayon*1.2, rayon*1.2)
-        ax.set_ylim(-rayon*1.2, rayon*1.2)
+        # Clean axes and auto-center
         ax.set_aspect('equal')
         ax.axis('off')
-        ax.set_title('Cercle', fontsize=14, fontweight='bold')
+        ax.relim()
+        ax.autoscale_view()
+        ax.set_title('Cercle', fontsize=12, fontweight='bold', pad=10)
         
         return self._fig_to_svg(fig)
     
